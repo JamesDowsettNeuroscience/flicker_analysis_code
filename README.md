@@ -1,7 +1,7 @@
 # flicker_analysis_code
 Data analysis code for all experiments using SSVEPs/Flicker 
 
-Here is a list of current data sets with some detail about the EEG recording:
+Here is a list of current data sets, with some detail about the EEG recording:
 
 Current full data sets:
 
