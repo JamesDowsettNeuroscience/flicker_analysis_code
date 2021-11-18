@@ -18,7 +18,7 @@ Gamma flicker basic stimuli (Colour, Luminance, Duty Cycle)
 30-60Hz, BrainAmp 64chan –  normal triggers, 5000 Hz sample rate
 
 Astrid data
-Alpha range sweep, 9 and 11 Hz, BrainAmp 64chan –  normal triggers, 5000 Hz sample rate??
+Alpha range sweep, 9 and 11 Hz, LiveAmp 8chan –  normal triggers, 1000 Hz sample rate
 
 
 Pilot data:
