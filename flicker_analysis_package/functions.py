@@ -109,7 +109,6 @@ def low_pass_filter(sample_rate, data):
 ##Function for making evoked FFT
 #Desc: Segment data into non-overlapping segments of a given length, each time locked to a trigger. Then average and do an FFT on the average.
 
-
 ###ANALYSIS FUNCTIONS
 
 ##Permutation tests on two conditions
