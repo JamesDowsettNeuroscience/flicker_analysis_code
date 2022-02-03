@@ -211,12 +211,14 @@ white_lp_ffts = FFT_Master_pipeline(white_lp, flicker_time, length_of_segment, '
 
 ## FIND PEAKS AND CALCULATE SNR
 all_ffts = np.array([blue_ffts,red_ffts,green_ffts,white_ffts]) # stacks all original FFTs 
-np.save(file_name + '_' + electrode_name + '_all_ffts',all_ffts) # saves all original FFTs
+np.save(file_name + '_' + electrode_name + '_all_induced_ffts',all_ffts) # saves all original FFTs
 
 all_lp_ffts = np.array([blue_lp_ffts,red_lp_ffts,green_lp_ffts,white_lp_ffts]) # stacks all interpolated FFTs
+np.save(file_name + '_' + electrode_name + '_all_induced_lp_ffts',all_lp_ffts) # saves all original FFTs
 
 # calculates peak amplitudes, peak indices, and SNR for all colours, with a window of 2 Hz
 all_peaks, all_indices, SNR_ffts = SNR(all_ffts,flicker_periods,length_of_segment,2)
+np.save(file_name + '_' + electrode_name + '_all_induced_SNR',SNR_ffts) # saves all original SNRs
 
 # plots all original and interpolated FFTs (compared), with original peaks
 FFT_plots(blue_ffts, blue_lp_ffts, flicker_periods, harmonics, subharmonics, length_of_segment*sample_rate, colour='b', peak_indices=all_indices)
