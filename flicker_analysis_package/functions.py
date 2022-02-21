@@ -14,11 +14,48 @@ Created on Tue Nov 30 12:02:57 2021
 
 ### Loading data, getting and sorting triggers (experiment specicfic)
 
-## Function for loading data from one channel
-def load_data(file_name, electrode_name):
+
+num_loops = 1000
+
+## Function for loading data from one channel using electrode number
+def load_data(file_name, electrode):
     
     import numpy as np
     import mne
+    import os
+    
+    # read the EEG data with the MNE function
+    raw = mne.io.read_raw_brainvision(file_name + '.vhdr')
+    
+    #channel_names = raw.info.ch_names
+    
+    # Load data
+    print('  ')
+    print('Loading Electrode data ...')
+    print('  ')
+    
+    
+    data = np.array(raw[electrode,:], dtype=object) 
+    data = data[0,]
+    data = data.flatten()
+
+
+    print('Saving ...')
+
+    electrode_data_file_name = file_name + '_' + raw.ch_names[electrode] +'_data'
+    
+    # save as a numpy array
+    np.save(os.path.join(file_name, electrode_data_file_name), data)
+    
+    
+    print('Done')
+    
+## Function for loading data from one channel using electrode name
+def load_data_electrode_name(file_name, electrode_name):
+    
+    import numpy as np
+    import mne
+    import os
     
     # read the EEG data with the MNE function
     raw = mne.io.read_raw_brainvision(file_name + '.vhdr')
@@ -29,45 +66,22 @@ def load_data(file_name, electrode_name):
     
     # Load data
     print('  ')
-    print('Loading EOG data ...')
+    print('Loading Electrode data ...')
     print('  ')
-    
-    
-    # extract the EOG data
-
-    VEOG_data = np.array(raw[30,:], dtype=object) 
-    VEOG_data = VEOG_data[0,]
-    VEOG_data = VEOG_data.flatten()
-    
-    HEOG_data = np.array(raw[31,:], dtype=object) 
-    HEOG_data = HEOG_data[0,]
-    HEOG_data = HEOG_data.flatten()
-    
-    print('Loading electrode data ...')
-    print('  ')
-    
     
     data = np.array(raw[electrode,:], dtype=object) 
     data = data[0,]
     data = data.flatten()
     
-    channel_names = raw.info.ch_names 
-    channel_names[60] = 'Fpz' # correct names spelt wrong
-
-
     print('Saving ...')
 
-    electrode_data_file_name = file_name + '_' + electrode_name +'_data'
-    VEOG_data_file_name = file_name + '_VEOG_data'
-    HEOG_data_file_name = file_name + '_HEOG_data'
+    electrode_data_file_name = file_name + '_' + raw.ch_names[electrode] +'_data'
     
     # save as a numpy array
-    np.save(electrode_data_file_name, data)
-    np.save(VEOG_data_file_name, VEOG_data)
-    np.save(HEOG_data_file_name, HEOG_data)
-    
+    np.save(os.path.join(file_name, electrode_data_file_name), data)
     
     print('Done')
+
     
 ##Function for getting triggers from .vmrk file – save as numpy array
 
@@ -98,8 +112,189 @@ def low_pass_filter(sample_rate, data):
 ##Function to determine good data
 
 ##Function to make SSVEPs (use triggers & average)
+def make_SSVEPs(data, all_triggers, period):
+    import numpy as np
+
+    segment_matrix = np.zeros([len(all_triggers), period]) # empty matrix to put segments into
+    
+    seg_count = 0 # keep track of the number of segments
+    
+    # loop through all triggers and put the corresponding segment of data into the matrix
+    for trigger in all_triggers:
+        
+        # select a segment of data the lenght of the flicker period, starting from the trigger time 
+        segment =  data[trigger:trigger+period] 
+        
+        segment_matrix[seg_count,:] = segment
+    
+        seg_count += 1
+    
+    SSVEP = segment_matrix.mean(axis=0) # average to make SSVEP
+    
+    SSVEP = SSVEP - SSVEP.mean() # baseline correct
+    
+    return SSVEP
+
+##Function to make SSVEPs with offset (use triggers & average)
+def make_SSVEPs_offset(data, triggers, period, offset):
+    import numpy as np
+
+    segment_matrix = np.zeros([len(triggers), period]) # empty matrix to put segments into
+    
+    seg_count = 0 # keep track of the number of segments
+    
+    # loop through all triggers and put the corresponding segment of data into the matrix
+    for trigger in triggers:
+        
+        # select a segment of data the lenght of the flicker period, starting from the trigger time 
+        segment =  data[trigger-offset:trigger+period-offset] 
+        
+        segment_matrix[seg_count,:] = segment
+    
+        seg_count += 1
+    
+    SSVEP = segment_matrix.mean(axis=0) # average to make SSVEP
+    
+    SSVEP = SSVEP - SSVEP.mean() # baseline correct
+    
+    return SSVEP
 
 ##Function to make SSVEPs (randomly shuffle data in each segment, then average - way of calculating signal-to-noise ratio)
+def make_SSVEPs_random(data, all_triggers, period, num_loops):
+    ## make SSVEP with all segments
+    
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import random 
+
+    segment_matrix = np.zeros([len(all_triggers), period]) # empty matrix to put segments into
+    
+    seg_count = 0 # keep track of the number of segments
+    
+    # loop through all triggers and put the corresponding segment of data into the matrix
+    for trigger in all_triggers:
+        
+        # select a segment of data the lenght of the flicker period, starting from the trigger time 
+        segment =  data[trigger:trigger+period] 
+        
+        segment_matrix[seg_count,:] = segment
+    
+        seg_count += 1
+    
+    SSVEP = segment_matrix.mean(axis=0) # average to make SSVEP
+    
+    SSVEP = SSVEP - SSVEP.mean() # baseline correct
+    
+    
+    # permutation tests on noise
+    
+    
+    random_amplitudes = np.zeros([num_loops,])
+    
+    for loop in range(0,num_loops):
+        
+       # print(loop)
+        # make random SSVEP 
+        
+        shuffled_segment_matrix =  np.zeros([len(all_triggers), period])  
+        
+        # loop through all triggers and put the corresponding segment of data into the matrix
+        seg_count = 0 # keep track of the number of segments
+        
+        for trigger in all_triggers:
+            
+            segment =  data[trigger:trigger+period] 
+        
+            random.shuffle(segment) # randomly shuffle the data points
+            
+            shuffled_segment_matrix[seg_count,:] = segment
+            
+            seg_count += 1
+        
+        random_SSVEP = shuffled_segment_matrix.mean(axis=0) # average to make SSVEP
+        
+        random_SSVEP = random_SSVEP - random_SSVEP.mean() # baseline correct
+        
+        random_amplitudes[loop] = np.ptp(random_SSVEP)
+    
+    
+    plt.plot(random_SSVEP,'k') # plot the last random shuffle, just to see
+    
+    plt.plot(SSVEP,'b') # plot the true SSVEP
+    
+    true_amplitude = np.ptp(SSVEP)
+    
+    print('True amplitude = ', true_amplitude)
+    
+    average_noise = random_amplitudes.mean()
+    
+    print('Amplitude noise = ', average_noise)
+    
+    std_noise = np.std(random_amplitudes)
+    
+    print('Standard Deviation noise = ', std_noise)
+    
+    Z_score  = (true_amplitude-average_noise) / std_noise
+    
+    print('Z_score = ', Z_score)
+    
+##Function for only random SSVEPs and z score
+def randomSSVEPs_zscore(SSVEP, data, all_triggers, period, num_loops, offset):
+    
+    import numpy as np
+    import matplotlib.pyplot as plt
+    import random
+    
+    random_amplitudes = np.zeros([num_loops,])
+    
+    for loop in range(0,num_loops):
+        
+        print(loop)
+        # make random SSVEP 
+        
+        shuffled_segment_matrix =  np.zeros([len(all_triggers), period])  
+        
+        # loop through all triggers and put the corresponding segment of data into the matrix
+        seg_count = 0 # keep track of the number of segments
+        
+        for trigger in all_triggers:
+            
+            segment =  data[trigger-offset:trigger+period-offset] 
+        
+            random.shuffle(segment) # randomly shuffle the data points
+            
+            shuffled_segment_matrix[seg_count,:] = segment
+            
+            seg_count += 1
+        
+        random_SSVEP = shuffled_segment_matrix.mean(axis=0) # average to make SSVEP
+        
+        random_SSVEP = random_SSVEP - random_SSVEP.mean() # baseline correct
+        
+        random_amplitudes[loop] = np.ptp(random_SSVEP)
+    
+    
+    plt.plot(random_SSVEP,'k') # plot the last random shuffle, just to see
+    
+    plt.plot(SSVEP,'b') # plot the true SSVEP
+    
+    true_amplitude = np.ptp(SSVEP)
+    
+    print('True amplitude = ', true_amplitude)
+    
+    average_noise = random_amplitudes.mean()
+    
+    print('Amplitude noise = ', average_noise)
+    
+    std_noise = np.std(random_amplitudes)
+    
+    print('Standard Deviation noise = ', std_noise)
+    
+    Z_score  = (true_amplitude-average_noise) / std_noise
+    
+    print('Z_score = ', Z_score)
+
+
 
 ##Function for linear interpolation of trigger artefacts (plot SSVEP showing before and after in this function)
 
@@ -108,6 +303,7 @@ def low_pass_filter(sample_rate, data):
 
 ##Function for making evoked FFT
 #Desc: Segment data into non-overlapping segments of a given length, each time locked to a trigger. Then average and do an FFT on the average.
+
 
 ###ANALYSIS FUNCTIONS
 
