@@ -305,7 +305,7 @@ def randomSSVEPs_zscore(SSVEP, data, all_triggers, period, num_loops, offset):
 #Desc: Segment data into non-overlapping segments of a given length, each time locked to a trigger. Then average and do an FFT on the average.
 
 
-###ANALYSIS FUNCTIONS
+###ANALYSIS FUNCTIONS that require making SSSVEPs
 
 ##Permutation tests on two conditions
 #Desc: Make two SSVEPs by randomly assigning segments from condition 1 and condition 2 to two make two groups, and compare the difference in amplitude. Repeat this may times (e.g. 1000) and create a distribution of amplitude differences, which can be compared to the true difference.
@@ -319,15 +319,70 @@ def randomSSVEPs_zscore(SSVEP, data, all_triggers, period, num_loops, offset):
 ##Plots (for plotting example SSVEPs)
 
 
+##### ANALYSIS FUNCTIONS ON SSVEPs that are already averaged
+
+def compareSSVEPs(SSVEP_1, SSVEP_2):
+    
+    import numpy as np
+    import matplotlib.pyplot as plt
+
+    amplitude_difference = np.ptp(SSVEP_1) - np.ptp(SSVEP_2)
+
+    # check if SSVEPs are the same length
+    
+    if len(SSVEP_1) == len(SSVEP_2):
+        
+        correlation = np.corrcoef(SSVEP_1, SSVEP_2)    # Pearson correlation
+
+    else: # if not the same length, time-warp the shorter of the two so they are the same length, call the new time warped wave: new_SSVEP 
+    
+        if len(SSVEP_1) < len(SSVEP_2):
+            
+            longer_SSVEP = np.copy(SSVEP_2)
+            shorter_SSVEP = np.copy(SSVEP_1)
+            
+        elif len(SSVEP_1) > len(SSVEP_2):
+            
+            longer_SSVEP = np.copy(SSVEP_1)
+            shorter_SSVEP = np.copy(SSVEP_2)
+
+        ### time warp: 
+            
+        ## make a much longer version of the shorter SSVEP by evenly spacing each data point and linear interpolation of the data points in between
+
+        length_temp_SSVEP = 1000 # the length of the temporary waveform, which will be re-scaled
+        
+        temp_SSVEP = np.zeros([length_temp_SSVEP,]) # empty matrix for the long re-scaled SSVEP
+        
+        
+        steps_to_use = np.linspace(0,length_temp_SSVEP,len(shorter_SSVEP)) # evenly spaced time points, one for each time point of the shorter SSVEP
+        steps_to_use = np.round(steps_to_use) # round these time points to integer values
+        
+        for k in range(0,len(longer_SSVEP)-1): # for every time point in the longer SSVEP
+            t = int(steps_to_use[k]) # get the data value of one time point
+            t_2 = int(steps_to_use[k+1]) # and of the following time point
+            temp_SSVEP[t:t_2] = np.linspace(shorter_SSVEP[k],shorter_SSVEP[k+1],len(temp_SSVEP[t:t_2])) # add these data points, and linear interpolation between them, to the temp SSVEP
+           
+        
+        
+        new_SSVEP = np.zeros([len(longer_SSVEP),]) # empty array to put the new values into, the length of the longer SSVEP
+        
+        
+        steps_to_use = np.linspace(0,length_temp_SSVEP,len(longer_SSVEP)) # evenly spaced time points,  one for each time point of the longer SSVEP
+        steps_to_use = np.round(steps_to_use) # round these time points to integer values
+        
+        for k in range(0,len(shorter_SSVEP)-1): # get the values from the longer SSVEP, and use them to make the new SSVEP
+            t = int(steps_to_use[k])   
+            new_SSVEP[k] = temp_SSVEP[t]
+        
+        
+        new_SSVEP[-1] = temp_SSVEP[length_temp_SSVEP-1] # put the last time point in seperatly
 
 
+        correlation = np.corrcoef(longer_SSVEP, new_SSVEP)    # Pearson correlation of the longer SSVEP and the time warped shorter SSVEP
 
-
-
-
-
-
-
+    
+    return correlation
 
 
 
