@@ -358,7 +358,7 @@ def compareSSVEPs(SSVEP_1, SSVEP_2):
         steps_to_use = np.linspace(0,length_temp_SSVEP,len(shorter_SSVEP)) # evenly spaced time points, one for each time point of the shorter SSVEP
         steps_to_use = np.round(steps_to_use) # round these time points to integer values
         
-        for k in range(0,len(longer_SSVEP)-1): # for every time point in the longer SSVEP
+        for k in range(0,len(shorter_SSVEP)-1): # for every time point in the longer SSVEP
             t = int(steps_to_use[k]) # get the data value of one time point
             t_2 = int(steps_to_use[k+1]) # and of the following time point
             temp_SSVEP[t:t_2] = np.linspace(shorter_SSVEP[k],shorter_SSVEP[k+1],len(temp_SSVEP[t:t_2])) # add these data points, and linear interpolation between them, to the temp SSVEP
@@ -371,7 +371,7 @@ def compareSSVEPs(SSVEP_1, SSVEP_2):
         steps_to_use = np.linspace(0,length_temp_SSVEP,len(longer_SSVEP)) # evenly spaced time points,  one for each time point of the longer SSVEP
         steps_to_use = np.round(steps_to_use) # round these time points to integer values
         
-        for k in range(0,len(shorter_SSVEP)-1): # get the values from the longer SSVEP, and use them to make the new SSVEP
+        for k in range(0,len(longer_SSVEP)-1): # get the values from the longer SSVEP, and use them to make the new SSVEP
             t = int(steps_to_use[k])   
             new_SSVEP[k] = temp_SSVEP[t]
         
