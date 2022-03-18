@@ -321,16 +321,18 @@ def randomSSVEPs_zscore(SSVEP, data, all_triggers, period, num_loops, offset):
 
 ##### ANALYSIS FUNCTIONS ON SSVEPs that are already averaged
 
-def compareSSVEPs(SSVEP_1, SSVEP_2):
+def time_warp_SSVEPs(SSVEP_1, SSVEP_2):
     
     import numpy as np
-    import matplotlib.pyplot as plt
+    
 
     amplitude_difference = np.ptp(SSVEP_1) - np.ptp(SSVEP_2)
 
     # check if SSVEPs are the same length
     
     if len(SSVEP_1) == len(SSVEP_2):
+        
+        print('SSVEPs are already the same length')
         
         correlation = np.corrcoef(SSVEP_1, SSVEP_2)    # Pearson correlation
 
@@ -383,6 +385,43 @@ def compareSSVEPs(SSVEP_1, SSVEP_2):
 
     
     return correlation
+    return new_SSVEP
 
 
+def cross_correlation(SSVEP_1, SSVEP_2):
+    
+    import numpy as np
+    
+    if len(SSVEP_1) == len(SSVEP_2): # check the two SSVEPs are the same length
+     
+        correlations = np.zeros([len(SSVEP_1),]) # empty array to put the correlation values into
+        
+        phase_shifted_SSVEP_2 = np.copy(SSVEP_2) # make a copy of SSVEP_2 which can be phase shifted
+        
+        for i in range(len(SSVEP_1)):
+        
+           # plt.plot(phase_shift_SSVEP_2)
+        
+            correlations[i] = np.corrcoef(SSVEP_1, phase_shifted_SSVEP_2)[1,0] # get the pearson's correlatios for this phase value
+        
+            phase_shifted_SSVEP_2 = np.roll(phase_shifted_SSVEP_2, 1) # phase shift by one data point
+            
+           
+        # get the phase shift 
+        
+        phase_lag = np.argmax(correlations)  # the phase lag with the maximum correlation value
 
+        print('phase lag = ' + str(phase_lag))
+        
+    else:
+        
+        print('SSVEPs are not the same length')
+        
+        phase_lag = 0
+            
+        
+    phase_lag_degrees = phase_lag/len(SSVEP_1) * 360
+
+    print('Phase lag in degrees = ' + str(phase_lag_degrees))
+        
+    return phase_lag
