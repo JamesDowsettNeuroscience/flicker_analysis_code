@@ -10,7 +10,8 @@ from flicker_analysis_package import functions
 
 import numpy as np
 import matplotlib.pyplot as plt
-
+import math
+import scipy.stats
 
 # file_names = ('simulated_data_40Hz_Consistent_Amplitude', 'simulated_data_40Hz_Consistent_smaller_Amplitude')
 
@@ -71,7 +72,7 @@ import matplotlib.pyplot as plt
 
 
 
-file_names = ('simulated_data_40Hz_Consistent_Amplitude', 'simulated_data_40Hz_Consistent_smaller_Amplitude')
+file_names = ('simulated_data_40Hz_Consistent_Amplitude', 'simulated_data_40Hz_Consistent_smaller_Amplitude', 'simulated_data_40Hz_Consistent_Amplitude_phase_shift')
 
 ## load simulated data and triggers
 
@@ -79,17 +80,17 @@ data_1 = np.load(file_names[0] + '.npy')
 
 triggers_1 = np.load('simulated_triggers_40Hz.npy')
 
-data_2 = np.load(file_names[1] + '.npy')
+data_2 = np.load(file_names[2] + '.npy')
 
 triggers_2 = np.load('simulated_triggers_40Hz.npy')
 
 
 ## compare two SSVEPs
 
-num_subjects = 8
+num_subjects = 10
 
-condition_1_differences = np.zeros([num_subjects,])
-condition_2_differences = np.zeros([num_subjects,])
+condition_1_values = np.zeros([num_subjects,])
+condition_2_values = np.zeros([num_subjects,])
 
 for subject in range(0,num_subjects):
     
@@ -105,24 +106,34 @@ for subject in range(0,num_subjects):
     
     SSVEP_5 = (SSVEP_3 + SSVEP_4) /2
     
-    # plt.plot(SSVEP_1)
-    # plt.plot(SSVEP_2)
-    # plt.plot(SSVEP_3)
-    # plt.plot(SSVEP_4)
-    # plt.plot(SSVEP_5)
+    # plt.plot(SSVEP_1, label = 'SSVEP_1')
+    # plt.plot(SSVEP_2, label = 'SSVEP_2')
+    # # plt.plot(SSVEP_3, label = 'SSVEP_3')
+    # # plt.plot(SSVEP_4), label = 'SSVEP_4')
+    # plt.plot(SSVEP_5, label = 'SSVEP_5')
     
+   # plt.legend()
     
-    
-    condition_1_differences[subject] = np.ptp(SSVEP_1) - np.ptp(SSVEP_2)
-    condition_2_differences[subject] = np.ptp(SSVEP_1) - np.ptp(SSVEP_5)
+    # condition_1_values[subject] = np.ptp(SSVEP_1) - np.ptp(SSVEP_2)
+    # condition_2_values[subject] = np.ptp(SSVEP_1) - np.ptp(SSVEP_5)
+    phase_shift_1 = functions.cross_correlation(SSVEP_1, SSVEP_2)
+    phase_shift_2 = functions.cross_correlation(SSVEP_1, SSVEP_3)
 
-
+    condition_1_values[subject] = phase_shift_1
+    condition_2_values[subject] = phase_shift_2
+    
+    # plt.title(str(np.round(phase_shift_1,2)) + '    ' + str(np.round(phase_shift_2,2)))
+    
 ## permutation tests
 
 
-average_condition_1 = condition_1_differences.mean() # the average of the values from the first condition
+average_condition_1 = condition_1_values.mean() # the average of the values from the first condition
 
-average_condition_2 = condition_2_differences.mean() # the average of the values from the second condition
+average_condition_2 = condition_2_values.mean() # the average of the values from the second condition
+
+# get the standard deviation
+std_deviation_1 = np.std(condition_1_values, axis = 0)
+std_deviation_2 = np.std(condition_2_values, axis = 0)
 
 true_difference = average_condition_1 - average_condition_2
 
@@ -144,13 +155,13 @@ for loop in range(0,num_loops):
         
         if decide == 'yes':
             
-            temp_condition_1[subject] = condition_1_differences[subject] # keep the correct labels
-            temp_condition_2[subject] = condition_2_differences[subject]
+            temp_condition_1[subject] = condition_1_values[subject] # keep the correct labels
+            temp_condition_2[subject] = condition_2_values[subject]
     
         elif decide == 'no':
 
-            temp_condition_1[subject] = condition_2_differences[subject] #swap the conditions
-            temp_condition_2[subject] = condition_1_differences[subject]
+            temp_condition_1[subject] = condition_2_values[subject] #swap the conditions
+            temp_condition_2[subject] = condition_1_values[subject]
 
 
     average_shuffled_differences[loop] = temp_condition_1.mean() - temp_condition_2.mean() # average the two shuffled conditions
@@ -160,10 +171,41 @@ for loop in range(0,num_loops):
     
 plt.figure()
 
+plt.subplot(1,2,1)
+
 plt.hist(average_shuffled_differences,10)
     
 plt.axvline(x=true_difference, color='r', linestyle='--')    
 
+
+
 Z_score = (true_difference - average_shuffled_differences.mean()) / np.std(average_shuffled_differences) # calculate Z score
 
+plt.title('Z score = '  + str(Z_score))
+
 print('Z score = ' + str(Z_score))
+
+p_value_one_sided = scipy.stats.norm.sf(abs(Z_score)) #one-sided
+
+p_value_two_sided = scipy.stats.norm.sf(abs(Z_score))*2 #twosided
+
+print('p = ' + str(p_value_two_sided))
+
+
+plt.subplot(1,2,2)
+
+plt.scatter(np.zeros(len(condition_1_values)) + 1 , condition_1_values)
+plt.scatter(np.zeros(len(condition_2_values)) + 2 , condition_2_values)
+
+
+# divide by the square root of the number of subjects to get the standard error
+std_error_1 = std_deviation_1 / math.sqrt(num_subjects)
+std_error_2 = std_deviation_2 / math.sqrt(num_subjects)
+
+
+# plot mean value with error bars
+plt.errorbar(1, average_condition_1,yerr = std_error_1, solid_capstyle='projecting', capsize=5,  fmt='o', color= 'g', ecolor='g', label='Insert Condition label here')  
+plt.errorbar(2, average_condition_2,yerr = std_error_2, solid_capstyle='projecting', capsize=5,  fmt='o', color= 'g', ecolor='g', label='Insert Condition label here')  
+
+
+plt.xlim(0, 3)

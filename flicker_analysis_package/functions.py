@@ -472,7 +472,7 @@ def cross_correlation(SSVEP_1, SSVEP_2):
         
         phase_lag = np.argmax(correlations)  # the phase lag with the maximum correlation value
 
-        print('phase lag = ' + str(phase_lag))
+        #print('phase lag = ' + str(phase_lag))
         
     else:
         
@@ -483,6 +483,17 @@ def cross_correlation(SSVEP_1, SSVEP_2):
         
     phase_lag_degrees = phase_lag/len(SSVEP_1) * 360
 
-    print('Phase lag in degrees = ' + str(phase_lag_degrees))
+    #print('Phase lag in degrees = ' + str(phase_lag_degrees))
         
-    return phase_lag
+    ## convert to absolute phase lag, i.e. independent of direction, max value will be 180
+    if phase_lag_degrees > 180:
+        absolute_phase_lag_degrees = 360-phase_lag_degrees
+    else:
+        absolute_phase_lag_degrees = phase_lag_degrees
+
+
+    return absolute_phase_lag_degrees
+
+
+
+
