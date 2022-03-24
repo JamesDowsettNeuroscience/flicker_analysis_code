@@ -135,6 +135,67 @@ def make_SSVEPs(data, all_triggers, period):
     
     return SSVEP
 
+
+
+## function to compare SSVEPs from two conditions. Randomly split the triggers from one condition to create two SSVEPs, 
+## and then compare these two SSVEPs to each other and to the second condition
+
+def compare_SSVEPs_split(data_1, data_2, triggers_1, triggers_2, period):
+    
+    import numpy as np
+    import random
+ #   import matplotlib.pyplot as plt
+    
+    for condition in range(0,2):
+    
+        if condition == 0:
+            seg_nums = np.arange(0,len(triggers_1)) # an index for seach segment
+            triggers = triggers_1
+            data = data_1
+        elif condition == 1:
+            seg_nums = np.arange(0,len(triggers_2)) # an index for seach segment
+            triggers = triggers_2
+            data = data_2
+    
+        random.shuffle(seg_nums)
+        
+        for random_half in range(0,2):
+            
+            if random_half == 0:
+                random_half_triggers = triggers[seg_nums[0:int(len(triggers)/2)]]
+            elif random_half == 1:
+                random_half_triggers = triggers[seg_nums[int(len(triggers)/2):]]
+    
+            segment_matrix = np.zeros([len(random_half_triggers), period])
+            seg_count = 0 # keep track of the number of segments
+       
+            for trigger in random_half_triggers:
+                segment =  data[trigger:trigger+period] 
+                segment_matrix[seg_count,:] = segment
+                seg_count += 1
+        
+            SSVEP = segment_matrix[0:seg_count,:].mean(axis=0) # average to make SSVEP
+            
+            SSVEP = SSVEP - SSVEP.mean() # baseline correct
+        
+            if condition == 0:
+                if random_half == 0:
+                    SSVEP_1 = np.copy(SSVEP)
+                elif random_half == 1:
+                    SSVEP_2 = np.copy(SSVEP)
+            elif condition == 1:
+                if random_half == 0:
+                    SSVEP_3 = np.copy(SSVEP)
+                elif random_half == 1:
+                    SSVEP_4 = np.copy(SSVEP)
+
+
+    return SSVEP_1, SSVEP_2, SSVEP_3, SSVEP_4
+    
+    
+    # plt.legend()
+
+
 ##Function to make SSVEPs with offset (use triggers & average)
 def make_SSVEPs_offset(data, triggers, period, offset):
     import numpy as np
@@ -326,7 +387,7 @@ def time_warp_SSVEPs(SSVEP_1, SSVEP_2):
     import numpy as np
     
 
-    amplitude_difference = np.ptp(SSVEP_1) - np.ptp(SSVEP_2)
+    #amplitude_difference = np.ptp(SSVEP_1) - np.ptp(SSVEP_2)
 
     # check if SSVEPs are the same length
     
