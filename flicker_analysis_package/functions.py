@@ -362,6 +362,47 @@ def randomSSVEPs_zscore(SSVEP, data, all_triggers, period, num_loops, offset):
 ##Function for making induced FFT
 #Desc: Segment data into segments of a given length, do an FFT on each segment and then average the FFTs.
 
+
+
+def induced_fft(data, triggers, length, sample_rate): # length = length of segment to use in seconds (1/length = the frequency resolution), sample rate in Hz
+    
+    import numpy as np
+    from scipy import fftpack
+    
+    length_of_segment = int(length * sample_rate)
+    
+    segment_matrix = np.zeros([len(triggers), length_of_segment]) # empty matrix to put segments into
+    
+    seg_count = 0
+   
+    k = 0
+    
+    while k < len(data) - length_of_segment: # loop until the end of data
+    
+        if k in triggers: # if data point is a trigger
+        
+            segment = data[k:k+length_of_segment] # get a segment of data
+    
+            segment = segment - segment.mean() # baseline correct
+                
+            segment_hanning = segment * np.hanning(length_of_segment) # multiply by hanning window
+                
+            fft_segment = np.abs(fftpack.fft(segment_hanning)) # FFT
+    
+            segment_matrix[seg_count,:] = fft_segment # put into matrix
+    
+            seg_count+=1
+            
+            k = k + length_of_segment # move forward the length of the segment, so segments are not overlapping
+    
+        k+=1
+    
+    fft_spectrum = segment_matrix[0:seg_count,:].mean(axis=0)
+    
+    return fft_spectrum
+
+
+
 ##Function for making evoked FFT
 #Desc: Segment data into non-overlapping segments of a given length, each time locked to a trigger. Then average and do an FFT on the average.
 
@@ -383,7 +424,7 @@ def evoked_fft(data, triggers, length, sample_rate): # length = length of segmen
     
         if k in triggers: # if data point is a trigger
         
-            segment = data[k:k+length_of_segment] # get a legment of data
+            segment = data[k:k+length_of_segment] # get a segment of data
     
             segment_matrix[seg_count,:] = segment # put into matrix
     
