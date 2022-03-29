@@ -366,6 +366,45 @@ def randomSSVEPs_zscore(SSVEP, data, all_triggers, period, num_loops, offset):
 #Desc: Segment data into non-overlapping segments of a given length, each time locked to a trigger. Then average and do an FFT on the average.
 
 
+def evoked_fft(data, triggers, length, sample_rate): # length = length of segment to use in seconds (1/length = the frequency resolution), sample rate in Hz
+    
+    import numpy as np
+    from scipy import fftpack
+    
+    length_of_segment = int(length * sample_rate)
+    
+    segment_matrix = np.zeros([len(triggers), length_of_segment]) # empty matrix to put segments into
+    
+    seg_count = 0
+   
+    k = 0
+    
+    while k < len(data) - length_of_segment: # loop until the end of data
+    
+        if k in triggers: # if data point is a trigger
+        
+            segment = data[k:k+length_of_segment] # get a legment of data
+    
+            segment_matrix[seg_count,:] = segment # put into matrix
+    
+            seg_count+=1
+            
+            k = k + length_of_segment # move forward the length of the segment, so segments are not overlapping
+    
+        k+=1
+    
+    SSVEP = segment_matrix[0:seg_count,:].mean(axis=0)
+    
+    
+    SSVEP = SSVEP - SSVEP.mean() # baseline correct
+        
+    SSVEP_hanning = SSVEP * np.hanning(length_of_segment) # multiply by hanning window
+        
+    fft_SSVEP = np.abs(fftpack.fft(SSVEP_hanning)) # FFT
+
+    return fft_SSVEP
+            
+
 ###ANALYSIS FUNCTIONS that require making SSSVEPs
 
 ##Permutation tests on two conditions

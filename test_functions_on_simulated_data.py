@@ -211,3 +211,22 @@ plt.errorbar(2, average_condition_2,yerr = std_error_2, solid_capstyle='projecti
 
 
 plt.xlim(0, 3)
+
+
+
+
+
+## evoked fft test
+
+evoked_fft = functions.evoked_fft(data_1, triggers_1, 1, 5000)
+
+
+
+
+
+
+
+
+
+
+
