@@ -80,14 +80,14 @@ data_1 = np.load(file_names[0] + '.npy')
 
 triggers_1 = np.load('simulated_triggers_40Hz.npy')
 
-data_2 = np.load(file_names[2] + '.npy')
+data_2 = np.load(file_names[1] + '.npy')
 
 triggers_2 = np.load('simulated_triggers_40Hz.npy')
 
 
 ## compare two SSVEPs
 
-num_subjects = 10
+num_subjects = 20
 
 condition_1_values = np.zeros([num_subjects,])
 condition_2_values = np.zeros([num_subjects,])
@@ -116,8 +116,8 @@ for subject in range(0,num_subjects):
     
     # condition_1_values[subject] = np.ptp(SSVEP_1) - np.ptp(SSVEP_2)
     # condition_2_values[subject] = np.ptp(SSVEP_1) - np.ptp(SSVEP_5)
-    phase_shift_1 = functions.cross_correlation(SSVEP_1, SSVEP_2)
-    phase_shift_2 = functions.cross_correlation(SSVEP_1, SSVEP_3)
+    phase_shift_1 = functions.cross_correlation(SSVEP_1, SSVEP_3)
+    phase_shift_2 = functions.cross_correlation(SSVEP_1, SSVEP_2)
 
     condition_1_values[subject] = phase_shift_1
     condition_2_values[subject] = phase_shift_2
@@ -181,7 +181,7 @@ plt.axvline(x=true_difference, color='r', linestyle='--')
 
 Z_score = (true_difference - average_shuffled_differences.mean()) / np.std(average_shuffled_differences) # calculate Z score
 
-plt.title('Z score = '  + str(Z_score))
+plt.title('Z score = '  + str(np.round(Z_score,2)))
 
 print('Z score = ' + str(Z_score))
 
@@ -193,6 +193,8 @@ print('p = ' + str(p_value_two_sided))
 
 
 plt.subplot(1,2,2)
+
+plt.title('p = ' + str(np.round(p_value_two_sided,4)))
 
 plt.scatter(np.zeros(len(condition_1_values)) + 1 , condition_1_values)
 plt.scatter(np.zeros(len(condition_2_values)) + 2 , condition_2_values)
