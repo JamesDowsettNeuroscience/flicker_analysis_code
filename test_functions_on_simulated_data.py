@@ -218,12 +218,25 @@ plt.xlim(0, 3)
 
 ## evoked fft test
 
-evoked_fft = functions.evoked_fft(data_1, triggers_1, 1, 5000)
+sample_rate = 5000
 
+length = 1
 
+evoked_fft = functions.evoked_fft(data_1, triggers_1, length, sample_rate)
 
+induced_fft = functions.induced_fft(data_1, triggers_1, length, sample_rate)
 
+length_of_segment = length * sample_rate
+    
+time_vector = np.linspace(0, sample_rate, num=int(length_of_segment))
+    
+    
+plt.figure()
 
+plt.plot(time_vector,evoked_fft, label = 'Evoked')
+plt.plot(time_vector,induced_fft, label = 'Induced')
+
+plt.legend()
 
 
 
