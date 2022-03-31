@@ -112,15 +112,15 @@ def low_pass_filter(sample_rate, data):
 ##Function to determine good data
 
 ##Function to make SSVEPs (use triggers & average)
-def make_SSVEPs(data, all_triggers, period):
+def make_SSVEPs(data, triggers, period):
     import numpy as np
 
-    segment_matrix = np.zeros([len(all_triggers), period]) # empty matrix to put segments into
+    segment_matrix = np.zeros([len(triggers), period]) # empty matrix to put segments into
     
     seg_count = 0 # keep track of the number of segments
     
     # loop through all triggers and put the corresponding segment of data into the matrix
-    for trigger in all_triggers:
+    for trigger in triggers:
         
         # select a segment of data the lenght of the flicker period, starting from the trigger time 
         segment =  data[trigger:trigger+period] 
@@ -135,62 +135,120 @@ def make_SSVEPs(data, all_triggers, period):
     
     return SSVEP
 
+### basic signal to noise ratio by randomly shuffling the data points of each segment and then making the SSVEP, compare to true SSVEP
+## instead of peak to peak amplitude, use a time range around the peak
+
+def SNR_random(data, triggers, period):
+    
+    import numpy as np
+    import random
+    import matplotlib.pyplot as plt
+    
+    segment_matrix = np.zeros([len(triggers), period]) # empty matrix to put segments into
+    random_segment_matrix = np.zeros([len(triggers), period]) # empty matrix to put the randomly shuffled segments into
+    seg_count = 0 # keep track of the number of segments
+    
+    # loop through all triggers and put the corresponding segment of data into the matrix
+    for trigger in triggers:
+        
+        # select a segment of data the lenght of the flicker period, starting from the trigger time 
+        segment =  data[trigger:trigger+period] 
+        segment_matrix[seg_count,:] = segment
+        
+        random.shuffle(segment)
+
+        random_segment_matrix[seg_count,:] = segment
+
+        seg_count += 1
+    
+    true_SSVEP = segment_matrix.mean(axis=0) # average to make SSVEP
+    random_SSVEP = random_segment_matrix.mean(axis=0) # average to make SSVEP of the randomly shuffled data
+
+    true_SSVEP = true_SSVEP - true_SSVEP.mean() # baseline correct
+    random_SSVEP = random_SSVEP - random_SSVEP.mean()
+   # plt.plot(random_SSVEP, '--k')
+
+    for condition in ('true', 'random'):
+        
+        if condition == 'true':
+            SSVEP = np.copy(true_SSVEP)
+        elif condition == 'random':
+            SSVEP = np.copy(random_SSVEP)
+
+        SSVEP_repeated = np.tile(SSVEP, 2) # repeat the SSVEP in case the peak area is too near the beginning or end, loops around to the start  
+    
+        max_SSVEP_index = np.argmax(SSVEP) # get the index of the peak of the SSVEP
+        
+        ## get the average of the 5 data points around the peak of the SSVEP
+        if (len(SSVEP) - max_SSVEP_index) <= 2: # if the peak is near the end of the SSVEP, 
+            average_peak_area = SSVEP_repeated[max_SSVEP_index-2:max_SSVEP_index+3].mean()
+        elif max_SSVEP_index <= 2: # if the peak index is near the begining of the SSVEP, repeat the SSVEP and move forward by the length of the SSVEP
+            average_peak_area = SSVEP_repeated[max_SSVEP_index+len(SSVEP)-2:max_SSVEP_index+len(SSVEP)+3].mean()
+        else: # otherwise, just average the area around the peak
+            average_peak_area = SSVEP[max_SSVEP_index-2:max_SSVEP_index+3].mean()
+        
+        min_SSVEP_index = np.argmin(SSVEP) # get the index of the trough of the SSVEP
+        
+        ## get the average of the 5 data points around the trough of the SSVEP
+        if (len(SSVEP) - min_SSVEP_index) <= 2: # if the trough is near the end of the SSVEP, 
+            average_trough_area = SSVEP_repeated[min_SSVEP_index-2:min_SSVEP_index+3].mean()
+        elif min_SSVEP_index <= 2: # if the trough index is near the begining of the SSVEP, move forward by the length of the SSVEP
+            average_trough_area = SSVEP_repeated[min_SSVEP_index+len(SSVEP)-2:min_SSVEP_index+len(SSVEP)+3].mean()
+        else: # otherwise, just average the area around the trough
+            average_trough_area = SSVEP[min_SSVEP_index-2:min_SSVEP_index+3].mean()
+    
+    
+        SSVEP_range = np.abs(average_peak_area - average_trough_area)
+
+        if condition == 'true':
+            true_SSVEP_range = np.copy(SSVEP_range)
+        elif condition == 'random':
+            random_SSVEP_range = np.copy(SSVEP_range)
+    
+    SNR = true_SSVEP_range/random_SSVEP_range
+    
+    return SNR
 
 
-## function to compare SSVEPs from two conditions. Randomly split the triggers from one condition to create two SSVEPs, 
-## and then compare these two SSVEPs to each other and to the second condition
-
-def compare_SSVEPs_split(data_1, data_2, triggers_1, triggers_2, period):
+##  Randomly split the triggers from one condition to create two SSVEPs, 
+## do this for both conditions to make 4 SSVEPs in total
+def compare_SSVEPs_split(data, triggers, period):
     
     import numpy as np
     import random
  #   import matplotlib.pyplot as plt
-    
-    for condition in range(0,2):
-    
-        if condition == 0:
-            seg_nums = np.arange(0,len(triggers_1)) # an index for seach segment
-            triggers = triggers_1
-            data = data_1
-        elif condition == 1:
-            seg_nums = np.arange(0,len(triggers_2)) # an index for seach segment
-            triggers = triggers_2
-            data = data_2
-    
-        random.shuffle(seg_nums)
-        
-        for random_half in range(0,2):
-            
-            if random_half == 0:
-                random_half_triggers = triggers[seg_nums[0:int(len(triggers)/2)]]
-            elif random_half == 1:
-                random_half_triggers = triggers[seg_nums[int(len(triggers)/2):]]
-    
-            segment_matrix = np.zeros([len(random_half_triggers), period])
-            seg_count = 0 # keep track of the number of segments
-       
-            for trigger in random_half_triggers:
-                segment =  data[trigger:trigger+period] 
-                segment_matrix[seg_count,:] = segment
-                seg_count += 1
-        
-            SSVEP = segment_matrix[0:seg_count,:].mean(axis=0) # average to make SSVEP
-            
-            SSVEP = SSVEP - SSVEP.mean() # baseline correct
-        
-            if condition == 0:
-                if random_half == 0:
-                    SSVEP_1 = np.copy(SSVEP)
-                elif random_half == 1:
-                    SSVEP_2 = np.copy(SSVEP)
-            elif condition == 1:
-                if random_half == 0:
-                    SSVEP_3 = np.copy(SSVEP)
-                elif random_half == 1:
-                    SSVEP_4 = np.copy(SSVEP)
 
+    seg_nums = np.arange(0,len(triggers)) # an index for seach segment
+ 
+    random.shuffle(seg_nums)
+    
+    for random_half in range(0,2):
+        
+        if random_half == 0:
+            random_half_triggers = triggers[seg_nums[0:int(len(triggers)/2)]]
+        elif random_half == 1:
+            random_half_triggers = triggers[seg_nums[int(len(triggers)/2):]]
 
-    return SSVEP_1, SSVEP_2, SSVEP_3, SSVEP_4
+        segment_matrix = np.zeros([len(random_half_triggers), period]) # empty matrix to put the segments into
+        seg_count = 0 # keep track of the number of segments
+   
+        for trigger in random_half_triggers:
+            segment =  data[trigger:trigger+period] 
+            segment_matrix[seg_count,:] = segment
+            seg_count += 1
+    
+        SSVEP = segment_matrix[0:seg_count,:].mean(axis=0) # average to make SSVEP
+        
+        SSVEP = SSVEP - SSVEP.mean() # baseline correct
+    
+    
+        if random_half == 0:
+            SSVEP_1 = np.copy(SSVEP)
+        elif random_half == 1:
+            SSVEP_2 = np.copy(SSVEP)
+   
+
+    return SSVEP_1, SSVEP_2
     
     
     # plt.legend()
@@ -220,20 +278,23 @@ def make_SSVEPs_offset(data, triggers, period, offset):
     
     return SSVEP
 
+
+
+
 ##Function to make SSVEPs (randomly shuffle data in each segment, then average - way of calculating signal-to-noise ratio)
-def make_SSVEPs_random(data, all_triggers, period, num_loops):
+def make_SSVEPs_random(data, triggers, period, num_loops):
     ## make SSVEP with all segments
     
     import numpy as np
     import matplotlib.pyplot as plt
     import random 
 
-    segment_matrix = np.zeros([len(all_triggers), period]) # empty matrix to put segments into
+    segment_matrix = np.zeros([len(triggers), period]) # empty matrix to put segments into
     
     seg_count = 0 # keep track of the number of segments
     
     # loop through all triggers and put the corresponding segment of data into the matrix
-    for trigger in all_triggers:
+    for trigger in triggers:
         
         # select a segment of data the lenght of the flicker period, starting from the trigger time 
         segment =  data[trigger:trigger+period] 
@@ -257,12 +318,12 @@ def make_SSVEPs_random(data, all_triggers, period, num_loops):
        # print(loop)
         # make random SSVEP 
         
-        shuffled_segment_matrix =  np.zeros([len(all_triggers), period])  
+        shuffled_segment_matrix =  np.zeros([len(triggers), period])  
         
         # loop through all triggers and put the corresponding segment of data into the matrix
         seg_count = 0 # keep track of the number of segments
         
-        for trigger in all_triggers:
+        for trigger in triggers:
             
             segment =  data[trigger:trigger+period] 
         
@@ -281,23 +342,25 @@ def make_SSVEPs_random(data, all_triggers, period, num_loops):
     
     plt.plot(random_SSVEP,'k') # plot the last random shuffle, just to see
     
-    plt.plot(SSVEP,'b') # plot the true SSVEP
+    # plt.plot(SSVEP,'b') # plot the true SSVEP
     
     true_amplitude = np.ptp(SSVEP)
     
-    print('True amplitude = ', true_amplitude)
+    # print('True amplitude = ', true_amplitude)
     
     average_noise = random_amplitudes.mean()
     
-    print('Amplitude noise = ', average_noise)
+    # print('Amplitude noise = ', average_noise)
     
     std_noise = np.std(random_amplitudes)
     
-    print('Standard Deviation noise = ', std_noise)
+    # print('Standard Deviation noise = ', std_noise)
     
     Z_score  = (true_amplitude-average_noise) / std_noise
     
-    print('Z_score = ', Z_score)
+    # print('Z_score = ', Z_score)
+    
+    return Z_score
     
 ##Function for only random SSVEPs and z score
 def randomSSVEPs_zscore(SSVEP, data, all_triggers, period, num_loops, offset):
