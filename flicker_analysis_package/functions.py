@@ -210,8 +210,7 @@ def SNR_random(data, triggers, period):
     return SNR
 
 
-##  Randomly split the triggers from one condition to create two SSVEPs, 
-## do this for both conditions to make 4 SSVEPs in total
+##  Randomly split the triggers from one condition to create two SSVEPs
 def compare_SSVEPs_split(data, triggers, period):
     
     import numpy as np

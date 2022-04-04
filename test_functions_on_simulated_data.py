@@ -80,14 +80,14 @@ data_1 = np.load(file_names[0] + '.npy')
 
 triggers_1 = np.load('simulated_triggers_40Hz.npy')
 
-data_2 = np.load(file_names[1] + '.npy')
+data_2 = np.load(file_names[2] + '.npy')
 
 triggers_2 = np.load('simulated_triggers_40Hz.npy')
 
 
 ## compare two SSVEPs
 
-num_subjects = 20
+num_subjects = 10
 
 condition_1_values = np.zeros([num_subjects,])
 condition_2_values = np.zeros([num_subjects,])
@@ -97,32 +97,48 @@ for subject in range(0,num_subjects):
     # plt.figure()
     # plt.title(subject)
     
-    SSVEPs = functions.compare_SSVEPs_split(data_1, data_2, triggers_1, triggers_2, 125)
+    for condition in range(0,2):
     
-    SSVEP_1 = SSVEPs[0]
-    SSVEP_2 = SSVEPs[1]
-    SSVEP_3 = SSVEPs[2]
-    SSVEP_4 = SSVEPs[3]
+        if condition == 0:
+            data = np.copy(data_1)
+            triggers = np.copy(triggers_1)
+        elif condition == 1:
+            data = np.copy(data_2)
+            triggers = np.copy(triggers_2)
     
-    SSVEP_5 = (SSVEP_3 + SSVEP_4) /2
-    
-    # plt.plot(SSVEP_1, label = 'SSVEP_1')
-    # plt.plot(SSVEP_2, label = 'SSVEP_2')
-    # # plt.plot(SSVEP_3, label = 'SSVEP_3')
-    # # plt.plot(SSVEP_4), label = 'SSVEP_4')
-    # plt.plot(SSVEP_5, label = 'SSVEP_5')
-    
-   # plt.legend()
-    
-    # condition_1_values[subject] = np.ptp(SSVEP_1) - np.ptp(SSVEP_2)
-    # condition_2_values[subject] = np.ptp(SSVEP_1) - np.ptp(SSVEP_5)
-    phase_shift_1 = functions.cross_correlation(SSVEP_1, SSVEP_3)
-    phase_shift_2 = functions.cross_correlation(SSVEP_1, SSVEP_2)
+        SSVEPs = functions.compare_SSVEPs_split(data, triggers, 125)
+        
+        if condition == 0:
+            SSVEP_1 = SSVEPs[0]
+            SSVEP_2 = SSVEPs[1]
+        elif condition == 1:  
+            SSVEP_3 = SSVEPs[0]
+            SSVEP_4 = SSVEPs[1]           
+     
+        
+        # plt.plot(SSVEP_1, label = 'SSVEP_1')
+        # plt.plot(SSVEP_2, label = 'SSVEP_2')
+        # # plt.plot(SSVEP_3, label = 'SSVEP_3')
+        # # plt.plot(SSVEP_4), label = 'SSVEP_4')
+        # plt.plot(SSVEP_5, label = 'SSVEP_5')
+        
+       # plt.legend()
+        
+        # condition_1_values[subject] = np.ptp(SSVEP_1) - np.ptp(SSVEP_2)
+        # condition_2_values[subject] = np.ptp(SSVEP_1) - np.ptp(SSVEP_5)
+    phase_shift_1 = functions.cross_correlation(SSVEP_1, SSVEP_2)
+    phase_shift_2 = functions.cross_correlation(SSVEP_1, SSVEP_3)
+
+    diff_1 = np.ptp(SSVEP_1) - np.ptp(SSVEP_2) 
+    diff_2 = np.ptp(SSVEP_1) - np.ptp(SSVEP_3) 
 
     condition_1_values[subject] = phase_shift_1
     condition_2_values[subject] = phase_shift_2
+        
+        # plt.title(str(np.round(phase_shift_1,2)) + '    ' + str(np.round(phase_shift_2,2)))
+   
     
-    # plt.title(str(np.round(phase_shift_1,2)) + '    ' + str(np.round(phase_shift_2,2)))
+   
     
 ## permutation tests
 
