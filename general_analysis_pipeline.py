@@ -12,7 +12,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import math
 import scipy.stats
-
+from random import choice
 
 ### information about the experiment: Gamma walk 1
 
@@ -35,7 +35,7 @@ amplitude_scores_split = np.zeros([num_subjects, len(frequencies_to_use), len(co
 
 phase_scores_split = np.zeros([num_subjects,len(frequencies_to_use),6])
 
-
+correlation_scores_split = np.zeros([num_subjects,len(frequencies_to_use),6])
 
 for subject in range(1,num_subjects+1):
     
@@ -53,68 +53,112 @@ for subject in range(1,num_subjects+1):
         
         print(str(frequency) + ' Hz')
         plt.subplot(2,3,plot_count)
-        # plt.title(str(frequency) + ' Hz')
+        plt.title(str(frequency) + ' Hz')
 
-        for condition in (0, 1): # standong = 0, walking = 1
-            
-            condition_name = condition_names[condition]
-            
-            data_file_name = 'subject_' + str(subject) + '_electrode_' + str(electrode) + '_data.npy'
-            
-            data = np.load(path + data_file_name)
-            
-            triggers_file_name = 'subject_' + str(subject) + '_' + condition_name + '_' + str(frequency) + 'Hz_triggers.npy'
-            
-            triggers = np.load(path + triggers_file_name)
-            
-            
-            
-            ### make SSVEP
-            
-            period = int(np.round(sample_rate/frequency))
-            
-            SSVEP = functions.make_SSVEPs(data, triggers, period)
+        # loop each condition multiple times to get a more stable value of the phase difference
+        num_loops = 100
+        num_combinations = 6 # the number of combinations for phase differences, for 2 conditions this is 4 SSVEPs which is 6 possible combinations
+        
+        phase_scores = np.zeros([num_combinations,num_loops])
+        correlation_scores = np.zeros([num_combinations,num_loops])
 
-          #  SNR = functions.SNR_random(data, triggers, period)
-            
-            # random split into two SSVEPs
-            split_SSVEPs = functions.compare_SSVEPs_split(data, triggers, period)
-            
-            SSVEP_1 = split_SSVEPs[0]
-            SSVEP_2 = split_SSVEPs[1]
-            
-            ## record scores
-            amplitude_scores[subject-1, frequency_count, condition] = np.ptp(SSVEP)
-            amplitude_scores_split[subject-1, frequency_count, condition,0] = np.ptp(SSVEP_1)
-            amplitude_scores_split[subject-1, frequency_count, condition,1] = np.ptp(SSVEP_2)
-            
-            
-            ## plots
-            if condition == 0: # standing
-                plt.plot(SSVEP, 'b', label = condition_names[condition])#, label = (condition_name + ' ' + str(np.round(SNR,2))))
-                plt.plot(SSVEP_1,'c')
-                plt.plot(SSVEP_2,'c')
-                condition_1_split_SSVEP_1 = np.copy(SSVEP_1)
-                condition_1_split_SSVEP_2 = np.copy(SSVEP_2)
-            elif condition ==  1: # walking
-                plt.plot(SSVEP, 'r', label = condition_names[condition])#, label = (condition_name + ' ' + str(np.round(SNR,2))))
-                plt.plot(SSVEP_1,'m')
-                plt.plot(SSVEP_2,'m')
-                condition_2_split_SSVEP_1 = np.copy(SSVEP_1)
-                condition_2_split_SSVEP_2 = np.copy(SSVEP_2)
+        for loop in range(0,num_loops):
+
+            for condition in range(0, len(condition_names)): # standing = 0, walking = 1
                 
-           # print(condition_name + '  SNR = ' + str(np.round(SNR,2)))
-            
+                condition_name = condition_names[condition]
+                
+                data_file_name = 'subject_' + str(subject) + '_electrode_' + str(electrode) + '_data.npy'
+                
+                data = np.load(path + data_file_name)
+                
+                triggers_file_name = 'subject_' + str(subject) + '_' + condition_name + '_' + str(frequency) + 'Hz_triggers.npy'
+                
+                triggers = np.load(path + triggers_file_name)
+                
+                
+                
+                ### make SSVEP
+                
+                period = int(np.round(sample_rate/frequency))
+                
+                SSVEP = functions.make_SSVEPs(data, triggers, period)
+    
+              #  SNR = functions.SNR_random(data, triggers, period)
+                
+                # random split into two SSVEPs
+                split_SSVEPs = functions.compare_SSVEPs_split(data, triggers, period)
+                
+                SSVEP_1 = split_SSVEPs[0]
+                SSVEP_2 = split_SSVEPs[1]
+                
+                ## record scores
+                amplitude_scores[subject-1, frequency_count, condition] = np.ptp(SSVEP)
+                amplitude_scores_split[subject-1, frequency_count, condition,0] = np.ptp(SSVEP_1)
+                amplitude_scores_split[subject-1, frequency_count, condition,1] = np.ptp(SSVEP_2)
+                
+                
+                ## store the SSVEPs to compare them later
+                if condition == 0: # standing
+                    condition_1_split_SSVEP_1 = np.copy(SSVEP_1)
+                    condition_1_split_SSVEP_2 = np.copy(SSVEP_2)
+                elif condition ==  1: # walking
+                    condition_2_split_SSVEP_1 = np.copy(SSVEP_1)
+                    condition_2_split_SSVEP_2 = np.copy(SSVEP_2)
+               
+                ## plot  SSVEPs and one set of splits as an example  
+                if loop == 0:
+                    if condition == 0: # standing
+                        plt.plot(SSVEP, 'b', label = condition_names[condition])#, label = (condition_name + ' ' + str(np.round(SNR,2))))
+                        plt.plot(SSVEP_1,'c')
+                        plt.plot(SSVEP_2,'c')                 
+                    elif condition ==  1: # walking
+                        plt.plot(SSVEP, 'r', label = condition_names[condition])#, label = (condition_name + ' ' + str(np.round(SNR,2))))
+                        plt.plot(SSVEP_1,'m')
+                        plt.plot(SSVEP_2,'m')
+                        
            
-        ## get phase shift scores for all 6 possible combinations (2 conditions = 4 50% splits)
+                
+               
+            ## get phase shift scores for all 6 possible combinations (2 conditions = 4 50% splits)
         
-        phase_scores_split[subject-1, frequency_count,0] = functions.cross_correlation(condition_1_split_SSVEP_1, condition_1_split_SSVEP_2)
-        phase_scores_split[subject-1, frequency_count,1] = functions.cross_correlation(condition_1_split_SSVEP_1, condition_2_split_SSVEP_1)
-        phase_scores_split[subject-1, frequency_count,2] = functions.cross_correlation(condition_1_split_SSVEP_1, condition_2_split_SSVEP_2)
-        phase_scores_split[subject-1, frequency_count,3] = functions.cross_correlation(condition_1_split_SSVEP_2, condition_2_split_SSVEP_1)
-        phase_scores_split[subject-1, frequency_count,4] = functions.cross_correlation(condition_1_split_SSVEP_2, condition_2_split_SSVEP_2)
-        phase_scores_split[subject-1, frequency_count,5] = functions.cross_correlation(condition_2_split_SSVEP_1, condition_2_split_SSVEP_2)
+            phase_scores[0,loop] = functions.cross_correlation(condition_1_split_SSVEP_1, condition_1_split_SSVEP_2)
+            phase_scores[1,loop] = functions.cross_correlation(condition_1_split_SSVEP_1, condition_2_split_SSVEP_1)
+            phase_scores[2,loop] = functions.cross_correlation(condition_1_split_SSVEP_1, condition_2_split_SSVEP_2)
+            phase_scores[3,loop] = functions.cross_correlation(condition_1_split_SSVEP_2, condition_2_split_SSVEP_1)
+            phase_scores[4,loop] = functions.cross_correlation(condition_1_split_SSVEP_2, condition_2_split_SSVEP_2)
+            phase_scores[5,loop] = functions.cross_correlation(condition_2_split_SSVEP_1, condition_2_split_SSVEP_2)
+
+            ## get correlation scores
+            correlation_scores[0,loop] = np.corrcoef(condition_1_split_SSVEP_1, condition_1_split_SSVEP_2)[0,1]
+            correlation_scores[1,loop] = np.corrcoef(condition_1_split_SSVEP_1, condition_2_split_SSVEP_1)[0,1]
+            correlation_scores[2,loop] = np.corrcoef(condition_1_split_SSVEP_1, condition_2_split_SSVEP_2)[0,1]
+            correlation_scores[3,loop] = np.corrcoef(condition_1_split_SSVEP_2, condition_2_split_SSVEP_1)[0,1]
+            correlation_scores[4,loop] = np.corrcoef(condition_1_split_SSVEP_2, condition_2_split_SSVEP_2)[0,1]
+            correlation_scores[5,loop] = np.corrcoef(condition_2_split_SSVEP_1, condition_2_split_SSVEP_2)[0,1]
+                
+
+
+        # average the phase scores from al the loops
+        phase_scores_split[subject-1, frequency_count,0] = phase_scores[0,:].mean(axis=0)
+        phase_scores_split[subject-1, frequency_count,1] = phase_scores[1,:].mean(axis=0)
+        phase_scores_split[subject-1, frequency_count,2] = phase_scores[2,:].mean(axis=0)
+        phase_scores_split[subject-1, frequency_count,3] = phase_scores[3,:].mean(axis=0)
+        phase_scores_split[subject-1, frequency_count,4] = phase_scores[4,:].mean(axis=0)
+        phase_scores_split[subject-1, frequency_count,5] = phase_scores[5,:].mean(axis=0)
         
+
+        # average the correlation scores
+        
+        correlation_scores_split[subject-1, frequency_count,0] = correlation_scores[0,:].mean(axis=0)
+        correlation_scores_split[subject-1, frequency_count,1] = correlation_scores[1,:].mean(axis=0)
+        correlation_scores_split[subject-1, frequency_count,2] = correlation_scores[2,:].mean(axis=0)
+        correlation_scores_split[subject-1, frequency_count,3] = correlation_scores[3,:].mean(axis=0)
+        correlation_scores_split[subject-1, frequency_count,4] = correlation_scores[4,:].mean(axis=0)
+        correlation_scores_split[subject-1, frequency_count,5] = correlation_scores[5,:].mean(axis=0)
+        
+
+
         plt.title(str(frequency) + ' Hz  ' + str(np.round(phase_scores_split[subject-1, frequency_count,0])) + '  ' + str(np.round(phase_scores_split[subject-1, frequency_count,1])))
         
 
@@ -134,14 +178,19 @@ for frequency_count in range(0,len(frequencies_to_use)):
     # condition_1_values = amplitude_scores[:,frequency_count,0]
     # condition_2_values = amplitude_scores[:,frequency_count,1]
     
-    condition_1_values = phase_scores_split[:,frequency_count,0] # compare condition 1 with itself (split 1 vs 2), vs. condition 1 split 1 with condition 2 split 1
-    condition_2_values = phase_scores_split[:,frequency_count,1]
-    
+    condition_1_values = phase_scores_split[:,frequency_count,0] # compare condition 1 with itself (split 1 vs 2), 
+    condition_2_values = phase_scores_split[:,frequency_count,1] #condition 1 split 1 with condition 2 split 1
+    condition_3_values = phase_scores_split[:,frequency_count,5] #condition 2 split 1 with condition 2 split 2
+
+
+    # condition_1_values = correlation_scores_split[:,frequency_count,0] # compare condition 1 with itself (split 1 vs 2), 
+    # condition_2_values = correlation_scores_split[:,frequency_count,1] #condition 1 split 1 with condition 2 split 1
+    # condition_3_values = correlation_scores_split[:,frequency_count,5] #condition 2 split 1 with condition 2 split 2
     
     true_difference = (condition_1_values - condition_2_values).mean()
     
     
-    from random import choice
+    
     
     num_loops = 1000
     
@@ -171,7 +220,7 @@ for frequency_count in range(0,len(frequencies_to_use)):
         average_shuffled_differences[loop] = temp_condition_1.mean() - temp_condition_2.mean() # average the two shuffled conditions
         
         
-    # import matplotlib.pyplot as plt
+    # plot histogram of the permutation test
         
     plt.figure()
     
@@ -196,15 +245,19 @@ for frequency_count in range(0,len(frequencies_to_use)):
     print('p = ' + str(p_value_two_sided))
     
     
-    plt.subplot(1,2,2) # plot the average, std error and individual values
+    
+    # plot the average, std error and individual values
+    plt.subplot(1,2,2) 
     
     average_condition_1 = condition_1_values.mean() # the average of the values from the first condition
     average_condition_2 = condition_2_values.mean() # the average of the values from the second condition
     
+    average_condition_3 = condition_3_values.mean() 
     
     # get the standard deviation
     std_deviation_1 = np.std(condition_1_values, axis = 0)
     std_deviation_2 = np.std(condition_2_values, axis = 0)
+    std_deviation_3 = np.std(condition_3_values, axis = 0)
     
     plt.title('p = ' + str(np.round(p_value_two_sided,4)))
     
@@ -213,19 +266,21 @@ for frequency_count in range(0,len(frequencies_to_use)):
     
     plt.scatter(np.zeros(len(condition_1_values)) + 1 , condition_1_values, color = 'b', label = 'standing vs standing')
     plt.scatter(np.zeros(len(condition_2_values)) + 2 , condition_2_values, color = 'r', label = 'standing vs walking')
+    plt.scatter(np.zeros(len(condition_3_values)) + 3 , condition_3_values, color = 'g', label = 'walking vs walking')
     
     
     # divide by the square root of the number of subjects to get the standard error
     std_error_1 = std_deviation_1 / math.sqrt(num_subjects)
     std_error_2 = std_deviation_2 / math.sqrt(num_subjects)
+    std_error_3 = std_deviation_3 / math.sqrt(num_subjects)
     
     
     # plot mean value with error bars
     plt.errorbar(1, average_condition_1,yerr = std_error_1, solid_capstyle='projecting', capsize=5,  fmt='o', color= 'g', ecolor='g')  
     plt.errorbar(2, average_condition_2,yerr = std_error_2, solid_capstyle='projecting', capsize=5,  fmt='o', color= 'g', ecolor='g')  
+    plt.errorbar(3, average_condition_3,yerr = std_error_3, solid_capstyle='projecting', capsize=5,  fmt='o', color= 'g', ecolor='g')  
     
-    
-    plt.xlim(0, 3)
+    plt.xlim(0, 4)
 
 
     plt.suptitle(str(frequencies_to_use[frequency_count]) + ' Hz')

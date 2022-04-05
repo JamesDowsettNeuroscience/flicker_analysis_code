@@ -35,9 +35,9 @@ simulated_SSVEP_data[0:number_of_flickers*period] = np.tile(one_cycle_SSVEP,numb
 
 simulated_triggers = np.arange(0, len(simulated_SSVEP_data)-period, period) # make triggers, stop one period length before the end
 
-num_loops = 1
+num_loops = 1000
 
-num_subjects = 10
+num_subjects = 1
 
 
 noise_values_to_test = np.arange(10,2010,10)
@@ -81,12 +81,12 @@ for noise_level in range(0,len(noise_values_to_test)):
     print('Noise = ' + str(noise_amplitude) + '  Average Phase shift = ' + str(np.round(grand_average)) + ' degrees')
     
     
-plt.plot(noise_values_to_test,grand_average_phase_shifts)
+plt.plot(noise_values_to_test,grand_average_phase_shifts,'g')
     
 plt.xlabel('Noise amplitude (in units of signal amplitude)')
 plt.ylabel('Average absolute phase shift (degrees)')
 
-plt.title('Simulation of 50% split of 100 seconds of 40 Hz flicker, 10 subjects')
+plt.title('Simulation of 50% split of 100 seconds of 40 Hz flicker, ' + str(num_subjects) + ' subjects')
 
 plt.plot(np.arange(0, 2000),np.ones([2000,])*90,  '--k')   
 
