@@ -139,27 +139,16 @@ for subject in range(1,num_subjects+1):
                 
 
 
-        # average the phase scores from al the loops
-        phase_scores_split[subject-1, frequency_count,0] = phase_scores[0,:].mean(axis=0)
-        phase_scores_split[subject-1, frequency_count,1] = phase_scores[1,:].mean(axis=0)
-        phase_scores_split[subject-1, frequency_count,2] = phase_scores[2,:].mean(axis=0)
-        phase_scores_split[subject-1, frequency_count,3] = phase_scores[3,:].mean(axis=0)
-        phase_scores_split[subject-1, frequency_count,4] = phase_scores[4,:].mean(axis=0)
-        phase_scores_split[subject-1, frequency_count,5] = phase_scores[5,:].mean(axis=0)
         
-
-        # average the correlation scores
-        
-        correlation_scores_split[subject-1, frequency_count,0] = correlation_scores[0,:].mean(axis=0)
-        correlation_scores_split[subject-1, frequency_count,1] = correlation_scores[1,:].mean(axis=0)
-        correlation_scores_split[subject-1, frequency_count,2] = correlation_scores[2,:].mean(axis=0)
-        correlation_scores_split[subject-1, frequency_count,3] = correlation_scores[3,:].mean(axis=0)
-        correlation_scores_split[subject-1, frequency_count,4] = correlation_scores[4,:].mean(axis=0)
-        correlation_scores_split[subject-1, frequency_count,5] = correlation_scores[5,:].mean(axis=0)
+        for combination in range(0,6):
+            phase_scores_split[subject-1, frequency_count,combination] = phase_scores[combination,:].mean(axis=0)# average the phase scores from all the loops
+            correlation_scores_split[subject-1, frequency_count,combination] = correlation_scores[combination,:].mean(axis=0)# average the correlation scores
         
 
 
-        plt.title(str(frequency) + ' Hz  ' + str(np.round(phase_scores_split[subject-1, frequency_count,0])) + '  ' + str(np.round(phase_scores_split[subject-1, frequency_count,1])))
+        condition_1_split_correlation = correlation_scores_split[subject-1, frequency_count,0]
+        condition_2_split_correlation = correlation_scores_split[subject-1, frequency_count,5]
+        plt.title(str(frequency) + ' Hz  ' + str(np.round(condition_1_split_correlation,2)) + '  ' + str(np.round(condition_2_split_correlation,2)))
         
 
         
@@ -174,27 +163,39 @@ for subject in range(1,num_subjects+1):
 for frequency_count in range(0,len(frequencies_to_use)):
     
     
+    ## reject subjects with low/variable signal 
+    correlation_split_condition_1 = correlation_scores_split[:,frequency_count,0] # compare condition 1 with itself (split 1 vs 2), 
+    correlation_split_condition_2 = correlation_scores_split[:,frequency_count,5] #condition 2 split 1 with condition 2 split 2   
+    
+    corr_cutoff = 0.33 # correlations above this value are significant 
+    
+    subjects_to_use = []
+    for subject in range(0,num_subjects):
+        if (correlation_split_condition_1[subject] > corr_cutoff) and (correlation_split_condition_2[subject] > corr_cutoff):
+            subjects_to_use.append(subject)
+    
 
     # condition_1_values = amplitude_scores[:,frequency_count,0]
     # condition_2_values = amplitude_scores[:,frequency_count,1]
     
-    condition_1_values = phase_scores_split[:,frequency_count,0] # compare condition 1 with itself (split 1 vs 2), 
-    condition_2_values = phase_scores_split[:,frequency_count,1] #condition 1 split 1 with condition 2 split 1
-    condition_3_values = phase_scores_split[:,frequency_count,5] #condition 2 split 1 with condition 2 split 2
+    # condition_1_values = phase_scores_split[:,frequency_count,0] # compare condition 1 with itself (split 1 vs 2), 
+    # condition_2_values = phase_scores_split[:,frequency_count,1] #condition 1 split 1 with condition 2 split 1
+    # condition_3_values = phase_scores_split[:,frequency_count,5] #condition 2 split 1 with condition 2 split 2
 
 
-    # condition_1_values = correlation_scores_split[:,frequency_count,0] # compare condition 1 with itself (split 1 vs 2), 
-    # condition_2_values = correlation_scores_split[:,frequency_count,1] #condition 1 split 1 with condition 2 split 1
-    # condition_3_values = correlation_scores_split[:,frequency_count,5] #condition 2 split 1 with condition 2 split 2
-    
-    true_difference = (condition_1_values - condition_2_values).mean()
+    condition_1_values = correlation_scores_split[:,frequency_count,0] # compare condition 1 with itself (split 1 vs 2), 
+    condition_2_values = correlation_scores_split[:,frequency_count,1] #condition 1 split 1 with condition 2 split 1
+    condition_3_values = correlation_scores_split[:,frequency_count,5] #condition 2 split 1 with condition 2 split 2
     
     
+
     
     
+    true_difference = (condition_1_values[subjects_to_use] - condition_2_values[subjects_to_use]).mean()
+
     num_loops = 1000
     
-    average_shuffled_differences = np.zeros([num_loops,]) # empty array to put the shuffled differences into
+    shuffled_differences = np.zeros([num_loops,]) # empty array to put the shuffled differences into
     
     for loop in range(0,num_loops):
         
@@ -203,21 +204,21 @@ for frequency_count in range(0,len(frequencies_to_use)):
         temp_condition_2 = np.zeros([num_subjects,])
         
         for subject in range(0,num_subjects): # loop through each subject
-            
+
             decide = choice(['yes', 'no'])  # for each subject, decide to either keep the correct labels, or swap the conditions. 50% chance
             
-            if decide == 'yes':
+            if decide == 'yes': # keep the correct labels
                 
-                temp_condition_1[subject] = condition_1_values[subject] # keep the correct labels
+                temp_condition_1[subject] = condition_1_values[subject] 
                 temp_condition_2[subject] = condition_2_values[subject]
         
-            elif decide == 'no':
+            elif decide == 'no': #swap the conditions
     
-                temp_condition_1[subject] = condition_2_values[subject] #swap the conditions
+                temp_condition_1[subject] = condition_2_values[subject] 
                 temp_condition_2[subject] = condition_1_values[subject]
     
     
-        average_shuffled_differences[loop] = temp_condition_1.mean() - temp_condition_2.mean() # average the two shuffled conditions
+        shuffled_differences[loop] = temp_condition_1[subjects_to_use].mean() - temp_condition_2[subjects_to_use].mean() # average the two shuffled conditions
         
         
     # plot histogram of the permutation test
@@ -226,13 +227,13 @@ for frequency_count in range(0,len(frequencies_to_use)):
     
     plt.subplot(1,2,1)
     
-    plt.hist(average_shuffled_differences,10)
+    plt.hist(shuffled_differences,10)
         
     plt.axvline(x=true_difference, color='r', linestyle='--')    
     
     
     
-    Z_score = (true_difference - average_shuffled_differences.mean()) / np.std(average_shuffled_differences) # calculate Z score
+    Z_score = (true_difference - shuffled_differences.mean()) / np.std(shuffled_differences) # calculate Z score
     
     plt.title('Z score = '  + str(np.round(Z_score,2)))
     
@@ -249,30 +250,30 @@ for frequency_count in range(0,len(frequencies_to_use)):
     # plot the average, std error and individual values
     plt.subplot(1,2,2) 
     
-    average_condition_1 = condition_1_values.mean() # the average of the values from the first condition
-    average_condition_2 = condition_2_values.mean() # the average of the values from the second condition
+    average_condition_1 = condition_1_values[subjects_to_use].mean() # the average of the values from the first condition
+    average_condition_2 = condition_2_values[subjects_to_use].mean() # the average of the values from the second condition
     
-    average_condition_3 = condition_3_values.mean() 
+    average_condition_3 = condition_3_values[subjects_to_use].mean() 
     
     # get the standard deviation
-    std_deviation_1 = np.std(condition_1_values, axis = 0)
-    std_deviation_2 = np.std(condition_2_values, axis = 0)
-    std_deviation_3 = np.std(condition_3_values, axis = 0)
+    std_deviation_1 = np.std(condition_1_values[subjects_to_use], axis = 0)
+    std_deviation_2 = np.std(condition_2_values[subjects_to_use], axis = 0)
+    std_deviation_3 = np.std(condition_3_values[subjects_to_use], axis = 0)
     
     plt.title('p = ' + str(np.round(p_value_two_sided,4)))
     
     # plt.scatter(np.zeros(len(condition_1_values)) + 1 , condition_1_values, color = 'b', label = condition_names[0])
     # plt.scatter(np.zeros(len(condition_2_values)) + 2 , condition_2_values, color = 'r', label = condition_names[1])
     
-    plt.scatter(np.zeros(len(condition_1_values)) + 1 , condition_1_values, color = 'b', label = 'standing vs standing')
-    plt.scatter(np.zeros(len(condition_2_values)) + 2 , condition_2_values, color = 'r', label = 'standing vs walking')
-    plt.scatter(np.zeros(len(condition_3_values)) + 3 , condition_3_values, color = 'g', label = 'walking vs walking')
+    plt.scatter(np.zeros(len(subjects_to_use)) + 1 , condition_1_values[subjects_to_use], color = 'b', label = 'standing vs standing')
+    plt.scatter(np.zeros(len(subjects_to_use)) + 2 , condition_2_values[subjects_to_use], color = 'r', label = 'standing vs walking')
+    plt.scatter(np.zeros(len(subjects_to_use)) + 3 , condition_3_values[subjects_to_use], color = 'g', label = 'walking vs walking')
     
     
     # divide by the square root of the number of subjects to get the standard error
-    std_error_1 = std_deviation_1 / math.sqrt(num_subjects)
-    std_error_2 = std_deviation_2 / math.sqrt(num_subjects)
-    std_error_3 = std_deviation_3 / math.sqrt(num_subjects)
+    std_error_1 = std_deviation_1 / math.sqrt(len(subjects_to_use))
+    std_error_2 = std_deviation_2 / math.sqrt(len(subjects_to_use))
+    std_error_3 = std_deviation_3 / math.sqrt(len(subjects_to_use))
     
     
     # plot mean value with error bars
@@ -283,6 +284,6 @@ for frequency_count in range(0,len(frequencies_to_use)):
     plt.xlim(0, 4)
 
 
-    plt.suptitle(str(frequencies_to_use[frequency_count]) + ' Hz')
+    plt.suptitle(str(frequencies_to_use[frequency_count]) + ' Hz  ' + str(len(subjects_to_use)) + ' good subjects')
 
     plt.legend()

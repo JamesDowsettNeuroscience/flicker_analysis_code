@@ -126,7 +126,7 @@ def make_SSVEPs(data, triggers, period):
         segment =  data[trigger:trigger+period] 
         
         segment_matrix[seg_count,:] = segment
-    
+
         seg_count += 1
     
     SSVEP = segment_matrix.mean(axis=0) # average to make SSVEP
@@ -219,10 +219,10 @@ def compare_SSVEPs_split(data, triggers, period):
 
     seg_nums = np.arange(0,len(triggers)) # an index for seach segment
  
-    random.shuffle(seg_nums)
+    random.shuffle(seg_nums) # randomize the order
     
-    for random_half in range(0,2):
-        
+    for random_half in range(0,2): # select the first half, and then the second half, of the randomized segments, and make an SSVEP of each
+
         if random_half == 0:
             random_half_triggers = triggers[seg_nums[0:int(len(triggers)/2)]]
         elif random_half == 1:
@@ -235,11 +235,12 @@ def compare_SSVEPs_split(data, triggers, period):
             segment =  data[trigger:trigger+period] 
             segment_matrix[seg_count,:] = segment
             seg_count += 1
-    
+
         SSVEP = segment_matrix[0:seg_count,:].mean(axis=0) # average to make SSVEP
         
         SSVEP = SSVEP - SSVEP.mean() # baseline correct
     
+
     
         if random_half == 0:
             SSVEP_1 = np.copy(SSVEP)
