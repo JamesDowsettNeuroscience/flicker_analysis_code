@@ -28,7 +28,16 @@ num_subjects = 10
 
 frequencies_to_use = (30, 35, 40, 45, 50, 55)
 
+#######################################
 
+
+
+electrode = 6
+
+electrode_name = electrode_names[electrode]
+
+
+## empty matrices to put output scores into
 amplitude_scores = np.zeros([num_subjects, len(frequencies_to_use), len(condition_names)]) # matrix to put the amplitudes into
 
 amplitude_scores_split = np.zeros([num_subjects, len(frequencies_to_use), len(condition_names), 2]) # scores of the random split data, 2 per conditions
@@ -36,6 +45,7 @@ amplitude_scores_split = np.zeros([num_subjects, len(frequencies_to_use), len(co
 phase_scores_split = np.zeros([num_subjects,len(frequencies_to_use),6])
 
 correlation_scores_split = np.zeros([num_subjects,len(frequencies_to_use),6])
+
 
 for subject in range(1,num_subjects+1):
     
@@ -45,7 +55,6 @@ for subject in range(1,num_subjects+1):
     plt.figure()
     plt.suptitle(subject)
     
-    electrode = 6
     
     plot_count = 1
     frequency_count = 0
@@ -68,13 +77,20 @@ for subject in range(1,num_subjects+1):
                 
                 condition_name = condition_names[condition]
                 
+                ## load data
                 data_file_name = 'subject_' + str(subject) + '_electrode_' + str(electrode) + '_data.npy'
                 
-                data = np.load(path + data_file_name)
+                data = np.load(path + data_file_name)                
                 
+            
+                
+                
+                
+                ## load triggers
                 triggers_file_name = 'subject_' + str(subject) + '_' + condition_name + '_' + str(frequency) + 'Hz_triggers.npy'
                 
                 triggers = np.load(path + triggers_file_name)
+                
                 
                 
                 
@@ -139,17 +155,22 @@ for subject in range(1,num_subjects+1):
                 
 
 
-        
+        # average values from each loop and put into matrix
         for combination in range(0,6):
             phase_scores_split[subject-1, frequency_count,combination] = phase_scores[combination,:].mean(axis=0)# average the phase scores from all the loops
             correlation_scores_split[subject-1, frequency_count,combination] = correlation_scores[combination,:].mean(axis=0)# average the correlation scores
         
 
-
+# put the scores into the title of the figure
         condition_1_split_correlation = correlation_scores_split[subject-1, frequency_count,0]
         condition_2_split_correlation = correlation_scores_split[subject-1, frequency_count,5]
         plt.title(str(frequency) + ' Hz  ' + str(np.round(condition_1_split_correlation,2)) + '  ' + str(np.round(condition_2_split_correlation,2)))
         
+        # condition_1_split_phase_shift = phase_scores_split[subject-1, frequency_count,0]
+        # condition_2_split_phase_shift = phase_scores_split[subject-1, frequency_count,5]        
+        # plt.title(str(frequency) + ' Hz  ' + str(np.round(condition_1_split_phase_shift,2)) + '  ' + str(np.round(condition_2_split_phase_shift,2)))
+        
+
 
         
         plt.legend()
@@ -169,11 +190,11 @@ for frequency_count in range(0,len(frequencies_to_use)):
     
     corr_cutoff = 0.33 # correlations above this value are significant 
     
-    subjects_to_use = []
-    for subject in range(0,num_subjects):
-        if (correlation_split_condition_1[subject] > corr_cutoff) and (correlation_split_condition_2[subject] > corr_cutoff):
-            subjects_to_use.append(subject)
-    
+    # subjects_to_use = []
+    # for subject in range(0,num_subjects):
+    #     if (correlation_split_condition_1[subject] > corr_cutoff) and (correlation_split_condition_2[subject] > corr_cutoff):
+    #         subjects_to_use.append(subject)
+    subjects_to_use = np.arange(0,10)
 
     # condition_1_values = amplitude_scores[:,frequency_count,0]
     # condition_2_values = amplitude_scores[:,frequency_count,1]

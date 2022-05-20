@@ -422,6 +422,20 @@ def randomSSVEPs_zscore(SSVEP, data, all_triggers, period, num_loops, offset):
 
 ##Function for linear interpolation of trigger artefacts (plot SSVEP showing before and after in this function)
 
+
+def linear_interpolation(data, triggers, time_1, time_2, trig_length):
+    
+    import numpy as np
+    
+    for trigger in triggers:
+
+        data[trigger+time_1:trigger+time_1+trig_length+1] = np.linspace(data[trigger+time_1], data[trigger+time_1+trig_length], num = trig_length+1)
+        data[trigger+time_2:trigger+time_2+trig_length+1] = np.linspace(data[trigger+time_2], data[trigger+time_2+trig_length], num = trig_length+1)
+    
+    
+    return data
+
+
 ##Function for making induced FFT
 #Desc: Segment data into segments of a given length, do an FFT on each segment and then average the FFTs.
 
