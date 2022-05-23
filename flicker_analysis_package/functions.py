@@ -135,7 +135,7 @@ def make_SSVEPs(data, triggers, period):
     
     return SSVEP
 
-### basic signal to noise ratio by randomly shuffling the data points of each segment and then making the SSVEP, compare to true SSVEP
+### signal to noise ratio by randomly shuffling the data points of each segment and then making the SSVEP, compare to true SSVEP
 ## instead of peak to peak amplitude, use a time range around the peak
 
 def SNR_random(data, triggers, period):
@@ -210,7 +210,7 @@ def SNR_random(data, triggers, period):
     return SNR
 
 
-##  Randomly split the triggers from one condition to create two SSVEPs
+##  Randomly split the triggers from one condition to create two SSVEPs and return the correlation between the two
 def compare_SSVEPs_split(data, triggers, period):
     
     import numpy as np
@@ -239,16 +239,15 @@ def compare_SSVEPs_split(data, triggers, period):
         SSVEP = segment_matrix[0:seg_count,:].mean(axis=0) # average to make SSVEP
         
         SSVEP = SSVEP - SSVEP.mean() # baseline correct
-    
 
-    
         if random_half == 0:
             SSVEP_1 = np.copy(SSVEP)
         elif random_half == 1:
             SSVEP_2 = np.copy(SSVEP)
    
+    correlation = np.corrcoef(SSVEP_1, SSVEP_2)[0,1]
 
-    return SSVEP_1, SSVEP_2
+    return correlation
     
     
     # plt.legend()
@@ -340,29 +339,29 @@ def make_SSVEPs_random(data, triggers, period, num_loops):
         random_amplitudes[loop] = np.ptp(random_SSVEP)
     
     
-    plt.plot(random_SSVEP,'k') # plot the last random shuffle, just to see
+   # plt.plot(random_SSVEP,'k') # plot the last random shuffle, just to see
     
     # plt.plot(SSVEP,'b') # plot the true SSVEP
     
     true_amplitude = np.ptp(SSVEP)
     
-    # print('True amplitude = ', true_amplitude)
+    print('True amplitude = ', true_amplitude)
     
     average_noise = random_amplitudes.mean()
     
-    # print('Amplitude noise = ', average_noise)
+    print('Amplitude of noise = ', average_noise)
     
     std_noise = np.std(random_amplitudes)
     
-    # print('Standard Deviation noise = ', std_noise)
+    print('Standard Deviation noise = ', std_noise)
     
     Z_score  = (true_amplitude-average_noise) / std_noise
     
-    # print('Z_score = ', Z_score)
+    print('Z_score = ', Z_score)
     
     return Z_score
     
-##Function for only random SSVEPs and z score
+##Function for only random SSVEPs and z score, with offset. Not necessary once trigger artefact is removed
 def randomSSVEPs_zscore(SSVEP, data, all_triggers, period, num_loops, offset):
     
     import numpy as np
@@ -421,7 +420,7 @@ def randomSSVEPs_zscore(SSVEP, data, all_triggers, period, num_loops, offset):
 
 
 ##Function for linear interpolation of trigger artefacts (plot SSVEP showing before and after in this function)
-
+## this function takes the trigger artefact times relative to the trigger and does the linear interpolation on the raw data, and returns a new data time series 
 
 def linear_interpolation(data, triggers, time_1, time_2, trig_length):
     

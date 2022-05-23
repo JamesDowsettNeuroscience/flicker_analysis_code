@@ -170,7 +170,7 @@ for subject in range(1,11):
                 
 ######  plots
 
-electrode = 0
+electrode = 3
 
 
 
@@ -189,7 +189,7 @@ for frequency_count in range(0,6):
     
     
     plt.figure()
-    plt.suptitle(str(frequencies_to_use[frequency_count]) + ' Hz')
+    plt.suptitle(electrode_names[electrode] + '  ' +  str(frequencies_to_use[frequency_count]) + ' Hz')
     
     correlation_values = SSVEP_walking_standing_correlations[:,frequency_count, electrode]
     
