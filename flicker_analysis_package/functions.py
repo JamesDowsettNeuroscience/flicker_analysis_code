@@ -339,9 +339,11 @@ def make_SSVEPs_random(data, triggers, period, num_loops):
         random_amplitudes[loop] = np.ptp(random_SSVEP)
     
     
-   # plt.plot(random_SSVEP,'k') # plot the last random shuffle, just to see
+    # plt.plot(random_SSVEP,'k') # plot the last random shuffle, just to see
     
     # plt.plot(SSVEP,'b') # plot the true SSVEP
+    
+    
     
     true_amplitude = np.ptp(SSVEP)
     
