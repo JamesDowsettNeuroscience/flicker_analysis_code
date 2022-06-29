@@ -45,7 +45,7 @@ for condition in range(0,3):
     plt.figure(1)
     plt.plot(SSVEP, label = file_names[condition])
     
-    ## put SSVEPs into matrix for later
+    ## save SSVEPs for later
     if condition == 0:
         SSVEP_0 = np.copy(SSVEP)
     elif condition == 1:
