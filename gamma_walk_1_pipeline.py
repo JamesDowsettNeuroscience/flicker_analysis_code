@@ -256,7 +256,7 @@ plt.suptitle('All Amplitudes')
 
 small_dot_size = 2
 
-for electrode in range(0,8):
+for electrode in range(0,8):  #'VEOG', 'blink', 'P3', 'P4', 'O2', 'Pz', 'O1', 'HEOG'
     
     for frequency_count in range(0,6):
 
@@ -281,28 +281,29 @@ for electrode in range(0,8):
         std_error_amplitude_walking = np.std(all_subjects_amplitudes_walking) / math.sqrt(10)
         
         plt.errorbar((electrode*10) + frequency_count + 0.5, mean_amplitude_walking,yerr = std_error_amplitude_walking, solid_capstyle='projecting', capsize=5,  fmt='o', color= 'r', ecolor='r')  
+     
+    if electrode == 5: # electrode Pz is the only electrode where the signal generator is approximatly the same size as real SSVEPs
+         #SIGI
+        SIGI_amplitudes_standing = SIGI_amplitudes[:,frequency_count,electrode,0]  
         
-     #SIGI
-    SIGI_amplitudes_standing = SIGI_amplitudes[:,frequency_count,electrode,0]  
+        plt.scatter(np.zeros([10,])+((electrode*10) + 6),SIGI_amplitudes_standing, c='c', s=small_dot_size)
+          
+        mean_SIGI_standing = SIGI_amplitudes_standing.mean()
+        
+        std_error_SIGI_standing = np.std(SIGI_amplitudes_standing) / math.sqrt(10)
+        
+        plt.errorbar((electrode*10) + 6, mean_SIGI_standing,yerr = std_error_SIGI_standing, solid_capstyle='projecting', capsize=5,  fmt='o', color= 'c', ecolor='c')  
     
-    plt.scatter(np.zeros([10,])+((electrode*10) + 6),SIGI_amplitudes_standing, c='c', s=small_dot_size)
+        SIGI_amplitudes_walking = SIGI_amplitudes[:,frequency_count,electrode,1]  
+        
+        plt.scatter(np.zeros([10,])+((electrode*10) + 6.5),SIGI_amplitudes_walking, c='m', s=small_dot_size)
+          
+        mean_SIGI_walking = SIGI_amplitudes_walking.mean()
+        
+        std_error_SIGI_walking = np.std(SIGI_amplitudes_walking) / math.sqrt(10)
+        
+        plt.errorbar((electrode*10) + 6.5, mean_SIGI_walking,yerr = std_error_SIGI_walking, solid_capstyle='projecting', capsize=5,  fmt='o', color= 'm', ecolor='m')  
       
-    mean_SIGI_standing = SIGI_amplitudes_standing.mean()
-    
-    std_error_SIGI_standing = np.std(SIGI_amplitudes_standing) / math.sqrt(10)
-    
-    plt.errorbar((electrode*10) + 6, mean_SIGI_standing,yerr = std_error_SIGI_standing, solid_capstyle='projecting', capsize=5,  fmt='o', color= 'c', ecolor='c')  
-
-    SIGI_amplitudes_walking = SIGI_amplitudes[:,frequency_count,electrode,1]  
-    
-    plt.scatter(np.zeros([10,])+((electrode*10) + 6.5),SIGI_amplitudes_walking, c='m', s=small_dot_size)
-      
-    mean_SIGI_walking = SIGI_amplitudes_walking.mean()
-    
-    std_error_SIGI_walking = np.std(SIGI_amplitudes_walking) / math.sqrt(10)
-    
-    plt.errorbar((electrode*10) + 6.5, mean_SIGI_walking,yerr = std_error_SIGI_walking, solid_capstyle='projecting', capsize=5,  fmt='o', color= 'm', ecolor='m')  
-  
 
 
     # blackout
@@ -358,21 +359,22 @@ for electrode in range(0,8):
 
         plt.errorbar((electrode*10) + frequency_count, mean_amplitude_difference,yerr = std_error_amplitude_difference, solid_capstyle='projecting', capsize=5,  fmt='o', color= colours[frequency_count], ecolor=colours[frequency_count])  
 
-    ## SIGI
-    SIGI_amplitudes_standing = SIGI_amplitudes[:,frequency_count,electrode,0]
-    SIGI_amplitudes_walking = SIGI_amplitudes[:,frequency_count,electrode,1]
-  
-    SIGI_difference = SIGI_amplitudes_walking - SIGI_amplitudes_standing
-  
-    plt.scatter(np.zeros([10,])+((electrode*10) + 6),SIGI_difference, c=colours[6], s=small_dot_size)
-
-    mean_SIGI_difference = SIGI_difference.mean()
-        
-    std_error_SIGI_difference = np.std(SIGI_difference) / math.sqrt(10)
-        
-    plt.errorbar((electrode*10) + 6, mean_SIGI_difference,yerr = std_error_SIGI_difference, solid_capstyle='projecting', capsize=5,  fmt='o', color= colours[6], ecolor=colours[6])  
-
+    if electrode == 5:
+        ## SIGI
+        SIGI_amplitudes_standing = SIGI_amplitudes[:,frequency_count,electrode,0]
+        SIGI_amplitudes_walking = SIGI_amplitudes[:,frequency_count,electrode,1]
+      
+        SIGI_difference = SIGI_amplitudes_walking - SIGI_amplitudes_standing
+      
+        plt.scatter(np.zeros([10,])+((electrode*10) + 6),SIGI_difference, c=colours[6], s=small_dot_size)
     
+        mean_SIGI_difference = SIGI_difference.mean()
+            
+        std_error_SIGI_difference = np.std(SIGI_difference) / math.sqrt(10)
+            
+        plt.errorbar((electrode*10) + 6, mean_SIGI_difference,yerr = std_error_SIGI_difference, solid_capstyle='projecting', capsize=5,  fmt='o', color= colours[6], ecolor=colours[6])  
+    
+        
 zero_line = np.arange(0,80)
 plt.plot(zero_line,np.zeros([80,]),'k--')
 
@@ -411,19 +413,20 @@ for electrode in range(0,8):
 
         plt.errorbar((electrode*10) + frequency_count, mean_phase_difference,yerr = std_error_phase_difference, solid_capstyle='projecting', capsize=5,  fmt='o', color= colours[frequency_count], ecolor=colours[frequency_count])  
 
-    ## SIGI
-
-    SIGI_phase_difference_all_subjects = SIGI_phase_scores[:,frequency_count,electrode]
-  
-    plt.scatter(np.zeros([10,])+((electrode*10) + 6),SIGI_phase_difference_all_subjects, c=colours[6], s=small_dot_size)
-
-    mean_SIGI_phase_difference = SIGI_phase_difference_all_subjects.mean()
-        
-    std_error_phase_SIGI_difference = np.std(SIGI_phase_difference_all_subjects) / math.sqrt(10)
-        
-    plt.errorbar((electrode*10) + 6, mean_SIGI_phase_difference,yerr = std_error_phase_SIGI_difference, solid_capstyle='projecting', capsize=5,  fmt='o', color= colours[6], ecolor=colours[6])  
-
+    if electrode == 5: # electrode Pz is the only electrode where the signal generator is approximatly the same size as real SSVEPs
+        ## SIGI
     
+        SIGI_phase_difference_all_subjects = SIGI_phase_scores[:,frequency_count,electrode]
+      
+        plt.scatter(np.zeros([10,])+((electrode*10) + 6),SIGI_phase_difference_all_subjects, c=colours[6], s=small_dot_size)
+    
+        mean_SIGI_phase_difference = SIGI_phase_difference_all_subjects.mean()
+            
+        std_error_phase_SIGI_difference = np.std(SIGI_phase_difference_all_subjects) / math.sqrt(10)
+            
+        plt.errorbar((electrode*10) + 6, mean_SIGI_phase_difference,yerr = std_error_phase_SIGI_difference, solid_capstyle='projecting', capsize=5,  fmt='o', color= colours[6], ecolor=colours[6])  
+    
+        
 # zero_line = np.arange(0,80)
 # plt.plot(zero_line,np.zeros([80,]),'k--')
 
@@ -464,17 +467,19 @@ for electrode in range(0,8):
 
         plt.errorbar((electrode*10) + frequency_count, mean_correlation,yerr = std_error_correlations, solid_capstyle='projecting', capsize=5,  fmt='o', color= colours[frequency_count], ecolor=colours[frequency_count])  
 
+
+    if electrode == 5: # electrode Pz is the only electrode where the signal generator is approximatly the same size as real SSVEPs
     ## SIGI
-
-    SIGI_correlations_all_subjects = SIGI_walking_standing_correlations[:,frequency_count,electrode]
-  
-    plt.scatter(np.zeros([10,])+((electrode*10) + 6),SIGI_correlations_all_subjects, c=colours[6], s=small_dot_size)
-
-    mean_SIGI_correlation = SIGI_correlations_all_subjects.mean()
-        
-    std_error_SIGI_correlations = np.std(SIGI_correlations_all_subjects) / math.sqrt(10)
-        
-    plt.errorbar((electrode*10) + 6, mean_SIGI_correlation,yerr = std_error_SIGI_correlations, solid_capstyle='projecting', capsize=5,  fmt='o', color= colours[6], ecolor=colours[6])  
+    
+        SIGI_correlations_all_subjects = SIGI_walking_standing_correlations[:,frequency_count,electrode]
+      
+        plt.scatter(np.zeros([10,])+((electrode*10) + 6),SIGI_correlations_all_subjects, c=colours[6], s=small_dot_size)
+    
+        mean_SIGI_correlation = SIGI_correlations_all_subjects.mean()
+            
+        std_error_SIGI_correlations = np.std(SIGI_correlations_all_subjects) / math.sqrt(10)
+            
+        plt.errorbar((electrode*10) + 6, mean_SIGI_correlation,yerr = std_error_SIGI_correlations, solid_capstyle='projecting', capsize=5,  fmt='o', color= colours[6], ecolor=colours[6])  
 
     
 # zero_line = np.arange(0,80)
@@ -490,121 +495,34 @@ plt.show()
 
 
 
+########### Stats  ####################
 
 
+for electrode in range(0,8):  #'VEOG', 'blink', 'P3', 'P4', 'O2', 'Pz', 'O1', 'HEOG'
+    
+    all_subjects_blackout =  blackout_amplitudes[:,electrode] 
 
+    print(' ')
+    print('Electrode ' +  electrode_names[electrode])
+    print(' ')
 
-# electrode = 3
-
-
-
-# for frequency_count in range(0,6):
+    for frequency_count in range(0,6):
     
-#     average_amplitude_O2 = statistics.median(SSVEP_amplitudes[:,frequency_count,electrode,0])
-#     average_SIGI_amplitude_O2 =  statistics.median(SIGI_amplitudes[:,frequency_count,electrode,0])
-           
-#     print('  ')
-#     print(electrode_names[electrode] + '  ' + str(frequencies_to_use[frequency_count]) + ' Hz')
-#     print(' ' )
-#     print('Median SSVEP amplitude ' + str(frequencies_to_use[frequency_count]) + ' Hz ' + electrode_names[electrode] + ' = ' + str(average_amplitude_O2))
-#     print('Median SIGI amplitude  ' + str(frequencies_to_use[frequency_count])  + ' Hz ' + electrode_names[electrode] + '= ' + str(average_SIGI_amplitude_O2))
-
-    
-    
-    
-#     plt.figure()
-#     plt.suptitle(electrode_names[electrode] + '  ' +  str(frequencies_to_use[frequency_count]) + ' Hz')
-    
-#     correlation_values = SSVEP_walking_standing_correlations[:,frequency_count, electrode]
-    
-#     correlation_values_SIGI = SIGI_walking_standing_correlations[:,frequency_count,electrode]
-    
-#     phase_shift_values = SSVEP_phase_scores[:,frequency_count, electrode]
-    
-#     phase_shift_values_SIGI = SIGI_phase_scores[:,frequency_count,electrode]
-    
-#     ###############  permutation tests  ####################
-    
-    
-#     condition_1_values =  correlation_values  #phase_shift_values ##
-#     condition_2_values = correlation_values_SIGI  ##phase_shift_values_SIGI  #
-    
-#     true_difference =  (condition_1_values - condition_2_values).mean()
-    
-#     num_loops = 1000
-    
-#     shuffled_differences = np.zeros([num_loops,]) # empty array to put the shuffled differences into
-    
-#     for loop in range(0,num_loops):
+        print(str(frequencies_to_use[frequency_count]) + ' Hz')
         
-#         # two temporary arrays, to put the shuffled values into
-#         temp_condition_1 = np.zeros([num_subjects,]) 
-#         temp_condition_2 = np.zeros([num_subjects,])
+        # standing
+        all_subjects_amplitudes_standing = SSVEP_amplitudes[:,frequency_count,electrode,0]
+
+        Z_score = functions.group_permutation_test(all_subjects_amplitudes_standing, all_subjects_blackout)
+
+        p_value_one_sided = scipy.stats.norm.sf(abs(Z_score)) #one-sided
+
+        p_value_two_sided = scipy.stats.norm.sf(abs(Z_score))*2 #twosided
+
+        cohens_d = functions.cohens_d(all_subjects_amplitudes_standing, all_subjects_blackout)
         
-#         for subject in range(0,num_subjects): # loop through each subject
-    
-#             decide = choice(['yes', 'no'])  # for each subject, decide to either keep the correct labels, or swap the conditions. 50% chance
-            
-#             if decide == 'yes': # keep the correct labels
-                
-#                 temp_condition_1[subject] = condition_1_values[subject] 
-#                 temp_condition_2[subject] = condition_2_values[subject]
-        
-#             elif decide == 'no': #swap the conditions
-    
-#                 temp_condition_1[subject] = condition_2_values[subject] 
-#                 temp_condition_2[subject] = condition_1_values[subject]
-    
-    
-#         shuffled_differences[loop] = temp_condition_1.mean() - temp_condition_2.mean() # average the two shuffled conditions
+        print('p = ' + str(p_value_two_sided))
+        print('cohens d = ' + str(cohens_d))
+        print('  ')
         
         
-#     # plot histogram of the permutation test
-        
-    
-#     plt.subplot(1,2,1)
-    
-#     plt.hist(shuffled_differences,10)
-        
-#     plt.axvline(x=true_difference, color='r', linestyle='--')    
-    
-    
-    
-#     Z_score = (true_difference - shuffled_differences.mean()) / np.std(shuffled_differences) # calculate Z score
-    
-#     plt.title('Z score = '  + str(np.round(Z_score,2)))
-
-#     p_value_one_sided = scipy.stats.norm.sf(abs(Z_score)) #one-sided
-    
-#     p_value_two_sided = scipy.stats.norm.sf(abs(Z_score))*2 #twosided
-    
-   
-#     print('Z score = ' + str(Z_score))
-#     print('p = ' + str(p_value_two_sided))
-    
-    
-#      # plot the average, std error and individual values
-#     plt.subplot(1,2,2) 
-    
-#     average_condition_1 = condition_1_values.mean() # the average of the values from the first condition
-#     average_condition_2 = condition_2_values.mean() # the average of the values from the second condition
-    
-#      # get the standard deviation
-#     std_deviation_1 = np.std(condition_1_values, axis = 0)
-#     std_deviation_2 = np.std(condition_2_values, axis = 0)
-    
-#     # calculate standard error
-#     std_error_1 = std_deviation_1 / math.sqrt(10)
-#     std_error_2 = std_deviation_2 / math.sqrt(10)
-    
-    
-#     plt.scatter(np.zeros(10) + 1 , condition_1_values, color = 'b', label = 'standing vs standing SSVEP')
-#     plt.scatter(np.zeros(10) + 2 , condition_2_values, color = 'r', label = 'standing vs walking Signal generator')
-    
-    
-#     plt.errorbar(1, average_condition_1,yerr = std_error_1, solid_capstyle='projecting', capsize=5,  fmt='o', color= 'g', ecolor='g')  
-#     plt.errorbar(2, average_condition_2,yerr = std_error_2, solid_capstyle='projecting', capsize=5,  fmt='o', color= 'g', ecolor='g')  
-    
-#     plt.xlim(0, 3)
-#     plt.ylim(-1, 1)
-

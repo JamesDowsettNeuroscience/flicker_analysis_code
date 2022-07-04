@@ -135,6 +135,9 @@ def make_SSVEPs(data, triggers, period):
     
     return SSVEP
 
+
+
+
 ### signal to noise ratio by randomly shuffling the data points of each segment and then making the SSVEP, compare to true SSVEP
 ## instead of peak to peak amplitude, use a time range around the peak
 
@@ -367,7 +370,7 @@ def make_SSVEPs_random(data, triggers, period, num_loops):
 def randomSSVEPs_zscore(SSVEP, data, all_triggers, period, num_loops, offset):
     
     import numpy as np
-    import matplotlib.pyplot as plt
+  #  import matplotlib.pyplot as plt
     import random
     
     random_amplitudes = np.zeros([num_loops,])
@@ -399,9 +402,9 @@ def randomSSVEPs_zscore(SSVEP, data, all_triggers, period, num_loops, offset):
         random_amplitudes[loop] = np.ptp(random_SSVEP)
     
     
-    plt.plot(random_SSVEP,'k') # plot the last random shuffle, just to see
+  #  plt.plot(random_SSVEP,'k') # plot the last random shuffle, just to see
     
-    plt.plot(SSVEP,'b') # plot the true SSVEP
+ #   plt.plot(SSVEP,'b') # plot the true SSVEP
     
     true_amplitude = np.ptp(SSVEP)
     
@@ -654,4 +657,132 @@ def cross_correlation(SSVEP_1, SSVEP_2):
 
 
 
+######### general stats   ##################
+
+
+### group level permutation test, within subjects shuffle
+
+
+def group_permutation_test(scores_condition_1, scores_condition_2):
+    
+    import numpy as np
+    from random import choice
+    
+    ## check for Nans and remove them from both sets of data
+    if len(np.argwhere(np.isnan(scores_condition_1))) > 0:
+        
+        index = np.argwhere(np.isnan(scores_condition_1))
+        scores_condition_1 = np.delete(scores_condition_1, index)
+        scores_condition_2 = np.delete(scores_condition_2, index)
+        
+    if len(np.argwhere(np.isnan(scores_condition_2))) > 0:
+
+        index = np.argwhere(np.isnan(scores_condition_2))
+        scores_condition_1 = np.delete(scores_condition_1, index)
+        scores_condition_2 = np.delete(scores_condition_2, index)
+        
+        
+    
+    ## check groups are the same size
+    
+    if len(scores_condition_1) == len(scores_condition_2):
+    
+        num_subjects = len(scores_condition_1)
+
+    else: # if groups are not the same size, take the length of the smallest group and the same number of subjects from the larger group
+    
+        print('ERROR: Variables are not the same length. Resizing ...')
+    
+        if len(scores_condition_1) > len(scores_condition_2):
+            
+            scores_condition_1 = scores_condition_1[0:len(scores_condition_2)]
+            
+            num_subjects = len(scores_condition_2)
+            
+        elif len(scores_condition_1) < len(scores_condition_2):
+            
+            scores_condition_2 = scores_condition_2[0:len(scores_condition_1)]
+    
+            num_subjects = len(scores_condition_1)
+    
+
+
+    average_condition_1 = scores_condition_1.mean()
+    
+    average_condition_2 = scores_condition_2.mean()
+    
+    true_difference = average_condition_1 - average_condition_2
+    
+    num_loops = 1000
+    
+    shuffled_differences = np.zeros([num_loops,])
+    
+    for loop in range(0,num_loops):
+        
+        random_condition_1 = np.zeros([len(scores_condition_1),])
+        random_condition_2 = np.zeros([len(scores_condition_2),])
+        
+        for subject in range(0,num_subjects):
+            
+            decide = choice(['yes', 'no'])  # for each subject, decide to either keep the correct labels, or swap the conditions. 50% chance
+                
+            if decide == 'yes':
+                
+                random_condition_1[subject] = scores_condition_1[subject] # keep the correct labels
+                random_condition_2[subject] = scores_condition_2[subject]
+            
+            elif decide == 'no':
+                
+                random_condition_1[subject] = scores_condition_2[subject] # swap the labels
+                random_condition_2[subject] = scores_condition_1[subject]
+            
+        average_random_condition_1 = random_condition_1.mean()
+        average_random_condition_2 = random_condition_2.mean()
+
+        difference_random_conditions = average_random_condition_1 - average_random_condition_2
+
+        shuffled_differences[loop] = difference_random_conditions
+        
+        
+    
+    Z_score = (true_difference - shuffled_differences.mean()) / np.std(shuffled_differences) # calculate Z score
+
+    return Z_score
+
+
+
+# calculate the Cohen's d between two samples
+def cohens_d(scores_condition_1, scores_condition_2):
+    
+    import numpy as np
+    from numpy import var
+
+    ## check for Nans and remove them from both sets of data
+    if len(np.argwhere(np.isnan(scores_condition_1))) > 0:
+        
+        index = np.argwhere(np.isnan(scores_condition_1))
+        scores_condition_1 = np.delete(scores_condition_1, index)
+        scores_condition_2 = np.delete(scores_condition_2, index)
+        
+    if len(np.argwhere(np.isnan(scores_condition_2))) > 0:
+
+        index = np.argwhere(np.isnan(scores_condition_2))
+        scores_condition_1 = np.delete(scores_condition_1, index)
+        scores_condition_2 = np.delete(scores_condition_2, index)
+
+
+
+    num_subjects_1 = len(scores_condition_1)
+    num_subjects_2 = len(scores_condition_2)
+    
+    # calculate the variance of the samples
+    s1, s2 = var(scores_condition_1, ddof=1), var(scores_condition_2, ddof=1) 
+ 	# calculate the pooled standard deviation
+    s = np.sqrt(((num_subjects_1 - 1) * s1 + (num_subjects_2 - 1) * s2) / (num_subjects_1 + num_subjects_2 - 2))
+ 	# calculate the means of the samples
+    u1, u2 = scores_condition_1.mean(), scores_condition_2.mean()
+ 	# calculate the effect size
+    cohens_d = (u1 - u2) / s
+
+    return cohens_d
 
