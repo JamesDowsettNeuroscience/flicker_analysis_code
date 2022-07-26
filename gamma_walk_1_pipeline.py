@@ -177,7 +177,7 @@ for subject in range(1,11):
             # save correlations and phase shift
             SSVEP_walking_standing_correlations[subject-1,frequency_count,electrode] = np.corrcoef(standing_SSVEP, walking_SSVEP)[0,1]
                
-            SSVEP_phase_scores[subject-1,frequency_count,electrode] = functions.cross_correlation(standing_SSVEP, walking_SSVEP)
+            SSVEP_phase_scores[subject-1,frequency_count,electrode] = functions.cross_correlation_absolute(standing_SSVEP, walking_SSVEP)
 
             frequency_count += 1
                     

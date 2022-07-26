@@ -252,6 +252,47 @@ def compare_SSVEPs_split(data, triggers, period):
 
     return correlation
     
+
+
+##  Randomly split the triggers from one condition to create two SSVEPs and return directional phase shift between the two
+def phase_shift_SSVEPs_split(data, triggers, period):
+    
+    import numpy as np
+    import random
+ #   import matplotlib.pyplot as plt
+
+    seg_nums = np.arange(0,len(triggers)) # an index for seach segment
+ 
+    random.shuffle(seg_nums) # randomize the order
+    
+    for random_half in range(0,2): # select the first half, and then the second half, of the randomized segments, and make an SSVEP of each
+
+        if random_half == 0:
+            random_half_triggers = triggers[seg_nums[0:int(len(triggers)/2)]]
+        elif random_half == 1:
+            random_half_triggers = triggers[seg_nums[int(len(triggers)/2):]]
+
+        segment_matrix = np.zeros([len(random_half_triggers), period]) # empty matrix to put the segments into
+        seg_count = 0 # keep track of the number of segments
+   
+        for trigger in random_half_triggers:
+            segment =  data[trigger:trigger+period] 
+            segment_matrix[seg_count,:] = segment
+            seg_count += 1
+
+        SSVEP = segment_matrix[0:seg_count,:].mean(axis=0) # average to make SSVEP
+        
+        SSVEP = SSVEP - SSVEP.mean() # baseline correct
+
+        if random_half == 0:
+            SSVEP_1 = np.copy(SSVEP)
+        elif random_half == 1:
+            SSVEP_2 = np.copy(SSVEP)
+   
+    phase_shift = cross_correlation_directional(SSVEP_1, SSVEP_2)
+
+    return phase_shift
+
     
     # plt.legend()
 
@@ -609,8 +650,8 @@ def time_warp_SSVEPs(SSVEP_1, SSVEP_2):
     return correlation
     return new_SSVEP
 
-
-def cross_correlation(SSVEP_1, SSVEP_2):
+## the absolute phase shift
+def cross_correlation_absolute(SSVEP_1, SSVEP_2):
     
     import numpy as np
     
@@ -654,6 +695,53 @@ def cross_correlation(SSVEP_1, SSVEP_2):
 
 
     return absolute_phase_lag_degrees
+
+#### direction specific phase shift - if phase shift is greater than 180, then assume the phase shift is in the other direction, i.e. negative
+def cross_correlation_directional(SSVEP_1, SSVEP_2):
+    
+    import numpy as np
+    
+    if len(SSVEP_1) == len(SSVEP_2): # check the two SSVEPs are the same length
+     
+        correlations = np.zeros([len(SSVEP_1),]) # empty array to put the correlation values into
+        
+        phase_shifted_SSVEP_2 = np.copy(SSVEP_2) # make a copy of SSVEP_2 which can be phase shifted
+        
+        for i in range(len(SSVEP_1)):
+        
+           # plt.plot(phase_shift_SSVEP_2)
+        
+            correlations[i] = np.corrcoef(SSVEP_1, phase_shifted_SSVEP_2)[1,0] # get the pearson's correlatios for this phase value
+        
+            phase_shifted_SSVEP_2 = np.roll(phase_shifted_SSVEP_2, 1) # phase shift by one data point
+            
+           
+        # get the phase shift 
+        
+        phase_lag = np.argmax(correlations)  # the phase lag with the maximum correlation value
+
+        #print('phase lag = ' + str(phase_lag))
+        
+    else:
+        
+        print('SSVEPs are not the same length')
+        
+        phase_lag = 0
+            
+        
+    phase_lag_degrees = phase_lag/len(SSVEP_1) * 360
+
+    #print('Phase lag in degrees = ' + str(phase_lag_degrees))
+        
+    ## convert to directional phase lag, i.e. if the phase lag ig greater than 180 degrees, assume in the other direction and negative
+    if phase_lag_degrees > 180:
+        directional_phase_lag_degrees = (360 - phase_lag_degrees) * -1
+    else:
+        directional_phase_lag_degrees = phase_lag_degrees
+
+
+    return directional_phase_lag_degrees
+
 
 
 
