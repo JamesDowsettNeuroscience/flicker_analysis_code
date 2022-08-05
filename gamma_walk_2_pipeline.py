@@ -77,7 +77,7 @@ all_sd_self_phase_shifts_laplacian = np.zeros([num_subjects,2,64,3])  # subject,
 
 
 
-for laplacian in(0,1):
+for laplacian in(0,1): # loop first for normal Cz referance and then again for laplacian
     
     if laplacian == 0:
         montage_name = 'Cz Reference'
@@ -225,7 +225,7 @@ for laplacian in(0,1):
                 #     plt.subplot(8,8,electrode+1)
                 #     plt.ylim([-(max_amplitude/2), (max_amplitude/2)])
              
-                
+##############  save the resulting matrices  #################            
              
 np.save(path + 'all_SSVEPs', all_SSVEPs)
 np.save(path + 'all_SSVEPs_laplacian', all_SSVEPs_laplacian)                
@@ -244,27 +244,199 @@ np.save(path + 'all_sd_self_correlations_laplacian', all_sd_self_correlations_la
 np.save(path + 'all_mean_self_phase_shifts_laplacian', all_mean_self_phase_shifts_laplacian)
 np.save(path + 'all_sd_self_phase_shifts_laplacian', all_sd_self_phase_shifts_laplacian ) 
    
-                
-         ####### matricies to store the analysis outcomes     
-   
-# ## normal reference
-             
-# SSVEP_amplitudes = np.zeros([num_subjects,2,64,3]) # subject, frequency, electrode , condition
 
-# SSVEP_walking_standing_correlations = np.zeros([num_subjects,2,64]) # subject, frequency, electrode
 
-# SSVEP_walking_standing_phase_shift = np.zeros([num_subjects,6,8])             
-                
-#          ### laplacian
-         
-# SSVEP_amplitudes_laplacian = np.zeros([num_subjects,2,64,3]) # subject, frequency, electrode , condition
-
-# SSVEP_walking_standing_correlations_laplacian = np.zeros([num_subjects,2,64]) # subject, frequency, electrode
-
-# SSVEP_walking_standing_phase_shift_laplacian = np.zeros([num_subjects,6,8])
+  
 
 
    
 
+########### load the matrices for second part of analysis pipeline ###############
+
+laplacian = 1
+
+if laplacian == 0:
+    
+    all_SSVEPs = np.load(path + 'all_SSVEPs.npy') # subject, frequency, electrode, condition, SSVEP data (29 data points is the largest SSVEP, 35 Hz)
+    
+    all_mean_self_correlations = np.load(path + 'all_mean_self_correlations.npy') # subject, frequency, electrode, condition
+    all_sd_self_correlations = np.load(path + 'all_sd_self_correlations.npy')
+    
+    all_mean_self_phase_shifts = np.load(path + 'all_mean_self_phase_shifts.npy')
+    all_sd_self_phase_shifts = np.load(path + 'all_sd_self_phase_shifts.npy')    
+    
+elif laplacian == 1:
+    
+    all_SSVEPs = np.load(path + 'all_SSVEPs_laplacian.npy')
+    
+    all_mean_self_correlations = np.load(path + 'all_mean_self_correlations_laplacian.npy')
+    all_sd_self_correlations = np.load(path + 'all_sd_self_correlations_laplacian.npy')
+    
+    all_mean_self_phase_shifts = np.load(path + 'all_mean_self_phase_shifts_laplacian.npy')
+    all_sd_self_phase_shifts = np.load(path + 'all_sd_self_phase_shifts_laplacian.npy')    
                 
              
+                
+             
+#### Topoplots ########
+
+import mne               
+ 
+### setup montage
+
+file_name = 'S' + str(1) + '_' + 'W35' # load one subjects header file to get the correct montage
+
+path = '/home/james/Active_projects/Gamma_walk/gamma_walk_experiment_2/Right_handed_participants/'
+
+# read the EEG data with the MNE function
+raw = mne.io.read_raw_brainvision(path + file_name + '.vhdr')
+
+
+channel_names = raw.info.ch_names
+
+channel_names[60] = 'Fpz' # rename incorrectly named channel 
+
+# rename the trigger and EOG as the position of the ground and reference, which were interpolated
+raw.info.ch_names[30] =  'FCz' #'A1' 
+raw.info.ch_names[31] = 'AFz' # 'A2'  #
+
+
+
+sfreq = 1000  # in Hertz
+
+# The EEG channels use the standard naming strategy.
+# By supplying the 'montage' parameter, approximate locations
+# will be added for them
+
+montage = 'standard_1005'
+
+# Initialize required fields
+info = mne.create_info(channel_names, sfreq, ch_types = 'eeg')
+
+info.set_montage(montage)
+            
+
+
+### plot self-correlations 
+
+min_value = 0
+max_value = 1
+
+plot_names = ('Walking 35Hz', 'Standing 35 Hz', 'Walking 40 Hz', 'Standing 40Hz')
+
+fig = plt.figure()
+plt.suptitle('Mean Self Correlation')
+
+
+plot_count = 0
+
+for frequency in range(0,2):
+    for condition in range(0,2):
+        plot_count += 1
+        
+        plt.subplot(2,2,plot_count)
+        
+        plt.title(plot_names[plot_count-1])
+        
+        all_subjects_values = all_mean_self_correlations[:,frequency,:,condition]
+      
+        
+        values_to_plot = all_subjects_values.mean(axis=0)
+        
+        evoked_values = mne.EvokedArray(np.reshape(values_to_plot, (64,1)), info)
+
+        evoked_values.set_montage(montage)
+
+        mne.viz.plot_topomap(evoked_values.data[:, 0], evoked_values.info,
+              vmin=min_value, vmax=max_value, names=channel_names, show_names=True, show=True)
+
+    im,cm = mne.viz.plot_topomap(evoked_values.data[:, 0], evoked_values.info,
+  vmin=min_value, vmax=max_value, names=channel_names, show_names=True, show=True)
+
+                
+# manually fiddle the position of colorbar
+ax_x_start = 0.9
+ax_x_width = 0.04
+ax_y_start = 0.1
+ax_y_height = 0.8
+cbar_ax = fig.add_axes([ax_x_start, ax_y_start, ax_x_width, ax_y_height])
+clb = fig.colorbar(im, cax=cbar_ax)
+
+
+
+
+#### get walking-standing phase shift
+
+
+min_value = 0
+max_value = 1000
+
+fig = plt.figure()
+plt.suptitle('Walking Standing Phase Shifts Z scores')
+
+
+
+plot_names = ('35 Hz', '40 Hz')
+
+
+for frequency in range(0,2):
+    
+    if frequency == 0:
+        period = 29
+    elif frequency == 1:
+        period = 25
+  
+    plt.subplot(1,2,frequency+1)  
+  
+    plt.title(plot_names[frequency])
+  
+    walking_standing_phase_shifts = np.zeros([num_subjects,64])    
+    walking_standing_phase_shift_Z_scores = np.zeros([num_subjects,64])            
+  
+    for subject in range(0,num_subjects):
+
+        for electrode in range(0,64):
+            
+            walking_SSVEP =  all_SSVEPs[subject,frequency,electrode,0,0:period] # subject, frequency, electrode, condition, SSVEP data
+    
+            standing_SSVEP =  all_SSVEPs[subject,frequency,electrode,1,0:period]
+
+            phase_shift = functions.cross_correlation_directional(walking_SSVEP, standing_SSVEP)
+
+            #phase_shift = np.abs(phase_shift)
+
+            walking_standing_phase_shifts[subject,electrode] = phase_shift
+
+              ## calculate phase shift Z score from the self 50-50 split phase permutation
+            mean_walking_self_phase_shift = all_mean_self_phase_shifts[subject,frequency,electrode,0] # get average mean walking self-phase-shift
+            sd_walking_self_phase_shift = all_sd_self_phase_shifts[subject,frequency,electrode,0] # get average mean walking self-phase-shift
+
+            phase_shift_Z_score = (phase_shift-mean_walking_self_phase_shift)/(sd_walking_self_phase_shift + 0.001)
+
+            abs_phase_shift_Z_score = np.abs(phase_shift_Z_score)
+
+            walking_standing_phase_shift_Z_scores[subject,electrode] = abs_phase_shift_Z_score
+
+
+    #values_to_plot = walking_standing_phase_shifts.mean(axis=0)
+    values_to_plot = walking_standing_phase_shift_Z_scores.mean(axis=0)
+    
+    
+    evoked_values = mne.EvokedArray(np.reshape(values_to_plot, (64,1)), info)
+
+    evoked_values.set_montage(montage)
+
+    mne.viz.plot_topomap(evoked_values.data[:, 0], evoked_values.info,
+          vmin=min_value, vmax=max_value, names=channel_names, show_names=True, show=True)
+
+    im,cm = mne.viz.plot_topomap(evoked_values.data[:, 0], evoked_values.info,
+  vmin=min_value, vmax=max_value, names=channel_names, show_names=True, show=True)
+
+                
+# manually fiddle the position of colorbar
+ax_x_start = 0.9
+ax_x_width = 0.04
+ax_y_start = 0.1
+ax_y_height = 0.8
+cbar_ax = fig.add_axes([ax_x_start, ax_y_start, ax_x_width, ax_y_height])
+clb = fig.colorbar(im, cax=cbar_ax)
