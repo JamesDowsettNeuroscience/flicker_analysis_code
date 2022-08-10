@@ -19,7 +19,7 @@ import math
 import scipy.stats
 from random import choice
 import statistics
-
+import random
 
 from timeit import default_timer as timer
 from datetime import timedelta
@@ -60,8 +60,12 @@ all_sd_self_correlations = np.zeros([num_subjects,2,64,3])  # subject, frequency
 all_mean_self_phase_shifts = np.zeros([num_subjects,2,64,3])  # subject, frequency, electrode, condition
 all_sd_self_phase_shifts = np.zeros([num_subjects,2,64,3])  # subject, frequency, electrode, condition
 
-
 all_mean_self_absolute_phase_shifts = np.zeros([num_subjects,2,64,3])  # subject, frequency, electrode, condition
+
+all_mean_self_amplitude_differences = np.zeros([num_subjects,2,64,3])  # subject, frequency, electrode, condition
+all_sd_self_amplitude_differences = np.zeros([num_subjects,2,64,3])  # subject, frequency, electrode, condition
+
+all_mean_absolute_self_amplitude_differences = np.zeros([num_subjects,2,64,3])  # subject, frequency, electrode, condition
 
 # laplacian reference
 
@@ -76,10 +80,12 @@ all_sd_self_phase_shifts_laplacian = np.zeros([num_subjects,2,64,3])  # subject,
 
 all_mean_self_absolute_phase_shifts_laplacian = np.zeros([num_subjects,2,64,3])  # subject, frequency, electrode, condition
 
+all_mean_self_amplitude_differences_laplacian = np.zeros([num_subjects,2,64,3])  # subject, frequency, electrode, condition
+all_sd_self_amplitude_differences_laplacian = np.zeros([num_subjects,2,64,3])  # subject, frequency, electrode, condition
+
+all_mean_absolute_self_amplitude_differences_laplacian = np.zeros([num_subjects,2,64,3])  # subject, frequency, electrode, condition
 
 ##################################
-
-
 
 
 
@@ -169,25 +175,34 @@ for laplacian in(0,1): # loop first for normal Cz referance and then again for l
                         
                     
                     
-                   ###### permutation tests on self correlation and phase shift
+                   ###### permutation tests on self correlation, self phase shift and self amplitude difference 
                     num_loops = 1
                     
                     # all_split_corr_values = np.zeros([num_loops,])
                     # all_split_phase_shift_values = np.zeros([num_loops,])
                     
-                    all_split_absolute_phase_shift_values = np.zeros([num_loops,])
+                   # all_split_absolute_phase_shift_values = np.zeros([num_loops,])
+                    
+                    all_split_amplitude_differences = np.zeros([num_loops,])
+                    
+                    all_split_absolute_amplitude_differences = np.zeros([num_loops,])
                     
                     for loop in range(0,num_loops):
                         # correlation of random 50/50 split
                         
                        # all_split_corr_values[loop] = functions.compare_SSVEPs_split(data, triggers, period)
                         
-                        phase_shift = functions.phase_shift_SSVEPs_split(data, triggers, period)
+                        # phase_shift = functions.phase_shift_SSVEPs_split(data, triggers, period)
                         
-                        # all_split_phase_shift_values[loop] = phase_shift
+                        # # all_split_phase_shift_values[loop] = phase_shift
                         
-                        all_split_absolute_phase_shift_values[loop] = np.abs(phase_shift)
+                        # all_split_absolute_phase_shift_values[loop] = np.abs(phase_shift)
                     
+                        split_amplitude_difference = functions.SSVEP_split_amplitude_difference(data, triggers, period)
+                        
+                        all_split_amplitude_differences[loop] = split_amplitude_difference
+                        
+                        all_split_absolute_amplitude_differences[loop] = np.abs(split_amplitude_difference)
                     
                     # mean_corr = all_split_corr_values.mean()
                     # sd_corr = np.std(all_split_corr_values)
@@ -195,7 +210,13 @@ for laplacian in(0,1): # loop first for normal Cz referance and then again for l
                     # mean_phase = all_split_phase_shift_values.mean()
                     # sd_phase = np.std(all_split_phase_shift_values)
                     
-                    mean_abs_phase = all_split_absolute_phase_shift_values.mean()
+                   #  mean_abs_phase = all_split_absolute_phase_shift_values.mean()
+                    
+                    mean_amplitude_difference = all_split_amplitude_differences.mean()
+                    std_amplitude_difference = np.std(all_split_amplitude_differences)
+                    
+                    
+                    mean_absolute_amplitude_difference = all_split_absolute_amplitude_differences.mean()
                     
                     ##############
                     
@@ -211,7 +232,12 @@ for laplacian in(0,1): # loop first for normal Cz referance and then again for l
                         # all_mean_self_phase_shifts[subject-1,frequency_count,electrode,condition_count]  = mean_phase # subject, frequency, electrode, condition
                         # all_sd_self_phase_shifts[subject-1,frequency_count,electrode,condition_count]  = sd_phase # subject, frequency, electrode, condition
                         
-                        all_mean_self_absolute_phase_shifts[subject-1,frequency_count,electrode,condition_count] = mean_abs_phase
+                       # all_mean_self_absolute_phase_shifts[subject-1,frequency_count,electrode,condition_count] = mean_abs_phase
+
+                        all_mean_self_amplitude_differences[subject-1,frequency_count,electrode,condition_count] = mean_amplitude_difference
+                        all_sd_self_amplitude_differences[subject-1,frequency_count,electrode,condition_count] = std_amplitude_difference
+
+                        all_mean_absolute_self_amplitude_differences[subject-1,frequency_count,electrode,condition_count] = mean_absolute_amplitude_difference
 
                     elif laplacian == 1:
                         
@@ -224,8 +250,13 @@ for laplacian in(0,1): # loop first for normal Cz referance and then again for l
                         # all_mean_self_phase_shifts_laplacian[subject-1,frequency_count,electrode,condition_count]  = mean_phase # subject, frequency, electrode, condition
                         # all_sd_self_phase_shifts_laplacian[subject-1,frequency_count,electrode,condition_count]  = sd_phase # subject, frequency, electrode, condition
                         
-                        all_mean_self_absolute_phase_shifts_laplacian[subject-1,frequency_count,electrode,condition_count] = mean_abs_phase
-                    
+                        # all_mean_self_absolute_phase_shifts_laplacian[subject-1,frequency_count,electrode,condition_count] = mean_abs_phase
+   
+                        all_mean_self_amplitude_differences_laplacian[subject-1,frequency_count,electrode,condition_count] = mean_amplitude_difference
+                        all_sd_self_amplitude_differences_laplacian[subject-1,frequency_count,electrode,condition_count] = std_amplitude_difference    
+                        
+                        all_mean_absolute_self_amplitude_differences_laplacian[subject-1,frequency_count,electrode,condition_count] = mean_absolute_amplitude_difference
+   
                     ### plots ###
                     
                 #     plt.subplot(8,8,electrode+1)
@@ -239,6 +270,9 @@ for laplacian in(0,1): # loop first for normal Cz referance and then again for l
                 # for electrode in range(0,64):  
                 #     plt.subplot(8,8,electrode+1)
                 #     plt.ylim([-(max_amplitude/2), (max_amplitude/2)])
+                
+                
+                
              
 ##############  save the resulting matrices  #################            
              
@@ -252,8 +286,12 @@ for laplacian in(0,1): # loop first for normal Cz referance and then again for l
 # np.save(path + 'all_mean_self_phase_shifts', all_mean_self_phase_shifts ) 
 # np.save(path + 'all_sd_self_phase_shifts', all_sd_self_phase_shifts)
 
-np.save(path + 'all_mean_self_absolute_phase_shifts', all_mean_self_absolute_phase_shifts)
+# np.save(path + 'all_mean_self_absolute_phase_shifts', all_mean_self_absolute_phase_shifts)
 
+np.save(path + 'all_mean_self_amplitude_differences', all_mean_self_amplitude_differences)
+np.save(path + 'all_sd_self_amplitude_differences', all_sd_self_amplitude_differences)
+
+# np.save(path + 'all_mean_absolute_self_amplitude_differences', all_mean_absolute_self_amplitude_differences)
 
 # np.save(path + 'all_mean_self_correlations_laplacian', all_mean_self_correlations_laplacian) 
 # np.save(path + 'all_sd_self_correlations_laplacian', all_sd_self_correlations_laplacian) 
@@ -261,12 +299,15 @@ np.save(path + 'all_mean_self_absolute_phase_shifts', all_mean_self_absolute_pha
 # np.save(path + 'all_mean_self_phase_shifts_laplacian', all_mean_self_phase_shifts_laplacian)
 # np.save(path + 'all_sd_self_phase_shifts_laplacian', all_sd_self_phase_shifts_laplacian ) 
    
-np.save(path + 'all_mean_self_absolute_phase_shifts_laplacian', all_mean_self_absolute_phase_shifts_laplacian)
+# np.save(path + 'all_mean_self_absolute_phase_shifts_laplacian', all_mean_self_absolute_phase_shifts_laplacian)
 
-  
+np.save(path + 'all_mean_self_amplitude_differences_laplacian', all_mean_self_amplitude_differences_laplacian)
+np.save(path + 'all_sd_self_amplitude_differences_laplacian', all_sd_self_amplitude_differences_laplacian)
 
-
+# np.save(path + 'all_mean_absolute_self_amplitude_differences_laplacian', all_mean_absolute_self_amplitude_differences_laplacian)
    
+
+
 
 ########### load the matrices for second part of analysis pipeline ###############
 
@@ -284,6 +325,10 @@ if laplacian == 0:
     
     all_mean_self_absolute_phase_shifts = np.load(path + 'all_mean_self_absolute_phase_shifts.npy')
     
+    all_mean_self_amplitude_differences = np.load(path + 'all_mean_self_amplitude_differences.npy')
+
+    all_mean_absolute_self_amplitude_differences = np.load(path + 'all_mean_absolute_self_amplitude_differences.npy')
+    
 elif laplacian == 1:
     
     all_SSVEPs = np.load(path + 'all_SSVEPs_laplacian.npy')
@@ -295,9 +340,13 @@ elif laplacian == 1:
     all_sd_self_phase_shifts = np.load(path + 'all_sd_self_phase_shifts_laplacian.npy')    
                 
     all_mean_self_absolute_phase_shifts = np.load(path + 'all_mean_self_absolute_phase_shifts_laplacian.npy')         
-                
+        
+    all_mean_self_amplitude_differences = np.load(path + 'all_mean_self_amplitude_differences_laplacian.npy')
+    
+    all_mean_absolute_self_amplitude_differences = np.load(path + 'all_mean_absolute_self_amplitude_differences_laplacian.npy')      
              
-#### Topoplots ########
+    
+#### Setup Topoplots ########
 
 import mne               
  
@@ -387,8 +436,8 @@ clb = fig.colorbar(im, cax=cbar_ax)
 #### get walking-standing phase shift Z scores
 
 
-min_value = 1.95  # -2 # 
-max_value = 1.96   #3  # 
+min_value = -3  #1.95  # 0  # -2 # 
+max_value = 3  #1.96   # 3.9  # 3  # 
 
 fig = plt.figure()
 plt.suptitle('Walking Standing Phase Shifts Z scores')
@@ -410,7 +459,11 @@ for frequency in range(0,2):
     plt.title(plot_names[frequency])
   
     walking_standing_phase_shifts = np.zeros([num_subjects,64])    
-    walking_standing_phase_shift_Z_scores = np.zeros([num_subjects,64])            
+    walking_standing_phase_shift_Z_scores = np.zeros([num_subjects,64])      
+
+    walking_amplitudes = np.zeros([num_subjects,64])
+    standing_amplitudes = np.zeros([num_subjects,64])
+    walking_standing_amplitude_differences = np.zeros([num_subjects,64])     
   
     for subject in range(0,num_subjects):
 
@@ -426,6 +479,12 @@ for frequency in range(0,2):
 
             walking_standing_phase_shifts[subject,electrode] = abs_phase_shift
 
+            
+            walking_amplitudes[subject,electrode] = np.ptp(walking_SSVEP)
+            standing_amplitudes[subject,electrode] = np.ptp(standing_SSVEP)
+            
+            walking_standing_amplitude_differences[subject,electrode] = np.ptp(walking_SSVEP) - np.ptp(standing_SSVEP)
+
               ## calculate phase shift Z score for each individual subject from the self 50-50 split phase permutation
               
             # mean_walking_self_phase_shift = all_mean_self_phase_shifts[subject,frequency,electrode,0] # get average mean walking self-phase-shift
@@ -439,22 +498,41 @@ for frequency in range(0,2):
 
 
     
-    ### get subject level Z score
-    Z_scores = np.zeros([64,])
+    ### get subject level Z score for phase and amplitude
+    phase_Z_scores = np.zeros([64,])
+    
+    amplitude_Z_scores = np.zeros([64,])
+    
     for electrode in range(0,64):
         
+        ## phase
         true_abs_phase_shifts = walking_standing_phase_shifts[:,electrode]
         self_split_abs_phase_shifts = all_mean_self_absolute_phase_shifts[:,frequency,electrode,0] # load for walking condition
       
-        Z_scores[electrode] = functions.group_permutation_test(true_abs_phase_shifts, self_split_abs_phase_shifts)
+        phase_Z_scores[electrode] = functions.group_permutation_test(true_abs_phase_shifts, self_split_abs_phase_shifts)
+
+        ## amplitude
+        walking_amplitudes_electrode = walking_amplitudes[:,electrode]
+        standing_amplitudes_electrode = standing_amplitudes[:,electrode]
+        
+        amplitude_Z_scores[electrode] = functions.group_permutation_test(walking_amplitudes_electrode, standing_amplitudes_electrode)
 
         # Z score from the standard deviation of self split scores
        # Z_scores[electrode] = (true_abs_phase_shifts.mean()-self_split_abs_phase_shifts.mean())/np.std(self_split_abs_phase_shifts)
 
+    # store Z scores for later cluster tests
+    if frequency == 0:
+        phase_Z_scores_35Hz = np.copy(phase_Z_scores)
+        amplitude_Z_scores_35Hz = np.copy(amplitude_Z_scores)
+    elif frequency == 1:
+        phase_Z_scores_40Hz = np.copy(phase_Z_scores)
+        amplitude_Z_scores_40Hz = np.copy(amplitude_Z_scores)
 
+    ### topo-plot ###
+    
     #values_to_plot = walking_standing_phase_shifts.mean(axis=0)
     #values_to_plot = walking_standing_phase_shift_Z_scores.mean(axis=0)
-    values_to_plot = Z_scores
+    values_to_plot = amplitude_Z_scores   #  phase_Z_scores #
     
     evoked_values = mne.EvokedArray(np.reshape(values_to_plot, (64,1)), info)
 
@@ -479,25 +557,47 @@ clb = fig.colorbar(im, cax=cbar_ax)
 
 ############ cluster permutation tests ###############
 
-adjacency, ch_names = mne.channels.find_ch_adjacency(info, ch_type='eeg')
-
-sig_cutoff = 1.96
-
-significant_electrodes = []
-for electrode in range(0,64):
-    if Z_scores[electrode] > sig_cutoff:
-        significant_electrodes.append(electrode)
+for frequency in range(0,2):
+    
+    if frequency == 0:
+        Z_scores = np.copy(phase_Z_scores_35Hz)
+    elif frequency == 1:
+        Z_scores = np.copy(phase_Z_scores_40Hz)
+    
+    # get adjacency matrix for the EEG electrodes
+    adjacency, ch_names = mne.channels.find_ch_adjacency(info, ch_type='eeg')
+    
+    sig_cutoff = 1.96
+    
+    true_max_cluster = functions.find_max_cluster(Z_scores, adjacency, ch_names, sig_cutoff)
+    
+    num_loops = 1000
+    
+    shuffled_max_cluster_scores = np.zeros([num_loops,])
+    
+    for loop in range(0,num_loops):
+       
+        random.shuffle(Z_scores)
         
-for electrode in significant_electrodes:
-      
-    print('  ')      
-    print('Electrode ' + ch_names[electrode] + '  significant neighbours:')    
-    print('  ')   
-    
-    for electrode_to_check in significant_electrodes:
-        if adjacency[electrode,electrode_to_check] ==1:
-            print(ch_names[electrode_to_check])    
+        shuffled_max_cluster_scores[loop] = functions.find_max_cluster(Z_scores, adjacency, ch_names, sig_cutoff)
+        
+        
+    Z_score_num_clusters = (true_max_cluster - shuffled_max_cluster_scores.mean())/np.std(shuffled_max_cluster_scores)   
     
     
     
-    
+    #find p-value
+    if frequency == 0:
+        p_value_35Hz = scipy.stats.norm.sf(abs(Z_score_num_clusters))
+    elif frequency == 1:
+        p_value_40Hz = scipy.stats.norm.sf(abs(Z_score_num_clusters))
+        
+        
+
+print('35 Hz  p value = ' + str(p_value_35Hz))
+print('40 Hz  p value = ' + str(p_value_40Hz))
+
+
+
+
+

@@ -213,6 +213,46 @@ def SNR_random(data, triggers, period):
     return SNR
 
 
+
+## Randomly split the triggers and create two SSVEPs, return the amplitude difference between the two 
+def SSVEP_split_amplitude_difference(data, triggers, period):
+    
+    import numpy as np
+    import random
+ #   import matplotlib.pyplot as plt
+
+    seg_nums = np.arange(0,len(triggers)) # an index for seach segment
+ 
+    random.shuffle(seg_nums) # randomize the order
+    
+    for random_half in range(0,2): # select the first half, and then the second half, of the randomized segments, and make an SSVEP of each
+
+        if random_half == 0:
+            random_half_triggers = triggers[seg_nums[0:int(len(triggers)/2)]]
+        elif random_half == 1:
+            random_half_triggers = triggers[seg_nums[int(len(triggers)/2):]]
+
+        segment_matrix = np.zeros([len(random_half_triggers), period]) # empty matrix to put the segments into
+        seg_count = 0 # keep track of the number of segments
+   
+        for trigger in random_half_triggers:
+            segment =  data[trigger:trigger+period] 
+            segment_matrix[seg_count,:] = segment
+            seg_count += 1
+
+        SSVEP = segment_matrix[0:seg_count,:].mean(axis=0) # average to make SSVEP
+        
+        SSVEP = SSVEP - SSVEP.mean() # baseline correct
+
+        if random_half == 0:
+            SSVEP_1 = np.copy(SSVEP)
+        elif random_half == 1:
+            SSVEP_2 = np.copy(SSVEP)
+   
+    amplitude_difference = np.ptp(SSVEP_1) - np.ptp(SSVEP_2)
+
+    return amplitude_difference
+
 ##  Randomly split the triggers from one condition to create two SSVEPs and return the correlation between the two
 def compare_SSVEPs_split(data, triggers, period):
     
@@ -874,3 +914,69 @@ def cohens_d(scores_condition_1, scores_condition_2):
 
     return cohens_d
 
+
+# find largest cluster of Z scores for cluster based permutation tests. Requires adjacency matrix from MNE
+# sig_cutoff = the significance cutoff value for inclusion in the clusters
+
+def find_max_cluster(Z_scores, adjacency, ch_names, sig_cutoff):
+    
+        
+    significant_electrodes = []
+    for electrode in range(0,64):
+        if Z_scores[electrode] > sig_cutoff:
+            significant_electrodes.append(electrode)
+     
+    all_clusters_summed_Z_scores = []
+    
+    for electrode in significant_electrodes:
+    
+        current_cluster = [] # for each significant electrode create a running list of the cluster
+        
+        neighbours_to_check = [] # # list to keep track of neighbours which still need to be checked for further significant neighbours
+        
+        # print('  ')      
+        # print('Electrode ' + ch_names[electrode] + '  significant cluster:')    
+        # print('  ')   
+        
+        # check all significant electrodes to see if they are an immediate neighbour
+        for electrode_to_check in significant_electrodes: 
+            if adjacency[electrode,electrode_to_check] == 1:
+                
+               # print(ch_names[electrode_to_check])    
+                # add significant neighbours to the cluster list and the the neighbours-to-checked list 
+                current_cluster.append(electrode_to_check)
+                neighbours_to_check.append(electrode_to_check)
+        
+        # remove the current electrode from the neighbours-to-be-checked list, it's already been checked
+        neighbours_to_check.remove(electrode) 
+        
+        # check all neighbours for significant neighbours, removing them from the list when checked
+        while len(neighbours_to_check) > 0: 
+            
+            checking_current_neighbour = neighbours_to_check[0] # take the first neighbour from the list
+            
+            # check all significant electrodes to see if they are a neighbour
+            for electrode_to_check in significant_electrodes:
+                if adjacency[checking_current_neighbour,electrode_to_check] == 1:
+                    if electrode_to_check not in current_cluster: # only include electrodes not already in the cluster
+                        # add significant neighbours to the cluster list and the the neighbours-to-checked list 
+                        current_cluster.append(electrode_to_check)
+                        neighbours_to_check.append(electrode_to_check)
+                      #  print(ch_names[electrode_to_check]) 
+            
+            neighbours_to_check.pop(0) # remove the first neighbour from the list
+            
+        
+        cluster_Z_scores = []
+        
+        for electrode in current_cluster:
+           # print(electrode)
+            cluster_Z_scores.append(Z_scores[electrode])
+        
+        summed_Z_scores = sum(cluster_Z_scores)
+        
+        all_clusters_summed_Z_scores.append(summed_Z_scores)
+    
+    max_cluster = max(all_clusters_summed_Z_scores)
+        
+    return max_cluster   
