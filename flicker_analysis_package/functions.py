@@ -145,7 +145,7 @@ def SNR_random(data, triggers, period):
     
     import numpy as np
     import random
-    import matplotlib.pyplot as plt
+    #import matplotlib.pyplot as plt
     
     segment_matrix = np.zeros([len(triggers), period]) # empty matrix to put segments into
     random_segment_matrix = np.zeros([len(triggers), period]) # empty matrix to put the randomly shuffled segments into
@@ -169,7 +169,6 @@ def SNR_random(data, triggers, period):
 
     true_SSVEP = true_SSVEP - true_SSVEP.mean() # baseline correct
     random_SSVEP = random_SSVEP - random_SSVEP.mean()
-   # plt.plot(random_SSVEP, '--k')
 
     for condition in ('true', 'random'):
         

@@ -40,17 +40,17 @@ num_loops = 1000
 num_subjects = 1
 
 
-noise_values_to_test = np.arange(10,2010,10)
+noise_values_to_test = np.arange(10,2010,100)
 
 
-grand_average_phase_shifts = np.zeros([len(noise_values_to_test),])
+grand_average_absolute_phase_shifts = np.zeros([len(noise_values_to_test),])
 
 for noise_level in range(0,len(noise_values_to_test)):
 
 
     noise_amplitude = noise_values_to_test[noise_level]  
 
-    average_phase_shifts = np.zeros([num_subjects,])
+    average_absolute_phase_shifts = np.zeros([num_subjects,])
 
     for subject in range(0,num_subjects):
 
@@ -58,30 +58,30 @@ for noise_level in range(0,len(noise_values_to_test)):
         
         simulated_data = simulated_SSVEP_data + noise
         
-        phase_shifts = np.zeros([num_loops,])
+        absolute_phase_shifts = np.zeros([num_loops,])
         
         for loop in range(0,num_loops):
-    
-            split_SSVEPs = functions.compare_SSVEPs_split(simulated_data, simulated_triggers, period)
-        
-            SSVEP_1 = split_SSVEPs[0]
-            SSVEP_2 = split_SSVEPs[1]
+
+            phase_shift = functions.phase_shift_SSVEPs_split(simulated_data, simulated_triggers, period)
+
+            absolute_phase_shift = np.abs(phase_shift)
             
-            phase_shift = functions.cross_correlation(SSVEP_1, SSVEP_2)
+            absolute_phase_shifts[loop] = absolute_phase_shift
+            
+            
         
-            phase_shifts[loop] = phase_shift
+        average_absolute_phase_shift = absolute_phase_shifts.mean()
         
-        average_phase_shift = phase_shifts.mean()
         
-        average_phase_shifts[subject] = average_phase_shift
+        average_absolute_phase_shifts[subject] = average_absolute_phase_shift
        
-    grand_average = average_phase_shifts.mean()
-    grand_average_phase_shifts[noise_level] = grand_average
+    grand_average = average_absolute_phase_shifts.mean()
+    grand_average_absolute_phase_shifts[noise_level] = grand_average
     
     print('Noise = ' + str(noise_amplitude) + '  Average Phase shift = ' + str(np.round(grand_average)) + ' degrees')
     
     
-plt.plot(noise_values_to_test,grand_average_phase_shifts,'g')
+plt.plot(noise_values_to_test,grand_average_absolute_phase_shifts,'g')
     
 plt.xlabel('Noise amplitude (in units of signal amplitude)')
 plt.ylabel('Average absolute phase shift (degrees)')

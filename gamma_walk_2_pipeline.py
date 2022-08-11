@@ -532,7 +532,7 @@ for frequency in range(0,2):
     
     #values_to_plot = walking_standing_phase_shifts.mean(axis=0)
     #values_to_plot = walking_standing_phase_shift_Z_scores.mean(axis=0)
-    values_to_plot = amplitude_Z_scores   #  phase_Z_scores #
+    values_to_plot = phase_Z_scores # amplitude_Z_scores   #  
     
     evoked_values = mne.EvokedArray(np.reshape(values_to_plot, (64,1)), info)
 
