@@ -313,7 +313,10 @@ np.save(path + 'all_sd_self_amplitude_differences_laplacian', all_sd_self_amplit
 
 laplacian = 1
 
+laplacian_labels = ('Cz Reference', 'Laplacian')
+
 if laplacian == 0:
+    
     
     all_SSVEPs = np.load(path + 'all_SSVEPs.npy') # subject, frequency, electrode, condition, SSVEP data (29 data points is the largest SSVEP, 35 Hz)
     
@@ -393,7 +396,7 @@ max_value = 1
 plot_names = ('Walking 35Hz', 'Standing 35 Hz', 'Walking 40 Hz', 'Standing 40Hz')
 
 fig = plt.figure()
-plt.suptitle('Mean Self Correlation')
+plt.suptitle('Mean Self Correlation ' + laplacian_labels[laplacian])
 
 
 plot_count = 0
@@ -433,16 +436,20 @@ clb = fig.colorbar(im, cax=cbar_ax)
 
 
 
-#### get walking-standing phase shift Z scores
+#### get walking-standing phase shift and amplitude Z scores
 
+amplitude_or_phase = 0 # 0 = amplitude, 1 = phase
 
-min_value = -3  #1.95  # 0  # -2 # 
-max_value = 3  #1.96   # 3.9  # 3  # 
+amplitude_or_phase_label = ('Amplitude', 'Phase')
+
+sig_cutoff = 1.96
+
+min_value = 0  #-3  #1.95  # 0  # -2 # 
+max_value = 1  # 3  #1.96   # 3.9  # 3  # 
 
 fig = plt.figure()
-plt.suptitle('Walking Standing Phase Shifts Z scores')
 
-
+plt.suptitle('Walking Standing ' + amplitude_or_phase_label[amplitude_or_phase] + ' Z scores ' + laplacian_labels[laplacian])
 
 plot_names = ('35 Hz', '40 Hz')
 
@@ -469,6 +476,7 @@ for frequency in range(0,2):
 
         for electrode in range(0,64):
             
+            ### phase shift
             walking_SSVEP =  all_SSVEPs[subject,frequency,electrode,0,0:period] # subject, frequency, electrode, condition, SSVEP data
     
             standing_SSVEP =  all_SSVEPs[subject,frequency,electrode,1,0:period]
@@ -479,7 +487,7 @@ for frequency in range(0,2):
 
             walking_standing_phase_shifts[subject,electrode] = abs_phase_shift
 
-            
+            ## amplitudes
             walking_amplitudes[subject,electrode] = np.ptp(walking_SSVEP)
             standing_amplitudes[subject,electrode] = np.ptp(standing_SSVEP)
             
@@ -515,7 +523,15 @@ for frequency in range(0,2):
         walking_amplitudes_electrode = walking_amplitudes[:,electrode]
         standing_amplitudes_electrode = standing_amplitudes[:,electrode]
         
-        amplitude_Z_scores[electrode] = functions.group_permutation_test(walking_amplitudes_electrode, standing_amplitudes_electrode)
+       # amplitude_Z_scores[electrode] = functions.group_permutation_test(walking_amplitudes_electrode, standing_amplitudes_electrode)
+
+        walking_standing_amplitude_difference_electrode = walking_amplitudes_electrode - standing_amplitudes_electrode
+
+        # group level Z-score from average absolute mean self split amplitude difference (compare to walking condition)
+        
+        self_split_mean_absolute_amplitude_difference_electrode =  all_mean_absolute_self_amplitude_differences[:,frequency,electrode,0] # load for walking condition
+
+        amplitude_Z_scores[electrode] = functions.group_permutation_test(walking_standing_amplitude_difference_electrode, self_split_mean_absolute_amplitude_difference_electrode)
 
         # Z score from the standard deviation of self split scores
        # Z_scores[electrode] = (true_abs_phase_shifts.mean()-self_split_abs_phase_shifts.mean())/np.std(self_split_abs_phase_shifts)
@@ -532,8 +548,21 @@ for frequency in range(0,2):
     
     #values_to_plot = walking_standing_phase_shifts.mean(axis=0)
     #values_to_plot = walking_standing_phase_shift_Z_scores.mean(axis=0)
-    values_to_plot = phase_Z_scores # amplitude_Z_scores   #  
-    
+    if amplitude_or_phase == 0:
+        values_to_plot = amplitude_Z_scores
+    elif amplitude_or_phase == 1:
+        values_to_plot = phase_Z_scores # 
+
+    ### plot threshold ###
+    sig_cutoff = 1.96
+    thresholded_values = np.zeros([64,])
+    for electrode in range(0,64):
+        if values_to_plot[electrode] > sig_cutoff:
+            thresholded_values[electrode] = 1
+    values_to_plot = thresholded_values
+    #####
+
+
     evoked_values = mne.EvokedArray(np.reshape(values_to_plot, (64,1)), info)
 
     evoked_values.set_montage(montage)
@@ -555,17 +584,30 @@ clb = fig.colorbar(im, cax=cbar_ax)
 
 
 
-############ cluster permutation tests ###############
+############ cluster permutation tests phase ###############
+
+# get adjacency matrix for the EEG electrodes
+adjacency, ch_names = mne.channels.find_ch_adjacency(info, ch_type='eeg')
 
 for frequency in range(0,2):
     
-    if frequency == 0:
-        Z_scores = np.copy(phase_Z_scores_35Hz)
-    elif frequency == 1:
-        Z_scores = np.copy(phase_Z_scores_40Hz)
+    if amplitude_or_phase == 0:
+        
+        if frequency == 0:
+            Z_scores = np.copy(amplitude_Z_scores_35Hz)
+        elif frequency == 1:
+            Z_scores = np.copy(amplitude_Z_scores_40Hz)
+       
+    elif amplitude_or_phase == 1:
+        
+        if frequency == 0:
+            Z_scores = np.copy(phase_Z_scores_35Hz)
+        elif frequency == 1:
+            Z_scores = np.copy(phase_Z_scores_40Hz)
     
-    # get adjacency matrix for the EEG electrodes
-    adjacency, ch_names = mne.channels.find_ch_adjacency(info, ch_type='eeg')
+
+    
+
     
     sig_cutoff = 1.96
     
@@ -592,10 +634,11 @@ for frequency in range(0,2):
     elif frequency == 1:
         p_value_40Hz = scipy.stats.norm.sf(abs(Z_score_num_clusters))
         
-        
-
+print(' ')    
+print(amplitude_or_phase_label[amplitude_or_phase]  + '  ' + laplacian_labels[laplacian])
 print('35 Hz  p value = ' + str(p_value_35Hz))
 print('40 Hz  p value = ' + str(p_value_40Hz))
+print(' ') 
 
 
 

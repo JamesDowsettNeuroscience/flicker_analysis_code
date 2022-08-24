@@ -88,15 +88,18 @@ for noise_amplitude in range(0,num_noise_amplitudes):
     
     
    
-    
+    # make the SSVEPs
     SSVEP_1 = functions.make_SSVEPs(simulated_data_1, simulated_triggers, period)
     SSVEP_2 = functions.make_SSVEPs(simulated_data_2, simulated_triggers, period)
     
+    # get the peak to peak amplitudes
     SSVEP_amplitudes_1[noise_amplitude] = np.ptp(SSVEP_1)
     SSVEP_amplitudes_2[noise_amplitude] = np.ptp(SSVEP_2)
     
+    # get the difference in amplitude between SSVEP_1 and SSVEP_2
     amplitude_differences[noise_amplitude] = np.ptp(SSVEP_2) - np.ptp(SSVEP_1)
     
+    # get the correlation of a randon 50% split 
     self_correlations_1[noise_amplitude] = functions.compare_SSVEPs_split(simulated_data_1, simulated_triggers, period)
     self_correlations_2[noise_amplitude] = functions.compare_SSVEPs_split(simulated_data_2, simulated_triggers, period)
     
@@ -173,7 +176,10 @@ plt.plot(FFT_SNR_1)
 plt.plot(FFT_SNR_2)
 
 
+######
+# SNR with peak-to-peak of random shuffle seems to give random spikes in the SNR, maybe better to use peak-to-peak without a 5 data point average
 
+# FFT peaks are on average the same amplitude as more noise is added, wheras peak-to-peak amplitudes go up with additional noise 
 
 ###  
 
@@ -182,11 +188,25 @@ smooth_window = 10
 smoothed_1 = np.zeros([len(SSVEP_amplitudes_1)-smooth_window,])
 smoothed_2 = np.zeros([len(SSVEP_amplitudes_1)-smooth_window,])
 
+smoothed_fft_1 = np.zeros([len(SSVEP_amplitudes_1)-smooth_window,])
+smoothed_fft_2 = np.zeros([len(SSVEP_amplitudes_1)-smooth_window,])
+
 for k in range(smooth_window,len(SSVEP_amplitudes_1)-smooth_window):
     
     smoothed_1[k] = SSVEP_amplitudes_1[k-smooth_window:k+smooth_window].mean()
     smoothed_2[k] = SSVEP_amplitudes_2[k-smooth_window:k+smooth_window].mean()
-
+    
+    smoothed_fft_1[k] = FFT_SNR_1[k-smooth_window:k+smooth_window].mean()
+    smoothed_fft_2[k] = FFT_SNR_2[k-smooth_window:k+smooth_window].mean()
+    
+    
+    
 plt.figure()
 plt.plot(smoothed_1)
 plt.plot(smoothed_2)
+
+plt.figure()
+plt.title('smoothed FFT SNR')
+plt.plot(smoothed_fft_1)
+plt.plot(smoothed_fft_2)
+
