@@ -62,9 +62,16 @@ SSVEP_walking_standing_correlations = np.zeros([num_subjects,6,8]) # subject, fr
 SSVEP_phase_scores = np.zeros([num_subjects,6,8])
 
 
+
 blackout_SSVEPs = np.zeros([num_subjects,8,25]) # blackout was 40 Hz, so length = 25
 
 blackout_amplitudes = np.zeros([num_subjects,8])
+
+
+
+all_mean_self_absolute_phase_shifts = np.zeros([num_subjects,6,8,2])  # subject, frequency, electrode, condition
+self_split_amplitude_differences = np.zeros([num_subjects,6,8,2])  # subject, frequency, electrode, condition
+
 
 ##################################
 
@@ -125,6 +132,7 @@ for subject in range(1,11):
                 
                 SIGI_SSVEPs[subject-1,frequency_count,electrode,condition,:] = SSVEP # save the SSVEP
                 
+
                     # make a copy to later compare walking and standing
                 if condition == 0:
                     standing_SSVEP = np.copy(SSVEP)
@@ -135,7 +143,7 @@ for subject in range(1,11):
             # get walking/standing correlations and phase shift
             SIGI_walking_standing_correlations[subject-1,frequency_count,electrode] = np.corrcoef(standing_SSVEP, walking_SSVEP)[0,1]
         
-            SIGI_phase_scores[subject-1,frequency_count,electrode] = functions.cross_correlation(standing_SSVEP, walking_SSVEP)
+            SIGI_phase_scores[subject-1,frequency_count,electrode] = functions.cross_correlation_absolute(standing_SSVEP, walking_SSVEP)
         
             frequency_count += 1
             
@@ -166,7 +174,18 @@ for subject in range(1,11):
                 # save amplitude
                 SSVEP_amplitudes[subject-1,frequency_count,electrode,condition] = np.ptp(SSVEP)
                 
-                all_SSVEPs[subject-1,frequency_count,electrode,condition,0:len(SSVEP)] = SSVEP # save the SSVEP
+                # save the SSVEP
+                all_SSVEPs[subject-1,frequency_count,electrode,condition,0:len(SSVEP)] = SSVEP 
+                
+                # get absolute self phase shift
+                phase_shift = functions.phase_shift_SSVEPs_split(data_linear_interpolation, triggers, period)
+                
+                all_mean_self_absolute_phase_shifts[subject-1, frequency_count, electrode, condition] = np.abs(phase_shift)
+                
+                # get self amplitude difference
+                amplitude_difference = functions.SSVEP_split_amplitude_difference(data_linear_interpolation, triggers, period)
+                self_split_amplitude_differences[subject-1, frequency_count, electrode, condition] = amplitude_difference
+                
                 
                 # make a copy to later compare walking and standing
                 if condition == 0:
@@ -209,43 +228,43 @@ for subject in range(1,11):
 
 ## check raw SSVEPs for each electrode
 
-electrode = 1 #('VEOG', 'blink', 'P3', 'P4', 'O2', 'Pz', 'O1', 'HEOG', 'x_dir', 'y_dir', 'z_dir')
+# electrode = 1 #('VEOG', 'blink', 'P3', 'P4', 'O2', 'Pz', 'O1', 'HEOG', 'x_dir', 'y_dir', 'z_dir')
 
-for subject in range(1,11):
+# for subject in range(1,11):
     
-    plt.figure()
-    plt.suptitle('Subject ' + str(subject) + ' ' + electrode_names[electrode])
+#     plt.figure()
+#     plt.suptitle('Subject ' + str(subject) + ' ' + electrode_names[electrode])
     
-    for frequency_count in range(0,6):
+#     for frequency_count in range(0,6):
         
-        plt.subplot(3,3,frequency_count+1)
+#         plt.subplot(3,3,frequency_count+1)
         
-        plt.title(str(frequencies_to_use[frequency_count]) + ' Hz')
+#         plt.title(str(frequencies_to_use[frequency_count]) + ' Hz')
         
-        period = int(np.round(sample_rate/frequencies_to_use[frequency_count]))
+#         period = int(np.round(sample_rate/frequencies_to_use[frequency_count]))
         
-        standing_SSVEP = all_SSVEPs[subject-1,frequency_count,electrode,0,0:period]
-        walking_SSVEP = all_SSVEPs[subject-1,frequency_count,electrode,1,0:period]
+#         standing_SSVEP = all_SSVEPs[subject-1,frequency_count,electrode,0,0:period]
+#         walking_SSVEP = all_SSVEPs[subject-1,frequency_count,electrode,1,0:period]
         
-        plt.plot(standing_SSVEP,'b')
-        plt.plot(walking_SSVEP,'r')
+#         plt.plot(standing_SSVEP,'b')
+#         plt.plot(walking_SSVEP,'r')
 
     
-    plt.subplot(3,3,3)
+#     plt.subplot(3,3,3)
 
-    blackout_SSVEP =  blackout_SSVEPs[subject-1,electrode,:] 
+#     blackout_SSVEP =  blackout_SSVEPs[subject-1,electrode,:] 
     
-    plt.plot(blackout_SSVEP,'k')
+#     plt.plot(blackout_SSVEP,'k')
 
 
-    plt.subplot(3,3,8)
-    for frequency_count in range(0,6):
+#     plt.subplot(3,3,8)
+#     for frequency_count in range(0,6):
         
-        standing_SIGI = SIGI_SSVEPs[subject-1,frequency_count,electrode,0,:]
-        walking_SIGI = SIGI_SSVEPs[subject-1,frequency_count,electrode,1,:]
+#         standing_SIGI = SIGI_SSVEPs[subject-1,frequency_count,electrode,0,:]
+#         walking_SIGI = SIGI_SSVEPs[subject-1,frequency_count,electrode,1,:]
 
-        plt.plot(standing_SIGI,'b')
-        plt.plot(walking_SIGI,'r')
+#         plt.plot(standing_SIGI,'b')
+#         plt.plot(walking_SIGI,'r')
 
 
 
@@ -791,18 +810,25 @@ for electrode in range(0,8):  #'VEOG', 'blink', 'P3', 'P4', 'O2', 'Pz', 'O1', 'H
         
         
 # read out average effect sizes
-print('  ')
-print('Average effect size of amplitude vs. blackout (Cohen''s d) across electrodes: ')
-print(' ')
+
 frequency_names = ('30 Hz', '35 Hz', '40 Hz', '45 Hz', '50 Hz', '55 Hz', 'Signal \n Generator \n (40 Hz)')    
 electrodes_to_use = (2,3,5,6,4) #  ('VEOG', 'blink', 'P3', 'P4', 'O2', 'Pz', 'O1', 'HEOG', 'x_dir', 'y_dir', 'z_dir')
 electrodes_used_names = ('P3', 'P4', 'Pz', 'O1', 'O2')
 
+print('  ')
+print('Average effect size of amplitude vs. blackout (Cohen''s d) across electrodes: ')
+print(' ')
 for frequency_count in range(0,6):
-    
     average_effect_size_for_frequency = effect_size_amplitude_compared_to_blackout[electrodes_to_use,frequency_count].mean()
     print(str(frequency_names[frequency_count]) + ' average effect size = ' + str(average_effect_size_for_frequency))
 
+print('  ')
+print('Minimum effect size of amplitude vs. blackout (Cohen''s d) across electrodes: ')
+print(' ')
+for frequency_count in range(0,6):
+    average_effect_size_for_frequency = effect_size_amplitude_compared_to_blackout[electrodes_to_use,frequency_count].mean()
+    min_effect_size_for_frequency = min(effect_size_amplitude_compared_to_blackout[electrodes_to_use,frequency_count])
+    print(str(frequency_names[frequency_count]) + ' min effect size = ' + str(min_effect_size_for_frequency))
 
     
         
@@ -862,6 +888,9 @@ for frequency_count in range(0,6):
         
 ### compare amplitude difference to Pz SIGI condition
 
+Z_scores_amplitude_difference_compared_to_Pz_SIGI = np.zeros([8,6])
+p_values_amplitude_difference_compared_to_Pz_SIGI = np.zeros([8,6])
+effect_size_amplitude_difference_compared_to_Pz_SIGI = np.zeros([8,6])
 
 for electrode in range(0,8):  #'VEOG', 'blink', 'P3', 'P4', 'O2', 'Pz', 'O1', 'HEOG'
     
@@ -871,8 +900,7 @@ for electrode in range(0,8):  #'VEOG', 'blink', 'P3', 'P4', 'O2', 'Pz', 'O1', 'H
       
     for frequency_count in range(0,6):
         
-        print(' ')
-        print(str(frequencies_to_use[frequency_count]) + ' Hz')
+
         
         all_Pz_SIGI_amplitude_differences = SIGI_amplitudes[:,frequency_count,5,1] - SIGI_amplitudes[:,frequency_count,5,0] # walking minus standing
        
@@ -885,13 +913,100 @@ for electrode in range(0,8):  #'VEOG', 'blink', 'P3', 'P4', 'O2', 'Pz', 'O1', 'H
         p_value_two_sided = scipy.stats.norm.sf(abs(Z_score))*2 #twosided
 
         cohens_d = functions.cohens_d(all_amplitude_differences, all_Pz_SIGI_amplitude_differences)
-        
+
+        print(' ')
+        print(str(frequencies_to_use[frequency_count]) + ' Hz')
         print('p = ' + str(p_value_two_sided))
         print('cohens d = ' + str(cohens_d))
         print('  ')        
        
+        Z_scores_amplitude_difference_compared_to_Pz_SIGI[electrode,frequency_count] = Z_score
+        p_values_amplitude_difference_compared_to_Pz_SIGI[electrode,frequency_count] = p_value_one_sided
+        effect_size_amplitude_difference_compared_to_Pz_SIGI[electrode,frequency_count] = cohens_d        
+
+
+# read out average effect sizes
+print('  ')
+print('Average effect size of amplitude difference vs. Signal generator (Cohen''s d) across electrodes: ')
+print(' ')
+frequency_names = ('30 Hz', '35 Hz', '40 Hz', '45 Hz', '50 Hz', '55 Hz', 'Signal \n Generator \n (40 Hz)')    
+electrodes_to_use = (2,3,5,6,4) #  ('VEOG', 'blink', 'P3', 'P4', 'O2', 'Pz', 'O1', 'HEOG', 'x_dir', 'y_dir', 'z_dir')
+electrodes_used_names = ('P3', 'P4', 'Pz', 'O1', 'O2')
+
+for frequency_count in range(0,6):
+    
+    average_effect_size_for_frequency = effect_size_amplitude_difference_compared_to_Pz_SIGI[electrodes_to_use,frequency_count].mean()
+    print(str(frequency_names[frequency_count]) + ' average effect size = ' + str(average_effect_size_for_frequency))
+
+       
+
+
+
+
+
+
+## Z scores phase shift vs. self split phase (from walking condition)
+
+sig_cutoff = 1.96
+
+phase_Z_scores = np.zeros([8,6])
+
+frequency_names = ('30 Hz', '35 Hz', '40 Hz', '45 Hz', '50 Hz', '55 Hz')
+
+print('  ')
+print('Significant walking-standing absolute PHASE differences:')
+
+for frequency in range(0,6):
+    print(' ')
+    for electrode in range(0,8):
+
+        walking_self_split_phase_scores = all_mean_self_absolute_phase_shifts[:, frequency, electrode, 1] # condition 1 = walking
         
+        walking_standing_phase_scores = SSVEP_phase_scores[:,frequency,electrode]     
+        
+        Z_score = functions.group_permutation_test(walking_standing_phase_scores, walking_self_split_phase_scores)         
+    
+        p_value_one_sided = scipy.stats.norm.sf(abs(Z_score)) #one-sided
+    
+        phase_Z_scores[electrode, frequency] = Z_score
+    
+        if Z_score > sig_cutoff:
+            print(frequency_names[frequency] + '  ' + electrode_names[electrode] + '  Z score = ' + str(Z_score) + '  p = ' + str(p_value_one_sided))
 
 
 
+
+
+
+
+## Z scores amplitude walking-standing difference vs. self split amplitude (from walking condition)
+
+sig_cutoff = 1.96
+
+phase_Z_scores = np.zeros([8,6])
+
+frequency_names = ('30 Hz', '35 Hz', '40 Hz', '45 Hz', '50 Hz', '55 Hz')
+
+print('  ')
+print('Significant walking-standing absolute AMPLITUDE differences:')
+
+for frequency in range(0,6):
+    print(' ')
+    for electrode in range(0,8):
+
+        walking_self_split_amplitude_scores = self_split_amplitude_differences[:, frequency, electrode, 1] # condition 1 = walking
+        
+        walking_amplitudes =  SSVEP_amplitudes[:,frequency,electrode,1]
+        standing_amplitudes =  SSVEP_amplitudes[:,frequency,electrode,0]
+        
+        walking_standing_amplitude_differences = walking_amplitudes - standing_amplitudes 
+        
+        Z_score = functions.group_permutation_test(walking_standing_amplitude_differences, walking_self_split_amplitude_scores)         
+    
+        p_value_one_sided = scipy.stats.norm.sf(abs(Z_score)) #one-sided
+    
+        phase_Z_scores[electrode, frequency] = Z_score
+    
+        if Z_score > sig_cutoff:
+            print(frequency_names[frequency] + '  ' + electrode_names[electrode] + '  Z score = ' + str(Z_score) + '  p = ' + str(p_value_one_sided))
 

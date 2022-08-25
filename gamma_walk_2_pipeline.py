@@ -393,7 +393,7 @@ info.set_montage(montage)
 min_value = 0
 max_value = 1
 
-plot_names = ('Walking 35Hz', 'Standing 35 Hz', 'Walking 40 Hz', 'Standing 40Hz')
+plot_names = ('Walking 35Hz', 'Standing 35 Hz', 'Blackout 35Hz', 'Walking 40 Hz', 'Standing 40Hz',  'Blackout 40Hz')
 
 fig = plt.figure()
 plt.suptitle('Mean Self Correlation ' + laplacian_labels[laplacian])
@@ -402,10 +402,13 @@ plt.suptitle('Mean Self Correlation ' + laplacian_labels[laplacian])
 plot_count = 0
 
 for frequency in range(0,2):
-    for condition in range(0,2):
+    
+    for condition in range(0,3):
+    
+
         plot_count += 1
         
-        plt.subplot(2,2,plot_count)
+        plt.subplot(2,3,plot_count)
         
         plt.title(plot_names[plot_count-1])
         
@@ -436,16 +439,21 @@ clb = fig.colorbar(im, cax=cbar_ax)
 
 
 
+
+
+
+
+
 #### get walking-standing phase shift and amplitude Z scores
 
-amplitude_or_phase = 0 # 0 = amplitude, 1 = phase
+amplitude_or_phase = 1 # 0 = amplitude, 1 = phase
 
 amplitude_or_phase_label = ('Amplitude', 'Phase')
 
 sig_cutoff = 1.96
 
-min_value = 0  #-3  #1.95  # 0  # -2 # 
-max_value = 1  # 3  #1.96   # 3.9  # 3  # 
+min_value = -3  #1.95  # 0  # -2 # 
+max_value =  3  #1.96   # 3.9  # 3  # 
 
 fig = plt.figure()
 
@@ -553,13 +561,25 @@ for frequency in range(0,2):
     elif amplitude_or_phase == 1:
         values_to_plot = phase_Z_scores # 
 
-    ### plot threshold ###
+    ### un-comment this section to plot thresholded significant electrodes ###
+    
     sig_cutoff = 1.96
     thresholded_values = np.zeros([64,])
+    sig_electrode_names = []
     for electrode in range(0,64):
         if values_to_plot[electrode] > sig_cutoff:
             thresholded_values[electrode] = 1
+            sig_electrode_names.append(channel_names[electrode])
+            
     values_to_plot = thresholded_values
+    
+    if len(sig_electrode_names) > 0:
+        print(plot_names[frequency]  + ' Significant electrodes = ')
+        print(sig_electrode_names)
+        
+    min_value = 0   #1.95  # 0  # -2 # 
+    max_value = 1 #1.96   # 3.9  # 3  # 
+    
     #####
 
 
@@ -581,6 +601,11 @@ ax_y_start = 0.1
 ax_y_height = 0.8
 cbar_ax = fig.add_axes([ax_x_start, ax_y_start, ax_x_width, ax_y_height])
 clb = fig.colorbar(im, cax=cbar_ax)
+
+
+
+
+
 
 
 
@@ -630,14 +655,16 @@ for frequency in range(0,2):
     
     #find p-value
     if frequency == 0:
+        Z_score_35Hz = np.copy(Z_score_num_clusters)
         p_value_35Hz = scipy.stats.norm.sf(abs(Z_score_num_clusters))
     elif frequency == 1:
+        Z_score_40Hz = np.copy(Z_score_num_clusters)
         p_value_40Hz = scipy.stats.norm.sf(abs(Z_score_num_clusters))
         
 print(' ')    
 print(amplitude_or_phase_label[amplitude_or_phase]  + '  ' + laplacian_labels[laplacian])
-print('35 Hz  p value = ' + str(p_value_35Hz))
-print('40 Hz  p value = ' + str(p_value_40Hz))
+print('35 Hz  Z score = ' + str(Z_score_35Hz) + '  p value = ' + str(p_value_35Hz))
+print('40 Hz  Z score = ' + str(Z_score_40Hz) + ' p value = ' + str(p_value_40Hz))
 print(' ') 
 
 
