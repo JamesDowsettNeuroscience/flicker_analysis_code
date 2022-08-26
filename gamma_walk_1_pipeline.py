@@ -73,6 +73,10 @@ all_mean_self_absolute_phase_shifts = np.zeros([num_subjects,6,8,2])  # subject,
 self_split_amplitude_differences = np.zeros([num_subjects,6,8,2])  # subject, frequency, electrode, condition
 
 
+length = 1 # length of FFT in seconds
+all_evoked_FFTs = np.zeros([num_subjects,6,8,2,(length * sample_rate)]) # subject, frequency, electrode, condition, FFT data 
+
+
 ##################################
 
 for subject in range(1,11):
@@ -149,7 +153,7 @@ for subject in range(1,11):
             
             
     
-        ######### make real SSVEPs  ########################
+        ######### make real SSVEPs and FFTs ########################
         frequency_count = 0
         for frequency in frequencies_to_use:
             for condition in range(0,2):
@@ -186,6 +190,9 @@ for subject in range(1,11):
                 amplitude_difference = functions.SSVEP_split_amplitude_difference(data_linear_interpolation, triggers, period)
                 self_split_amplitude_differences[subject-1, frequency_count, electrode, condition] = amplitude_difference
                 
+                # Evoked FFT
+                evoked_FFT = functions.evoked_fft(data_linear_interpolation, triggers, length, sample_rate)
+                all_evoked_FFTs[subject-1,frequency_count,electrode,condition,0:len(evoked_FFT)] = evoked_FFT # subject, frequency, electrode, condition, FFT data 
                 
                 # make a copy to later compare walking and standing
                 if condition == 0:
@@ -626,9 +633,11 @@ plt.suptitle('Phase shifts')
 
 plot_count = 1
 
-for electrode in (2, 5, 3):
+electrodes_to_use =  (2, 5, 3)  #(2, 3)  #
+
+for electrode in electrodes_to_use:
     
-    plt.subplot(1,3,plot_count)
+    plt.subplot(1,len(electrodes_to_use),plot_count)
     if plot_count == 1:
         plt.ylabel('Absolute Phase Shift (degrees)')
     
@@ -691,6 +700,85 @@ plt.legend()
 
 plt.xlim(-0.5, 6.5)
 
+
+
+
+#### plot P3 P4 only: 35 and 40 Hz differences
+
+
+plt.figure()
+
+x_position = 0
+
+P3_P4_phase_scores = np.zeros([10,2,2])
+
+for frequency_count in (1,2):
+    
+    average_phase_shifts = np.zeros([2,])
+    
+    electrode_count = 0
+    
+    for electrode in (2,3):
+
+        # phase shift
+        phase_scores_all_subjects =  SSVEP_phase_scores[:,frequency_count,electrode]
+    
+       # plt.scatter(np.zeros([10,]) + frequency_count,phase_scores_all_subjects, c=colours[frequency_count], s=small_dot_size)
+    
+        mean_phase_difference = phase_scores_all_subjects.mean()
+        
+        average_phase_shifts[electrode_count] = mean_phase_difference
+        
+        std_error_phase_difference = np.std(phase_scores_all_subjects) / math.sqrt(10)
+    
+        plt.errorbar(x_position, mean_phase_difference,yerr = std_error_phase_difference, solid_capstyle='projecting', capsize=5,  fmt='o', color= colours[frequency_count], ecolor=colours[frequency_count])  
+
+
+        P3_P4_phase_scores[:,frequency_count-1,electrode_count] = phase_scores_all_subjects
+
+        x_position = x_position + 1   
+        electrode_count += 1
+
+    if frequency_count == 1:
+        plt.plot((0,1),average_phase_shifts, color= colours[frequency_count],  label = frequency_names[frequency_count]) 
+    elif frequency_count == 2:
+        plt.plot((2,3),average_phase_shifts, color= colours[frequency_count],  label = frequency_names[frequency_count]) 
+
+    
+
+
+plt.ylabel('Absolute Phase Shift (degrees)')
+
+plt.xticks((0,1,2,3), ('P3', 'P4','P3', 'P4'))
+
+plt.title('Walking-Standing phase shift')
+
+plt.legend()
+
+
+## stats
+
+phase_P3_P4_difference_35Hz = P3_P4_phase_scores[:,0,0] -  P3_P4_phase_scores[:,0,1]
+phase_P3_P4_difference_40Hz = P3_P4_phase_scores[:,1,0] -  P3_P4_phase_scores[:,1,1]
+
+Z_score_35_vs_40_Hz = functions.group_permutation_test(phase_P3_P4_difference_35Hz, phase_P3_P4_difference_40Hz)
+
+
+
+Z_score_phase_P3_vs_P4_35Hz = functions.group_permutation_test(P3_P4_phase_scores[:,0,0],  P3_P4_phase_scores[:,0,1])
+
+Z_score_phase_P3_vs_P4_40Hz = functions.group_permutation_test(P3_P4_phase_scores[:,1,0],  P3_P4_phase_scores[:,1,1])
+
+Z_score_phase_35_vs_40z_P3 = functions.group_permutation_test(P3_P4_phase_scores[:,0,0],  P3_P4_phase_scores[:,1,0])
+
+Z_score_phase_35_vs_40z_P4 = functions.group_permutation_test(P3_P4_phase_scores[:,0,1],  P3_P4_phase_scores[:,1,1])
+
+
+print('\nPhase shifts:')
+print('P3 vs P4, 35Hz Z = ' + str(Z_score_phase_P3_vs_P4_35Hz))
+print('P3 vs P4, 40Hz Z = ' + str(Z_score_phase_P3_vs_P4_40Hz))
+print('35 vs 40 Hz, P3 Z = ' + str(Z_score_phase_35_vs_40z_P3))
+print('35 vs 40 Hz, P4 Z = ' + str(Z_score_phase_35_vs_40z_P4))
 
 
 
