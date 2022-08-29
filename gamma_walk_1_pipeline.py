@@ -231,6 +231,99 @@ for subject in range(1,11):
 
 
 
+
+### save the Evoked FFTs, because this takes some time
+
+np.save(path + 'all_evoked_FFTs', all_evoked_FFTs)
+
+
+
+
+## Evoked FFT spectrums
+
+
+peak_locations = (31, 36, 42, 45, 50, 55)
+first_harmonic_locations = (62, 71, 84, 90, 100, 110)
+
+peak_amplitudes = np.zeros([10,6,8,2])
+first_harmonic_amplitudes = np.zeros([10,6,8,2])
+
+SNR_peaks = np.zeros([10,6,8,2])
+SNR_first_harmonic = np.zeros([10,6,8,2])
+
+for subject in range(0,10):
+    # plt.figure()
+    # plt.suptitle('Subject ' + str(subject+1))
+    for frequency in range(0,6):
+        # plt.subplot(3,2,frequency+1)
+        # plt.title(str(frequencies_to_use[frequency]) + ' Hz')
+        
+        for electrode in range(0,8):
+            for condition in range(0,2):
+                
+                #   plt.plot(fft_spectrum, label = (str(condition_names[condition])))
+                
+                fft_spectrum = all_evoked_FFTs[subject,frequency,electrode,condition,:]
+                peak_frequency = peak_locations[frequency]
+     
+                peak_amplitude = fft_spectrum[peak_frequency] 
+                peak_noise_amplitude = fft_spectrum[np.r_[peak_frequency-5:peak_frequency-2, peak_frequency+2:peak_frequency+5]]
+                
+                peak_amplitudes[subject,frequency,electrode,condition] = peak_amplitude
+                SNR_peaks[subject,frequency,electrode,condition] = peak_amplitude / peak_noise_amplitude.mean()
+                
+                first_harmonic_frequency = first_harmonic_locations[frequency]
+                
+                first_harmonic_amplitude = fft_spectrum[first_harmonic_frequency] 
+                
+                first_harmonic_noise_amplitude = fft_spectrum[np.r_[first_harmonic_frequency-5:first_harmonic_frequency-2, first_harmonic_frequency+2:first_harmonic_frequency+5]]
+                
+                first_harmonic_amplitudes[subject,frequency,electrode,condition] = first_harmonic_amplitude 
+                SNR_first_harmonic[subject,frequency,electrode,condition] = first_harmonic_amplitude / first_harmonic_noise_amplitude.mean()
+                
+           
+                
+           
+        #plt.xlim(0, 100)
+    
+   # plt.legend()
+
+
+## plot grand average FFTs
+for electrode in range(0,8):
+    plt.figure()
+    plt.suptitle(electrode_names[electrode])
+    print('\n ' + str(electrode_names[electrode]) +  '\n')
+    for frequency in range(0,6):
+        plt.subplot(3,2,frequency+1)
+        plt.title(str(frequencies_to_use[frequency]) + ' Hz')
+        for condition in range(0,2):
+            
+            grand_average_fft = all_evoked_FFTs[:,frequency,electrode,condition,:].mean(axis=0)
+            plt.plot(grand_average_fft, label = (str(condition_names[condition])))
+            plt.xlim(20, 120)
+            plt.ylim(0, 150)
+            
+            peak_amplitudes_all_subjects = peak_amplitudes[:, frequency, electrode, condition]
+            first_harmonic_all_subjects = first_harmonic_amplitudes[:, frequency, electrode, condition]
+            
+            SNR_peaks_all_subjects = SNR_peaks[:, frequency, electrode, condition]
+            SNR_first_harmonic_all_subjects = SNR_first_harmonic[:, frequency, electrode, condition]
+            
+            average_peak_SNR = SNR_peaks_all_subjects.mean()
+            average_first_harmonic_SNR = SNR_first_harmonic_all_subjects.mean()
+            
+            # harmonic_ratios = peak_amplitudes_all_subjects / first_harmonic_all_subjects
+            
+            # average_harmonic_ratio = harmonic_ratios.mean()
+            
+            print(str(frequencies_to_use[frequency]) + ' Hz  '  + str(condition_names[condition]) + '  peak = ' + str(average_peak_SNR) + '  , first harmonic =  ' + str(average_first_harmonic_SNR))
+            
+    plt.legend()        
+
+
+
+
 ######  plots
 
 ## check raw SSVEPs for each electrode

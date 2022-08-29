@@ -42,6 +42,7 @@ num_subjects = 24
 
 frequencies_to_use = (35, 40)
 
+length = 1 # length of FFT in seconds
 
 trig_1_times = [-1, -1, -1, -1, -1, -1]
 trig_2_times = [15, 13, 11, 10, 9, 8]
@@ -67,6 +68,11 @@ all_sd_self_amplitude_differences = np.zeros([num_subjects,2,64,3])  # subject, 
 
 all_mean_absolute_self_amplitude_differences = np.zeros([num_subjects,2,64,3])  # subject, frequency, electrode, condition
 
+
+
+all_evoked_FFTs = np.zeros([num_subjects,2,64,3,(length * sample_rate)]) # subject, frequency, electrode, condition, FFT data 
+
+
 # laplacian reference
 
 all_SSVEPs_laplacian = np.zeros([num_subjects,2,64,3,29]) # subject, frequency, electrode, condition, SSVEP data (29 data points is the largest SSVEP, 35 Hz)
@@ -84,6 +90,8 @@ all_mean_self_amplitude_differences_laplacian = np.zeros([num_subjects,2,64,3]) 
 all_sd_self_amplitude_differences_laplacian = np.zeros([num_subjects,2,64,3])  # subject, frequency, electrode, condition
 
 all_mean_absolute_self_amplitude_differences_laplacian = np.zeros([num_subjects,2,64,3])  # subject, frequency, electrode, condition
+
+all_evoked_FFTs_laplacian = np.zeros([num_subjects,2,64,3,(length * sample_rate)]) # subject, frequency, electrode, condition, FFT data 
 
 ##################################
 
@@ -119,7 +127,7 @@ for laplacian in(0,1): # loop first for normal Cz referance and then again for l
             # plt.figure()
             # plt.suptitle('Subject ' + str(subject) + '  ' + str(frequencies_to_use[frequency_count]) + ' Hz ' + montage_name)
             
-            print('Subject ' + str(subject) + '  ' + str(frequencies_to_use[frequency_count]) + ' Hz ' + montage_name)
+            print('\nSubject ' + str(subject) + '  ' + str(frequencies_to_use[frequency_count]) + ' Hz ' + montage_name + '\n')
             
 
             
@@ -173,50 +181,52 @@ for laplacian in(0,1): # loop first for normal Cz referance and then again for l
                     #     # record the SSVEP amplitudes
                     # amplitudes_this_condition[electrode] = np.ptp(SSVEP) # 
                         
+                       ### make evoked FFT
                     
-                    
+                    evoked_FFT = functions.evoked_fft(data, triggers, length, sample_rate)
+                
                    ###### permutation tests on self correlation, self phase shift and self amplitude difference 
-                    num_loops = 100
+                   #  num_loops = 100
                     
-                    # all_split_corr_values = np.zeros([num_loops,])
-                    # all_split_phase_shift_values = np.zeros([num_loops,])
+                   #  # all_split_corr_values = np.zeros([num_loops,])
+                   #  # all_split_phase_shift_values = np.zeros([num_loops,])
                     
-                   # all_split_absolute_phase_shift_values = np.zeros([num_loops,])
+                   # # all_split_absolute_phase_shift_values = np.zeros([num_loops,])
                     
-                    all_split_amplitude_differences = np.zeros([num_loops,])
+                   #  all_split_amplitude_differences = np.zeros([num_loops,])
                     
-                    all_split_absolute_amplitude_differences = np.zeros([num_loops,])
+                   #  all_split_absolute_amplitude_differences = np.zeros([num_loops,])
                     
-                    for loop in range(0,num_loops):
-                        # correlation of random 50/50 split
+                   #  for loop in range(0,num_loops):
+                   #      # correlation of random 50/50 split
                         
-                       # all_split_corr_values[loop] = functions.compare_SSVEPs_split(data, triggers, period)
+                   #     # all_split_corr_values[loop] = functions.compare_SSVEPs_split(data, triggers, period)
                         
-                        # phase_shift = functions.phase_shift_SSVEPs_split(data, triggers, period)
+                   #      # phase_shift = functions.phase_shift_SSVEPs_split(data, triggers, period)
                         
-                        # # all_split_phase_shift_values[loop] = phase_shift
+                   #      # # all_split_phase_shift_values[loop] = phase_shift
                         
-                        # all_split_absolute_phase_shift_values[loop] = np.abs(phase_shift)
+                   #      # all_split_absolute_phase_shift_values[loop] = np.abs(phase_shift)
                     
-                        split_amplitude_difference = functions.SSVEP_split_amplitude_difference(data, triggers, period)
+                   #      split_amplitude_difference = functions.SSVEP_split_amplitude_difference(data, triggers, period)
                         
-                        all_split_amplitude_differences[loop] = split_amplitude_difference
+                   #      all_split_amplitude_differences[loop] = split_amplitude_difference
                         
-                        all_split_absolute_amplitude_differences[loop] = np.abs(split_amplitude_difference)
+                   #      all_split_absolute_amplitude_differences[loop] = np.abs(split_amplitude_difference)
                     
-                    # mean_corr = all_split_corr_values.mean()
-                    # sd_corr = np.std(all_split_corr_values)
+                   #  # mean_corr = all_split_corr_values.mean()
+                   #  # sd_corr = np.std(all_split_corr_values)
                     
-                    # mean_phase = all_split_phase_shift_values.mean()
-                    # sd_phase = np.std(all_split_phase_shift_values)
+                   #  # mean_phase = all_split_phase_shift_values.mean()
+                   #  # sd_phase = np.std(all_split_phase_shift_values)
                     
-                   #  mean_abs_phase = all_split_absolute_phase_shift_values.mean()
+                   # #  mean_abs_phase = all_split_absolute_phase_shift_values.mean()
                     
-                    mean_amplitude_difference = all_split_amplitude_differences.mean()
-                    std_amplitude_difference = np.std(all_split_amplitude_differences)
+                   #  mean_amplitude_difference = all_split_amplitude_differences.mean()
+                   #  std_amplitude_difference = np.std(all_split_amplitude_differences)
                     
                     
-                    mean_absolute_amplitude_difference = all_split_absolute_amplitude_differences.mean()
+                   #  mean_absolute_amplitude_difference = all_split_absolute_amplitude_differences.mean()
                     
                     ##############
                     
@@ -234,10 +244,12 @@ for laplacian in(0,1): # loop first for normal Cz referance and then again for l
                         
                        # all_mean_self_absolute_phase_shifts[subject-1,frequency_count,electrode,condition_count] = mean_abs_phase
 
-                        all_mean_self_amplitude_differences[subject-1,frequency_count,electrode,condition_count] = mean_amplitude_difference
-                        all_sd_self_amplitude_differences[subject-1,frequency_count,electrode,condition_count] = std_amplitude_difference
+                        # all_mean_self_amplitude_differences[subject-1,frequency_count,electrode,condition_count] = mean_amplitude_difference
+                        # all_sd_self_amplitude_differences[subject-1,frequency_count,electrode,condition_count] = std_amplitude_difference
 
-                        all_mean_absolute_self_amplitude_differences[subject-1,frequency_count,electrode,condition_count] = mean_absolute_amplitude_difference
+                        # all_mean_absolute_self_amplitude_differences[subject-1,frequency_count,electrode,condition_count] = mean_absolute_amplitude_difference
+
+                        all_evoked_FFTs[subject-1,frequency_count,electrode,condition_count,:] = evoked_FFT
 
                     elif laplacian == 1:
                         
@@ -252,11 +264,16 @@ for laplacian in(0,1): # loop first for normal Cz referance and then again for l
                         
                         # all_mean_self_absolute_phase_shifts_laplacian[subject-1,frequency_count,electrode,condition_count] = mean_abs_phase
    
-                        all_mean_self_amplitude_differences_laplacian[subject-1,frequency_count,electrode,condition_count] = mean_amplitude_difference
-                        all_sd_self_amplitude_differences_laplacian[subject-1,frequency_count,electrode,condition_count] = std_amplitude_difference    
+                        # all_mean_self_amplitude_differences_laplacian[subject-1,frequency_count,electrode,condition_count] = mean_amplitude_difference
+                        # all_sd_self_amplitude_differences_laplacian[subject-1,frequency_count,electrode,condition_count] = std_amplitude_difference    
                         
-                        all_mean_absolute_self_amplitude_differences_laplacian[subject-1,frequency_count,electrode,condition_count] = mean_absolute_amplitude_difference
+                        # all_mean_absolute_self_amplitude_differences_laplacian[subject-1,frequency_count,electrode,condition_count] = mean_absolute_amplitude_difference
    
+                        all_evoked_FFTs_laplacian[subject-1,frequency_count,electrode,condition_count,:] = evoked_FFT
+   
+    
+   
+    
                     ### plots ###
                     
                 #     plt.subplot(8,8,electrode+1)
@@ -288,10 +305,12 @@ for laplacian in(0,1): # loop first for normal Cz referance and then again for l
 
 # np.save(path + 'all_mean_self_absolute_phase_shifts', all_mean_self_absolute_phase_shifts)
 
-np.save(path + 'all_mean_self_amplitude_differences', all_mean_self_amplitude_differences)
-np.save(path + 'all_sd_self_amplitude_differences', all_sd_self_amplitude_differences)
+# np.save(path + 'all_mean_self_amplitude_differences', all_mean_self_amplitude_differences)
+# np.save(path + 'all_sd_self_amplitude_differences', all_sd_self_amplitude_differences)
 
 # np.save(path + 'all_mean_absolute_self_amplitude_differences', all_mean_absolute_self_amplitude_differences)
+
+np.save(path + 'all_evoked_FFTs', all_evoked_FFTs)
 
 # np.save(path + 'all_mean_self_correlations_laplacian', all_mean_self_correlations_laplacian) 
 # np.save(path + 'all_sd_self_correlations_laplacian', all_sd_self_correlations_laplacian) 
@@ -301,12 +320,13 @@ np.save(path + 'all_sd_self_amplitude_differences', all_sd_self_amplitude_differ
    
 # np.save(path + 'all_mean_self_absolute_phase_shifts_laplacian', all_mean_self_absolute_phase_shifts_laplacian)
 
-np.save(path + 'all_mean_self_amplitude_differences_laplacian', all_mean_self_amplitude_differences_laplacian)
-np.save(path + 'all_sd_self_amplitude_differences_laplacian', all_sd_self_amplitude_differences_laplacian)
+# np.save(path + 'all_mean_self_amplitude_differences_laplacian', all_mean_self_amplitude_differences_laplacian)
+# np.save(path + 'all_sd_self_amplitude_differences_laplacian', all_sd_self_amplitude_differences_laplacian)
 
 # np.save(path + 'all_mean_absolute_self_amplitude_differences_laplacian', all_mean_absolute_self_amplitude_differences_laplacian)
    
 
+np.save(path + 'all_evoked_FFTs_laplacian', all_evoked_FFTs_laplacian)
 
 
 ########### load the matrices for second part of analysis pipeline ###############
@@ -332,6 +352,8 @@ if laplacian == 0:
 
     all_mean_absolute_self_amplitude_differences = np.load(path + 'all_mean_absolute_self_amplitude_differences.npy')
     
+    all_evoked_FFTs = np.load(path + 'all_evoked_FFTs.npy')
+    
 elif laplacian == 1:
     
     all_SSVEPs = np.load(path + 'all_SSVEPs_laplacian.npy')
@@ -348,6 +370,13 @@ elif laplacian == 1:
     
     all_mean_absolute_self_amplitude_differences = np.load(path + 'all_mean_absolute_self_amplitude_differences_laplacian.npy')      
              
+    all_evoked_FFTs = np.load(path + 'all_evoked_FFTs_laplacian.npy')
+    
+    
+    
+
+    
+    
     
 #### Setup Topoplots ########
 
@@ -386,6 +415,49 @@ info = mne.create_info(channel_names, sfreq, ch_types = 'eeg')
 
 info.set_montage(montage)
             
+
+
+
+
+## plot raw SSVEPs
+
+electrode_name = 'P3'
+
+electrode = channel_names.index(electrode_name)
+
+frequency_names = ('35 Hz', '40 Hz')
+plot_colours = ('r', 'b', 'k')
+
+for frequency in range(0,2):
+    
+    if frequency == 0:
+        period = 29
+    elif frequency == 1:
+        period = 25
+    
+    plt.figure()
+    plt.suptitle(electrode_name + '  ' + frequency_names[frequency] + ' ' + laplacian_labels[laplacian])
+   
+    for condition in range(0,3):
+
+        for subject in range(0,24):
+            plt.subplot(4,6,subject+1)
+            plt.title(subject+1)
+
+            SSVEP = all_SSVEPs[subject,frequency,electrode,condition,0:period]
+            
+            plt.plot(SSVEP, color = plot_colours[condition], label = condition_names[condition])
+    
+            if laplacian == 0:
+                plt.ylim(-0.0000025, 0.0000025)
+            elif laplacian == 1:
+                plt.ylim(-0.0025, 0.0025)
+    
+    plt.legend()
+    
+
+
+
 
 
 ### plot self-correlations 
@@ -746,3 +818,237 @@ print('35 vs 40 Hz, P3 Z = ' + str(Z_score_phase_35_vs_40z_P3))
 print('35 vs 40 Hz, P4 Z = ' + str(Z_score_phase_35_vs_40z_P4))
 
 plt.legend()
+
+
+
+
+
+
+#### plot evoked FFTs
+
+## single channel
+
+electrode_name = 'POz'
+
+electrode = channel_names.index(electrode_name)
+
+plot_count = 0
+plt.figure()
+plot_colours = ('r', 'b', 'k')
+
+plt.suptitle(electrode_name + ' ' + laplacian_labels[laplacian])
+
+for frequency in range(0,2):
+    plot_count += 1
+    plt.subplot(1,2,plot_count)
+    plt.title(frequency_names[frequency]) 
+    for condition in range(0,3):
+
+       # plt.title(str(frequency_names[frequency]) + '  ' + condition_names[condition]) 
+        # for subject in range(0,24):
+        #     fft_spectrum = all_evoked_FFTs[subject,frequency,electrode,condition,:]
+            
+        #     plt.plot(fft_spectrum,'c')
+        
+        average_fft_spectrum = all_evoked_FFTs[:,frequency,electrode,condition,:].mean(axis=0)
+        plt.plot(average_fft_spectrum, color = plot_colours[condition], label = condition_names[condition] ) 
+            
+        plt.xlim(20, 90)
+        #plt.ylim(0, 0.6)
+    
+    plt.legend()
+    
+ 
+# evoked FFT topoplots   
+ 
+peak_locations = (34, 40)
+first_harmonic_locations = (69, 80)
+
+peak_amplitudes = np.zeros([24,2,64,3])
+first_harmonic_amplitudes = np.zeros([24,2,64,3])
+
+SNR_peaks = np.zeros([24,2,64,3])
+SNR_first_harmonic = np.zeros([24,2,64,3])
+ 
+
+# get peaks and SNRs
+for subject in range(0,24):
+    for frequency in range(0,2):
+        for electrode in range(0,64):
+            for condition in range(0,3):
+                
+                fft_spectrum = all_evoked_FFTs[subject,frequency,electrode,condition,:]
+                
+                peak_frequency = peak_locations[frequency]
+                peak_amplitude = fft_spectrum[peak_frequency]
+ 
+                peak_amplitudes[subject,frequency,electrode,condition] = peak_amplitude
+                
+                peak_noise_amplitude = fft_spectrum[np.r_[peak_frequency-5:peak_frequency-2, peak_frequency+2:peak_frequency+5]]
+                SNR_peaks[subject,frequency,electrode,condition]  = peak_amplitude / peak_noise_amplitude.mean()
+
+
+                first_harmonic_frequency = first_harmonic_locations[frequency]
+                first_harmonic_amplitude = fft_spectrum[first_harmonic_frequency]
+                
+                first_harmonic_amplitudes[subject,frequency,electrode,condition] = first_harmonic_amplitude
+ 
+                first_harmonic_noise_amplitude = fft_spectrum[np.r_[first_harmonic_frequency-5:first_harmonic_frequency-2, first_harmonic_frequency+2:first_harmonic_frequency+5]]
+                SNR_first_harmonic[subject,frequency,electrode,condition] = first_harmonic_amplitude / first_harmonic_noise_amplitude.mean()
+                
+           
+                
+# topoplots 
+
+min_value = 0
+max_value = 0.2
+
+        
+for frequency in range(0,2):
+    
+    fig = plt.figure()
+    plt.suptitle(frequency_names[frequency] + '  ' + montage_name) 
+    
+    plot_number = 1
+    
+    for test_count in range(1,4):
+        for condition in range(0,3):                
+    
+            average_peak = np.nanmean(peak_amplitudes[:,frequency,:,condition], axis = 0)
+            average_peak_SNR = np.nanmean(SNR_peaks[:,frequency,:,condition], axis = 0)
+            
+            average_first_harmonic = np.nanmean(first_harmonic_amplitudes[:,frequency,:,condition], axis = 0)
+            average_first_harmonic_SNR = np.nanmean(SNR_first_harmonic[:,frequency,:,condition], axis = 0)
+            
+            peak_harmonic_difference = average_peak - average_first_harmonic
+            peak_first_harmonic_SNR_ratio = average_peak_SNR - average_first_harmonic_SNR
+            
+ 
+            ## topoplots
+            
+            plt.subplot(3,3,plot_number)
+            plot_number += 1
+            
+            if test_count == 1:
+                #values_to_plot = average_peak_SNR
+                #plt.title(condition_names[condition] + ' \nPeak SNR')
+                values_to_plot = average_peak
+                plt.title(condition_names[condition] + ' \nPeak Amplitude')
+            elif test_count == 2:
+                #values_to_plot = average_first_harmonic_SNR
+               # plt.title(condition_names[condition] + ' \nFirst harmonic SNR')
+                values_to_plot = average_first_harmonic
+                plt.title(condition_names[condition] + ' \nFirst harmonic amplitude')
+            elif test_count == 3:
+               # values_to_plot = peak_first_harmonic_SNR_ratio
+               #plt.title(condition_names[condition] + ' \nPeak - First harmonic SNR')
+                values_to_plot = peak_harmonic_difference
+                plt.title(condition_names[condition] + ' \nPeak - First harmonic ')
+            
+            evoked_values = mne.EvokedArray(np.reshape(values_to_plot, (64,1)), info)
+    
+            evoked_values.set_montage(montage)
+    
+            mne.viz.plot_topomap(evoked_values.data[:, 0], evoked_values.info,
+                  vmin=min_value, vmax=max_value, names=channel_names, show_names=True, show=True)
+    
+            im,cm = mne.viz.plot_topomap(evoked_values.data[:, 0], evoked_values.info,
+          vmin=min_value, vmax=max_value, names=channel_names, show_names=True, show=True)
+
+                        
+        # manually fiddle the position of colorbar
+        ax_x_start = 0.9
+        ax_x_width = 0.04
+        ax_y_start = 0.1
+        ax_y_height = 0.8
+        cbar_ax = fig.add_axes([ax_x_start, ax_y_start, ax_x_width, ax_y_height])
+        clb = fig.colorbar(im, cax=cbar_ax)
+    
+    
+    
+    
+    
+    
+    
+    
+## Z scores walking vs Standing peak minus harmonic difference
+
+min_value = -2
+max_value = 2
+
+fig = plt.figure()
+plt.suptitle('Peak minus Harmonic Z scores  ' + montage_name) 
+plot_count = 0
+
+for frequency in range(0,2):
+
+    
+    plot_count += 1
+    plt.subplot(1,2,plot_count)
+    plt.title(frequency_names[frequency])
+    
+    all_Z_scores = np.zeros([64,])
+    
+    for electrode in range(0,64):
+        
+        walking_peak_amplitudes = peak_amplitudes[:,frequency,electrode,0]
+        walking_first_harmonic_amplitudes = first_harmonic_amplitudes[:,frequency,electrode,0]
+        
+        walking_peak_harmonic_difference = walking_peak_amplitudes - walking_first_harmonic_amplitudes
+        walking_peak_harmonic_ratio = walking_peak_amplitudes / walking_first_harmonic_amplitudes
+        
+        standing_peak_amplitudes = peak_amplitudes[:,frequency,electrode,1]
+        standing_first_harmonic_amplitudes = first_harmonic_amplitudes[:,frequency,electrode,1]
+        
+        standing_peak_harmonic_difference = standing_peak_amplitudes - standing_first_harmonic_amplitudes
+        standing_peak_harmonic_ratio = standing_peak_amplitudes / standing_first_harmonic_amplitudes
+
+       # Z_score = functions.group_permutation_test(walking_peak_harmonic_difference, standing_peak_harmonic_difference)
+        Z_score = functions.group_permutation_test(walking_peak_harmonic_ratio, standing_peak_harmonic_ratio)
+
+        all_Z_scores[electrode] = Z_score
+        
+        
+
+    values_to_plot = all_Z_scores
+  
+### un-comment this section to plot thresholded significant electrodes ###
+
+    # sig_cutoff = 1.96
+    # thresholded_values = np.zeros([64,])
+    # sig_electrode_names = []
+    # for electrode in range(0,64):
+    #     if values_to_plot[electrode] > sig_cutoff:
+    #         thresholded_values[electrode] = 1
+    #         sig_electrode_names.append(channel_names[electrode])
+            
+    # values_to_plot = thresholded_values
+    
+    # if len(sig_electrode_names) > 0:
+    #     print(plot_names[frequency]  + ' Significant electrodes = ')
+    #     print(sig_electrode_names)
+        
+    # min_value = 0   #1.95  # 0  # -2 # 
+    # max_value = 1 #1.96   # 3.9  # 3  # 
+
+#############
+
+    evoked_values = mne.EvokedArray(np.reshape(values_to_plot, (64,1)), info)
+  
+    evoked_values.set_montage(montage)
+  
+    mne.viz.plot_topomap(evoked_values.data[:, 0], evoked_values.info, vmin=min_value, vmax=max_value, names=channel_names, show_names=True, show=True)
+  
+    im,cm = mne.viz.plot_topomap(evoked_values.data[:, 0], evoked_values.info, vmin=min_value, vmax=max_value, names=channel_names, show_names=True, show=True)
+
+                        
+# manually fiddle the position of colorbar
+ax_x_start = 0.9
+ax_x_width = 0.04
+ax_y_start = 0.1
+ax_y_height = 0.8
+cbar_ax = fig.add_axes([ax_x_start, ax_y_start, ax_x_width, ax_y_height])
+clb = fig.colorbar(im, cax=cbar_ax)
+
+
+    
