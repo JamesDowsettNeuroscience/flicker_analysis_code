@@ -421,7 +421,7 @@ info.set_montage(montage)
 
 ## plot raw SSVEPs
 
-electrode_name = 'P3'
+electrode_name = 'Pz'
 
 electrode = channel_names.index(electrode_name)
 

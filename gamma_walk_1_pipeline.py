@@ -191,8 +191,8 @@ for subject in range(1,11):
                 self_split_amplitude_differences[subject-1, frequency_count, electrode, condition] = amplitude_difference
                 
                 # Evoked FFT
-                evoked_FFT = functions.evoked_fft(data_linear_interpolation, triggers, length, sample_rate)
-                all_evoked_FFTs[subject-1,frequency_count,electrode,condition,0:len(evoked_FFT)] = evoked_FFT # subject, frequency, electrode, condition, FFT data 
+                # evoked_FFT = functions.evoked_fft(data_linear_interpolation, triggers, length, sample_rate)
+                # all_evoked_FFTs[subject-1,frequency_count,electrode,condition,0:len(evoked_FFT)] = evoked_FFT # subject, frequency, electrode, condition, FFT data 
                 
                 # make a copy to later compare walking and standing
                 if condition == 0:
@@ -234,10 +234,10 @@ for subject in range(1,11):
 
 ### save the Evoked FFTs, because this takes some time
 
-np.save(path + 'all_evoked_FFTs', all_evoked_FFTs)
+#np.save(path + 'all_evoked_FFTs', all_evoked_FFTs)
 
 
-
+all_evoked_ffts = np.load(path + 'all_evoked_FFTs.npy')
 
 ## Evoked FFT spectrums
 
@@ -328,7 +328,7 @@ for electrode in range(0,8):
 
 ## check raw SSVEPs for each electrode
 
-# electrode = 1 #('VEOG', 'blink', 'P3', 'P4', 'O2', 'Pz', 'O1', 'HEOG', 'x_dir', 'y_dir', 'z_dir')
+# electrode = 5 #('VEOG', 'blink', 'P3', 'P4', 'O2', 'Pz', 'O1', 'HEOG', 'x_dir', 'y_dir', 'z_dir')
 
 # for subject in range(1,11):
     
@@ -365,6 +365,41 @@ for electrode in range(0,8):
 
 #         plt.plot(standing_SIGI,'b')
 #         plt.plot(walking_SIGI,'r')
+
+
+
+## plot raw SSVEPs for a single electrode and frequency
+
+electrode = 5 #('VEOG', 'blink', 'P3', 'P4', 'O2', 'Pz', 'O1', 'HEOG', 'x_dir', 'y_dir', 'z_dir')
+
+frequency_count = 1
+
+plt.figure()
+plt.suptitle(electrode_names[electrode] + '  ' + str(frequencies_to_use[frequency_count]) + ' Hz')
+    
+for subject in range(1,11):
+    
+
+    plt.subplot(3,4,subject)
+    
+    plt.title(str(subject))
+    
+    period = int(np.round(sample_rate/frequencies_to_use[frequency_count]))
+    
+    standing_SSVEP = all_SSVEPs[subject-1,frequency_count,electrode,0,0:period]
+    walking_SSVEP = all_SSVEPs[subject-1,frequency_count,electrode,1,0:period]
+    
+    plt.plot(standing_SSVEP,'b', label = 'Standing')
+    plt.plot(walking_SSVEP,'r', label = 'Walking')
+
+
+    # blackout_SSVEP =  blackout_SSVEPs[subject-1,electrode,:] 
+    
+    # plt.plot(blackout_SSVEP,'k', label = 'Blackout')
+
+    plt.ylim(-1, 1)
+
+plt.legend()
 
 
 
