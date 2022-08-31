@@ -210,3 +210,27 @@ plt.title('smoothed FFT SNR')
 plt.plot(smoothed_fft_1)
 plt.plot(smoothed_fft_2)
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -69,7 +69,7 @@ all_evoked_FFTs = np.zeros([num_subjects,2,8,4,(length * sample_rate)]) # subjec
 
 
 
-for subject in range(1,11):
+for subject in range(1,26):
    
     print('  ')
     print('Subject ' + str(subject))
@@ -194,4 +194,142 @@ for subject in range(1,11):
 
 
 
+### save 
 
+
+np.save(path + 'all_SSVEPs', all_SSVEPs) 
+
+np.save(path + 'SSVEP_amplitudes', SSVEP_amplitudes) 
+
+
+np.save(path + 'all_mean_self_absolute_phase_shifts', all_mean_self_absolute_phase_shifts)
+        
+np.save(path + 'self_split_amplitude_differences', self_split_amplitude_differences)
+
+np.save(path + 'self_split_correlation', self_split_correlation)
+        
+np.save(path + 'all_evoked_FFTs', all_evoked_FFTs)
+        
+        
+######
+###### Load
+
+
+all_SSVEPs = np.load(path + 'all_SSVEPs.npy')
+
+
+SSVEP_amplitudes = np.load(path + 'SSVEP_amplitudes.npy')
+
+all_mean_self_absolute_phase_shifts = np.load(path + 'all_mean_self_absolute_phase_shifts.npy')
+ 
+self_split_amplitude_differences = np.load(path + 'self_split_amplitude_differences.npy')
+ 
+self_split_correlation = np.load(path + 'self_split_correlation.npy')
+ 
+all_evoked_FFTs = np.load(path + 'all_evoked_FFTs.npy')
+
+
+#############
+
+### plot raw SSVEPs per electrode
+
+electrode_name = 'VEOG'
+
+electrode = electrode_names.index(electrode_name)
+
+for location in range(0,2):
+    
+    plt.figure()
+    plt.suptitle(location_names[location] + ' ' + electrode_name)
+
+
+    for subject in range(0,25):
+        
+        plt.subplot(5,5,subject+1)
+
+        plt.title(subject+1)
+
+        for condition in range(0,4):
+            
+            SSVEP = all_SSVEPs[subject, location, electrode, condition,:]
+
+            plt.plot(SSVEP, label = condition_names[condition])
+
+
+    plt.legend()
+
+
+
+
+
+
+## get phase shifts and Z scores
+
+cc = 0.4 ## correlation cutoff value, reject subjects with self correlation below this value in any condition, 0.4 is 2 SDs
+
+sig_cutoff = 0.05 / 6 # bonforroni corrected for 8 electrodes
+
+for location in range(0,2):
+    
+    print('\n' + location_names[location] + '\n')
+    
+    for electrode in range(0,8):
+        
+            print('\n' + electrode_names[electrode] + '\n')
+            
+            standing_self_correlations = self_split_correlation[:, location, electrode, 0] 
+            slow_self_correlations = self_split_correlation[:, location, electrode, 1] 
+            mid_self_correlations = self_split_correlation[:, location, electrode, 2] 
+            fast_self_correlations = self_split_correlation[:, location, electrode, 3] 
+    
+            # only use subjects for which the self correlation is above a certain threshold
+            subjects_to_use = []
+            for subject in range(0,25):
+                if standing_self_correlations[subject] > cc and slow_self_correlations[subject] > cc and mid_self_correlations[subject] > cc and fast_self_correlations[subject] > cc:
+                    subjects_to_use.append(subject)
+
+            
+            standing_mid_phases_differences = np.zeros([len(subjects_to_use),])
+            slow_mid_phases_differences = np.zeros([len(subjects_to_use),])
+            fast_mid_phases_differences = np.zeros([len(subjects_to_use),])
+            
+            mid_self_phase_splits = np.zeros([len(subjects_to_use),])
+            
+            subject_count = 0
+
+            for subject in subjects_to_use:
+                
+                standing_SSVEP = all_SSVEPs[subject, location, electrode, 0,:]
+                slow_SSVEP = all_SSVEPs[subject, location, electrode, 1,:]
+                mid_SSVEP = all_SSVEPs[subject, location, electrode, 2,:]
+                fast_SSVEP = all_SSVEPs[subject, location, electrode, 3,:]
+              
+                standing_mid_phases_differences[subject_count] = functions.cross_correlation_absolute(standing_SSVEP, mid_SSVEP)
+                slow_mid_phases_differences[subject_count] = functions.cross_correlation_absolute(slow_SSVEP, mid_SSVEP)
+                fast_mid_phases_differences[subject_count] = functions.cross_correlation_absolute(fast_SSVEP, mid_SSVEP)
+                
+                subject_count += 1
+                
+            Z_score_standing_mid_vs_slow_mid = functions.group_permutation_test(standing_mid_phases_differences, slow_mid_phases_differences)
+            Z_score_fast_mid_vs_slow_mid = functions.group_permutation_test(fast_mid_phases_differences, slow_mid_phases_differences)
+
+            p_value_standing_mid_vs_slow_mid = scipy.stats.norm.sf(abs(Z_score_standing_mid_vs_slow_mid))
+            p_value_fast_mid_vs_slow_mid = scipy.stats.norm.sf(abs(Z_score_fast_mid_vs_slow_mid))
+            
+            average_standing_mid_phase_shift = standing_mid_phases_differences.mean()
+            average_slow_mid_phase_shift = slow_mid_phases_differences.mean()
+            average_fast_mid_phase_shift = fast_mid_phases_differences.mean()
+
+            print('Average Standing-mid phase shift = ' + str(average_standing_mid_phase_shift))
+            print('Average Slow-mid phase shift = ' + str(average_slow_mid_phase_shift))
+            print('Average Fast-mid phase shift = ' + str(average_fast_mid_phase_shift))
+            
+            print('\nZ score standing-mid vs slow-mid =  '  + str(Z_score_standing_mid_vs_slow_mid))
+            print('p = ' + str(p_value_standing_mid_vs_slow_mid))
+            if p_value_standing_mid_vs_slow_mid < sig_cutoff:
+                print('SIGNIFICANT')
+            
+            print('\nZ score fast-mid vs slow-mid =  '  + str(Z_score_fast_mid_vs_slow_mid))
+            print('p = ' + str(p_value_fast_mid_vs_slow_mid))
+
+    
