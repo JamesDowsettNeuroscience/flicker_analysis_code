@@ -782,6 +782,33 @@ def cross_correlation_directional(SSVEP_1, SSVEP_2):
     return directional_phase_lag_degrees
 
 
+## calculate the max correlation after cross correlation
+def max_correlation(SSVEP_1, SSVEP_2):
+    
+    import numpy as np
+    
+    correlations = np.zeros([len(SSVEP_1),]) # empty array to put the correlation values into
+    
+    
+    if len(SSVEP_1) == len(SSVEP_2): # check the two SSVEPs are the same length
+
+        phase_shifted_SSVEP_2 = np.copy(SSVEP_2) # make a copy of SSVEP_2 which can be phase shifted
+        
+        for i in range(len(SSVEP_1)):
+        
+           # plt.plot(phase_shift_SSVEP_2)
+        
+            correlations[i] = np.corrcoef(SSVEP_1, phase_shifted_SSVEP_2)[1,0] # get the pearson's correlatios for this phase value
+        
+            phase_shifted_SSVEP_2 = np.roll(phase_shifted_SSVEP_2, 1) # phase shift by one data point
+
+    else:
+        
+        print('SSVEPs are not the same length')
+
+    max_correlation = max(correlations)   
+
+    return max_correlation
 
 
 ######### general stats   ##################

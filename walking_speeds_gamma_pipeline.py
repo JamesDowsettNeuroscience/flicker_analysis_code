@@ -267,11 +267,19 @@ for location in range(0,2):
 
 cc = 0.4 ## correlation cutoff value, reject subjects with self correlation below this value in any condition, 0.4 is 2 SDs
 
-sig_cutoff = 0.05 / 6 # bonforroni corrected for 8 electrodes
+sig_cutoff = 0.05 / 6 # bonforroni corrected for all electrodes
+
+plt.figure()
+
+plt.suptitle('Phase Shifts')
+
 
 for location in range(0,2):
     
     print('\n' + location_names[location] + '\n')
+    
+    plt.subplot(1,2,location+1)
+    plt.title(location_names[location])
     
     for electrode in range(0,8):
         
@@ -288,7 +296,9 @@ for location in range(0,2):
                 if standing_self_correlations[subject] > cc and slow_self_correlations[subject] > cc and mid_self_correlations[subject] > cc and fast_self_correlations[subject] > cc:
                     subjects_to_use.append(subject)
 
-            
+            if 3 in subjects_to_use: # subject 3 has big artefacts, don't use
+                subjects_to_use.remove(3)
+
             standing_mid_phases_differences = np.zeros([len(subjects_to_use),])
             slow_mid_phases_differences = np.zeros([len(subjects_to_use),])
             fast_mid_phases_differences = np.zeros([len(subjects_to_use),])
@@ -316,13 +326,26 @@ for location in range(0,2):
             p_value_standing_mid_vs_slow_mid = scipy.stats.norm.sf(abs(Z_score_standing_mid_vs_slow_mid))
             p_value_fast_mid_vs_slow_mid = scipy.stats.norm.sf(abs(Z_score_fast_mid_vs_slow_mid))
             
-            average_standing_mid_phase_shift = standing_mid_phases_differences.mean()
-            average_slow_mid_phase_shift = slow_mid_phases_differences.mean()
-            average_fast_mid_phase_shift = fast_mid_phases_differences.mean()
+            mean_standing_mid_phase_shift = standing_mid_phases_differences.mean()
+            mean_slow_mid_phase_shift = slow_mid_phases_differences.mean()
+            mean_fast_mid_phase_shift = fast_mid_phases_differences.mean()
+            
+            sd_standing_mid_phase_shift = np.std(standing_mid_phases_differences)
+            sd_slow_mid_phase_shift = np.std(slow_mid_phases_differences)
+            sd_fast_mid_phase_shift = np.std(fast_mid_phases_differences)            
+            
+            median_standing_mid_phase_shift = np.median(standing_mid_phases_differences)
+            median_slow_mid_phase_shift = np.median(slow_mid_phases_differences)
+            median_fast_mid_phase_shift = np.median(fast_mid_phases_differences)
 
-            print('Average Standing-mid phase shift = ' + str(average_standing_mid_phase_shift))
-            print('Average Slow-mid phase shift = ' + str(average_slow_mid_phase_shift))
-            print('Average Fast-mid phase shift = ' + str(average_fast_mid_phase_shift))
+
+            # print('Average Standing-mid phase shift = ' + str(average_standing_mid_phase_shift))
+            # print('Average Slow-mid phase shift = ' + str(average_slow_mid_phase_shift))
+            # print('Average Fast-mid phase shift = ' + str(average_fast_mid_phase_shift))
+            
+            print('Median Standing-mid phase shift = ' + str(median_standing_mid_phase_shift))
+            print('Median Slow-mid phase shift = ' + str(median_slow_mid_phase_shift))
+            print('Median Fast-mid phase shift = ' + str(median_fast_mid_phase_shift))
             
             print('\nZ score standing-mid vs slow-mid =  '  + str(Z_score_standing_mid_vs_slow_mid))
             print('p = ' + str(p_value_standing_mid_vs_slow_mid))
@@ -332,4 +355,129 @@ for location in range(0,2):
             print('\nZ score fast-mid vs slow-mid =  '  + str(Z_score_fast_mid_vs_slow_mid))
             print('p = ' + str(p_value_fast_mid_vs_slow_mid))
 
+    
+            ## plots
+            
+            std_error_standing_mid_phase_shift = sd_standing_mid_phase_shift / math.sqrt(len(subjects_to_use))
+            plt.errorbar(electrode-0.1, mean_standing_mid_phase_shift,yerr = std_error_standing_mid_phase_shift, solid_capstyle='projecting', capsize=5,  fmt='o', color= 'b', ecolor='b')  
+
+            std_error_slow_mid_phase_shift = sd_slow_mid_phase_shift / math.sqrt(len(subjects_to_use))
+            plt.errorbar(electrode, mean_slow_mid_phase_shift,yerr = std_error_slow_mid_phase_shift, solid_capstyle='projecting', capsize=5,  fmt='o', color= 'r', ecolor='r')  
+
+            std_error_fast_mid_phase_shift = sd_fast_mid_phase_shift / math.sqrt(len(subjects_to_use))
+            plt.errorbar(electrode+0.1, mean_fast_mid_phase_shift,yerr = std_error_fast_mid_phase_shift, solid_capstyle='projecting', capsize=5,  fmt='o', color= 'g', ecolor='g')  
+
+
+plt.subplot(1,2,1)
+x = np.arange(0,8)
+plt.xticks(x, electrode_names[0:8])    
+plt.plot(0,0, 'b', label = 'Standing vs Walking Mid')
+plt.plot(0,0, 'r', label = 'Walking Slow vs Mid')
+plt.plot(0,0, 'g', label = 'Walking Fast vs Mid')
+plt.legend()
+
+plt.subplot(1,2,2)
+x = np.arange(0,8)
+plt.xticks(x, electrode_names[0:8])    
+plt.plot(0,0, 'b', label = 'Standing vs Walking Mid')
+plt.plot(0,0, 'r', label = 'Walking Slow vs Mid')
+plt.plot(0,0, 'g', label = 'Walking Fast vs Mid')
+plt.legend()   
+
+
+
+
+
+
+## compare Lobby and Hall standing
+
+
+condition = 0 # standing
+
+small_dot_size = 2
+
+plt.figure()
+
+plt.suptitle('Comparison of two locations - standing')
+
+for electrode in range(0,8):
+    
+    print('\n' + electrode_names[electrode] + '\n')
+        
+    standing_self_correlations_hall = self_split_correlation[:, 0, electrode, 0] 
+    standing_self_correlations_lobby = self_split_correlation[:, 1, electrode, 0] 
+   
+    
+    # only use subjects for which the self correlation is above a certain threshold
+    subjects_to_use = []
+    for subject in range(0,25):
+        if standing_self_correlations_hall[subject] > cc and standing_self_correlations_lobby[subject] > cc:
+            subjects_to_use.append(subject)
+    
+    if 3 in subjects_to_use: # subject 3 has big artefacts, don't use
+        subjects_to_use.remove(3)
+    
+    
+    lobby_hall_phase_shifts = np.zeros([len(subjects_to_use),]) 
+    lobby_hall_correlations = np.zeros([len(subjects_to_use),]) 
+    lobby_hall_max_correlations = np.zeros([len(subjects_to_use),]) 
+    
+    subject_count = 0
+    
+    for subject in subjects_to_use:
+    
+        standing_SSVEP_hall = all_SSVEPs[subject, location, electrode, 0,:]
+        standing_SSVEP_lobby = all_SSVEPs[subject, location, electrode, 1,:]
+        
+        lobby_hall_phase_shifts[subject_count] = functions.cross_correlation_absolute(standing_SSVEP_hall, standing_SSVEP_lobby)
+
+        lobby_hall_correlations[subject_count] = np.corrcoef(standing_SSVEP_hall,standing_SSVEP_lobby)[0,1]
+
+        lobby_hall_max_correlations[subject_count] = functions.max_correlation(standing_SSVEP_hall, standing_SSVEP_lobby)
+        
+        subject_count += 1
+        
+    
+    mean_abs_phase_shift = lobby_hall_phase_shifts.mean()
+    sd_abs_phase_shift = np.std(lobby_hall_phase_shifts)
+    
+    mean_correlation = lobby_hall_correlations.mean()
+    sd_correlation = np.std(lobby_hall_correlations)
+       
+    mean_max_correlation = lobby_hall_max_correlations.mean()
+    sd_max_correlation = np.std(lobby_hall_max_correlations)
+    
+    print('Average phase shift = ' + str(mean_abs_phase_shift))
+    print('Average correlation = ' + str(mean_correlation))
+    print('Average max correlation = ' + str(mean_max_correlation))
+    
+    
+    ## plots
+
+    plt.subplot(1,2,1)
+    plt.title('Average Phase Shift')
+
+    std_error_abs_phase_shift = sd_abs_phase_shift / math.sqrt(len(subjects_to_use))
+
+    plt.errorbar(electrode, mean_abs_phase_shift,yerr = std_error_abs_phase_shift, solid_capstyle='projecting', capsize=5,  fmt='o', color= 'b', ecolor='b')  
+
+    plt.scatter((np.ones(len(subjects_to_use))*electrode) + (np.random.rand(len(subjects_to_use))*0.1), lobby_hall_phase_shifts, s=small_dot_size)
+
+    plt.subplot(1,2,2)
+    plt.title('Maximum correlation')
+
+    std_error_max_correlation = sd_max_correlation / math.sqrt(len(subjects_to_use))
+
+    plt.errorbar(electrode, mean_max_correlation,yerr = std_error_max_correlation, solid_capstyle='projecting', capsize=5,  fmt='o', color= 'b', ecolor='b')  
+
+    plt.scatter((np.ones(len(subjects_to_use))*electrode) + (np.random.rand(len(subjects_to_use))*0.1), lobby_hall_max_correlations, s=small_dot_size)
+
+
+plt.subplot(1,2,1)
+x = np.arange(0,8)
+plt.xticks(x, electrode_names[0:8])    
+
+plt.subplot(1,2,2)
+x = np.arange(0,8)
+plt.xticks(x, electrode_names[0:8])    
     
