@@ -389,6 +389,81 @@ plt.legend()
 
 
 
+## compare standing-walking mid phase shifts: relative to EOG
+
+sig_cutoff = 0.05 / 6 # bonforroni corrected for all electrodes
+
+for electrode in range(0,6):
+    
+    print('\n' + electrode_names[electrode] + '\n')
+    
+    standing_self_correlations_hall = self_split_correlation[:, 0, electrode, 0] 
+    standing_self_correlations_lobby = self_split_correlation[:, 1, electrode, 0] 
+    mid_self_correlations_hall = self_split_correlation[:, 0, electrode, 2] 
+    mid_self_correlations_lobby = self_split_correlation[:, 1, electrode, 2] 
+    
+    # only use subjects for which the self correlation is above a certain threshold
+    subjects_to_use = []
+    for subject in range(0,25):
+        if standing_self_correlations_hall[subject] > cc and standing_self_correlations_lobby[subject] > cc and mid_self_correlations_hall[subject] > cc and mid_self_correlations_lobby[subject] > cc:
+            subjects_to_use.append(subject)
+    
+    if 3 in subjects_to_use: # subject 3 has big artefacts, don't use
+        subjects_to_use.remove(3)
+
+    standing_walking_phase_differences_electrode_hall = np.zeros([len(subjects_to_use,)])
+    standing_walking_phase_differences_electrode_lobby = np.zeros([len(subjects_to_use,)])
+
+    standing_walking_phase_differences_VEOG_hall = np.zeros([len(subjects_to_use,)])
+    standing_walking_phase_differences_VEOG_lobby = np.zeros([len(subjects_to_use,)])
+    
+    subject_count = 0
+
+    for subject in subjects_to_use:
+        
+        standing_SSVEP_hall = all_SSVEPs[subject, 0, electrode, 0,:]
+        mid_SSVEP_hall = all_SSVEPs[subject, 0, electrode, 2,:]
+
+        standing_SSVEP_lobby = all_SSVEPs[subject, 1, electrode, 0,:]
+        mid_SSVEP_lobby = all_SSVEPs[subject, 1, electrode, 2,:]
+        
+            
+        VEOG_standing_hall_SSVEP = all_SSVEPs[subject,0,7,0,:] # subject, location, electrode, condition, SSVEP data (25 data points = 40 Hz)
+        VEOG_walking_hall_SSVEP = all_SSVEPs[subject,0,7,1,:]
+        
+        VEOG_standing_lobby_SSVEP = all_SSVEPs[subject,1,7,0,:] # subject, location, electrode, condition, SSVEP data (25 data points = 40 Hz)
+        VEOG_walking_lobby_SSVEP = all_SSVEPs[subject,1,7,1,:]
+
+        
+        standing_walking_phase_differences_electrode_hall[subject_count] = functions.cross_correlation_absolute(standing_SSVEP_hall, mid_SSVEP_hall)
+        standing_walking_phase_differences_electrode_lobby[subject_count] = functions.cross_correlation_absolute(standing_SSVEP_lobby, mid_SSVEP_lobby)
+        
+        standing_walking_phase_differences_VEOG_hall[subject_count] = functions.cross_correlation_absolute(VEOG_standing_hall_SSVEP, VEOG_walking_hall_SSVEP)
+        standing_walking_phase_differences_VEOG_lobby[subject_count] = functions.cross_correlation_absolute(VEOG_standing_lobby_SSVEP, VEOG_walking_lobby_SSVEP)
+                
+        subject_count += 1
+        
+        
+        
+    Z_score_hall = functions.group_permutation_test(standing_walking_phase_differences_electrode_hall, standing_walking_phase_differences_VEOG_hall)
+    p_value_hall = scipy.stats.norm.sf(abs(Z_score_hall))
+
+    Z_score_lobby = functions.group_permutation_test(standing_walking_phase_differences_electrode_lobby, standing_walking_phase_differences_VEOG_lobby)
+    p_value_lobby = scipy.stats.norm.sf(abs(Z_score_lobby))
+
+    print('Hall: Z = ' + str(Z_score_hall) + ' p = ' + str(p_value_hall))
+    if p_value_hall < sig_cutoff:
+        print('SIGNIFICANT')
+    print('Lobby: Z = ' + str(Z_score_lobby) + ' p = ' + str(p_value_lobby))
+    if p_value_lobby < sig_cutoff:
+        print('SIGNIFICANT')
+
+
+
+
+
+
+
 ## compare Lobby and Hall standing
 
 
