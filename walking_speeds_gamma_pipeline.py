@@ -371,17 +371,17 @@ for location in range(0,2):
 plt.subplot(1,2,1)
 x = np.arange(0,8)
 plt.xticks(x, electrode_names[0:8])    
-plt.plot(0,0, 'b', label = 'Standing vs Walking Mid')
-plt.plot(0,0, 'r', label = 'Walking Slow vs Mid')
-plt.plot(0,0, 'g', label = 'Walking Fast vs Mid')
+plt.plot(0,0, 'b', label = 'Standing vs Walking 1.5 Hz')
+plt.plot(0,0, 'r', label = 'Walking 1 Hz vs 1.5 Hz')
+plt.plot(0,0, 'g', label = 'Walking 2 Hz vs 1.5 Hz')
 plt.legend()
 
 plt.subplot(1,2,2)
 x = np.arange(0,8)
 plt.xticks(x, electrode_names[0:8])    
-plt.plot(0,0, 'b', label = 'Standing vs Walking Mid')
-plt.plot(0,0, 'r', label = 'Walking Slow vs Mid')
-plt.plot(0,0, 'g', label = 'Walking Fast vs Mid')
+plt.plot(0,0, 'b', label = 'Standing vs Walking 1.5 Hz')
+plt.plot(0,0, 'r', label = 'Walking 1 Hz vs 1.5 Hz')
+plt.plot(0,0, 'g', label = 'Walking 2 Hz vs 1.5 Hz')
 plt.legend()   
 
 
@@ -390,6 +390,8 @@ plt.legend()
 
 
 ## compare standing-walking mid phase shifts: relative to EOG
+
+print('\nCompare phase shift in each electrode to the phase shift in the VEOG\n')
 
 sig_cutoff = 0.05 / 6 # bonforroni corrected for all electrodes
 
@@ -451,14 +453,20 @@ for electrode in range(0,6):
     Z_score_lobby = functions.group_permutation_test(standing_walking_phase_differences_electrode_lobby, standing_walking_phase_differences_VEOG_lobby)
     p_value_lobby = scipy.stats.norm.sf(abs(Z_score_lobby))
 
+    grand_average_phase_difference_standing_walking_electrode = (standing_walking_phase_differences_electrode_hall + standing_walking_phase_differences_electrode_lobby)/2
+    grand_average_phase_difference_standing_walking_VEOG  = (standing_walking_phase_differences_VEOG_hall + standing_walking_phase_differences_VEOG_lobby)/2
+    Z_score_grand_average = functions.group_permutation_test(grand_average_phase_difference_standing_walking_electrode, grand_average_phase_difference_standing_walking_VEOG)
+    p_value_grand_average = scipy.stats.norm.sf(abs(Z_score_grand_average))
+
     print('Hall: Z = ' + str(Z_score_hall) + ' p = ' + str(p_value_hall))
     if p_value_hall < sig_cutoff:
         print('SIGNIFICANT')
     print('Lobby: Z = ' + str(Z_score_lobby) + ' p = ' + str(p_value_lobby))
     if p_value_lobby < sig_cutoff:
         print('SIGNIFICANT')
-
-
+    print('Grand average Z score = ' + str(Z_score_grand_average) + ' p = ' + str(p_value_grand_average))
+    if p_value_grand_average < sig_cutoff:
+        print('SIGNIFICANT')
 
 
 

@@ -623,6 +623,9 @@ def evoked_fft(data, triggers, length, sample_rate): # length = length of segmen
 
 ##### ANALYSIS FUNCTIONS ON SSVEPs that are already averaged
 
+
+# time warp SSVEPs of different lengths so they can be compared
+
 def time_warp_SSVEPs(SSVEP_1, SSVEP_2):
     
     import numpy as np
@@ -634,9 +637,9 @@ def time_warp_SSVEPs(SSVEP_1, SSVEP_2):
     
     if len(SSVEP_1) == len(SSVEP_2):
         
-        print('SSVEPs are already the same length')
-        
-        correlation = np.corrcoef(SSVEP_1, SSVEP_2)    # Pearson correlation
+     #   print('SSVEPs are already the same length')
+        new_SSVEP = np.copy(SSVEP_1)
+       # correlation = np.corrcoef(SSVEP_1, SSVEP_2)    # Pearson correlation
 
     else: # if not the same length, time-warp the shorter of the two so they are the same length, call the new time warped wave: new_SSVEP 
     
@@ -683,11 +686,15 @@ def time_warp_SSVEPs(SSVEP_1, SSVEP_2):
         new_SSVEP[-1] = temp_SSVEP[length_temp_SSVEP-1] # put the last time point in seperatly
 
 
-        correlation = np.corrcoef(longer_SSVEP, new_SSVEP)    # Pearson correlation of the longer SSVEP and the time warped shorter SSVEP
+       # correlation = np.corrcoef(longer_SSVEP, new_SSVEP)    # Pearson correlation of the longer SSVEP and the time warped shorter SSVEP
 
     
-    return correlation
+  #  return correlation
     return new_SSVEP
+
+
+
+
 
 ## the absolute phase shift
 def cross_correlation_absolute(SSVEP_1, SSVEP_2):

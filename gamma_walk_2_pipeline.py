@@ -97,6 +97,48 @@ all_evoked_FFTs_laplacian = np.zeros([num_subjects,2,64,3,(length * sample_rate)
 
 
 
+
+#### Setup Topoplots ########
+
+import mne               
+ 
+### setup montage
+
+file_name = 'S' + str(1) + '_' + 'W35' # load one subjects header file to get the correct montage
+
+raw_data_path = '/home/james/Active_projects/Gamma_walk/gamma_walk_experiment_2/Right_handed_participants/'
+
+# read the EEG data with the MNE function
+raw = mne.io.read_raw_brainvision(raw_data_path + file_name + '.vhdr')
+
+
+channel_names = raw.info.ch_names
+
+channel_names[60] = 'Fpz' # rename incorrectly named channel 
+
+# rename the trigger and EOG as the position of the ground and reference, which were interpolated
+raw.info.ch_names[30] =  'FCz' #'A1' 
+raw.info.ch_names[31] = 'AFz' # 'A2'  #
+
+
+
+sfreq = 1000  # in Hertz
+
+# The EEG channels use the standard naming strategy.
+# By supplying the 'montage' parameter, approximate locations
+# will be added for them
+
+montage = 'standard_1005'
+
+# Initialize required fields
+info = mne.create_info(channel_names, sfreq, ch_types = 'eeg')
+
+info.set_montage(montage)
+            
+
+################
+
+
 for laplacian in(0,1): # loop first for normal Cz referance and then again for laplacian
     
     if laplacian == 0:
@@ -329,6 +371,51 @@ np.save(path + 'all_evoked_FFTs', all_evoked_FFTs)
 np.save(path + 'all_evoked_FFTs_laplacian', all_evoked_FFTs_laplacian)
 
 
+
+
+
+
+######## compare Cz reference and Laplacian
+
+all_SSVEPs_Cz_ref = np.load(path + 'all_SSVEPs.npy') # subject, frequency, electrode, condition, SSVEP data (29 data points is the largest SSVEP, 35 Hz)
+
+all_SSVEPs_laplacian = np.load(path + 'all_SSVEPs_laplacian.npy')
+
+all_ref_type_correlations = np.zeros([num_subjects,2,64,3]) 
+
+for subject in range(0,num_subjects):
+    for frequency in range(0,2):
+        if frequency == 0:
+            period = 29
+        elif frequency == 1:
+            period = 25
+        
+        for electrode in range(0,64):
+            for condition in range(0,2):
+                
+                Cz_ref_SSVEP = all_SSVEPs_Cz_ref[subject,frequency,electrode,condition,0:period]
+                laplacian_SSVEP = all_SSVEPs_laplacian[subject,frequency,electrode,condition,0:period]
+
+                all_ref_type_correlations[subject,frequency,electrode,condition] = np.corrcoef(Cz_ref_SSVEP, laplacian_SSVEP)[0,1]
+
+electrode_name = 'Pz'
+
+electrode = channel_names.index(electrode_name)
+
+print('\nMean Cz-Laplacian correlations ' + electrode_name + '\n')
+print('35 Hz Standing: ' + str(all_ref_type_correlations[:,0,electrode,1].mean()))
+print('35 Hz Walking: ' + str(all_ref_type_correlations[:,0,electrode,0].mean()))     
+print('40 Hz Standing: ' + str(all_ref_type_correlations[:,1,electrode,1].mean()))
+print('40 Hz Walking: ' + str(all_ref_type_correlations[:,1,electrode,0].mean()))     
+
+print('\nMedian Cz-Laplacian correlations ' + electrode_name + '\n')
+print('35 Hz Standing: ' + str(np.median(all_ref_type_correlations[:,0,electrode,1])))
+print('35 Hz Walking: ' + str(np.median(all_ref_type_correlations[:,0,electrode,0])))
+print('40 Hz Standing: ' + str(np.median(all_ref_type_correlations[:,1,electrode,1])))
+print('40 Hz Walking: ' + str(np.median(all_ref_type_correlations[:,1,electrode,0])))
+
+
+
 ########### load the matrices for second part of analysis pipeline ###############
 
 laplacian = 1
@@ -378,43 +465,6 @@ elif laplacian == 1:
     
     
     
-#### Setup Topoplots ########
-
-import mne               
- 
-### setup montage
-
-file_name = 'S' + str(1) + '_' + 'W35' # load one subjects header file to get the correct montage
-
-raw_data_path = '/home/james/Active_projects/Gamma_walk/gamma_walk_experiment_2/Right_handed_participants/'
-
-# read the EEG data with the MNE function
-raw = mne.io.read_raw_brainvision(raw_data_path + file_name + '.vhdr')
-
-
-channel_names = raw.info.ch_names
-
-channel_names[60] = 'Fpz' # rename incorrectly named channel 
-
-# rename the trigger and EOG as the position of the ground and reference, which were interpolated
-raw.info.ch_names[30] =  'FCz' #'A1' 
-raw.info.ch_names[31] = 'AFz' # 'A2'  #
-
-
-
-sfreq = 1000  # in Hertz
-
-# The EEG channels use the standard naming strategy.
-# By supplying the 'montage' parameter, approximate locations
-# will be added for them
-
-montage = 'standard_1005'
-
-# Initialize required fields
-info = mne.create_info(channel_names, sfreq, ch_types = 'eeg')
-
-info.set_montage(montage)
-            
 
 
 

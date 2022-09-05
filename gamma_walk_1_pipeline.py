@@ -1226,3 +1226,74 @@ for frequency in range(0,6):
         if Z_score > sig_cutoff:
             print(frequency_names[frequency] + '  ' + electrode_names[electrode] + '  Z score = ' + str(Z_score) + '  p = ' + str(p_value_one_sided))
 
+
+
+
+###########  Analysis of Waveform shape across frequencies #########
+
+
+
+
+## get the correlation between the SSVEP at one frequency and the time warped SSVEP at the next frequency
+
+max_correlations_with_other_frequencies = np.zeros([10,8,2,6,6])
+
+for subject in range(0,10):
+    for electrode in range(0,8):
+        for condition in range(0,2):
+            
+            for frequency_1 in range(0,6): 
+                for frequency_2 in range(0,6): 
+        
+        
+                    period_frequency_1 = int(np.round(sample_rate/frequencies_to_use[frequency_1]))             
+    
+                    SSVEP_1 = all_SSVEPs[subject,frequency_1,electrode,condition,0:period_frequency_1] 
+        
+                    period_frequency_2 = int(np.round(sample_rate/frequencies_to_use[frequency_2]))             
+    
+                    SSVEP_2 = all_SSVEPs[subject,frequency_2,electrode,condition,0:period_frequency_2] 
+    
+                    time_warped_SSVEP = functions.time_warp_SSVEPs(SSVEP_1, SSVEP_2)
+                    
+                    # get the cross correlation with the lowest frequency SSVEP
+                    if period_frequency_1 >= period_frequency_2:
+                        max_correlation = functions.max_correlation(SSVEP_1, time_warped_SSVEP)
+                    elif period_frequency_1 < period_frequency_2:
+                        max_correlation = functions.max_correlation(SSVEP_2, time_warped_SSVEP)
+                        
+                    max_correlations_with_other_frequencies[subject,electrode,condition, frequency_1,frequency_2] = max_correlation
+                    
+  
+electrodes_to_use = (2,3,4,6)
+grand_average_correlation_grid_matrix = np.zeros([len(electrodes_to_use),6,6])
+
+electrode_count = 0  
+
+for electrode in electrodes_to_use: ##'VEOG', 'blink', 'P3', 'P4', 'O2', 'Pz', 'O1', 'HEOG', 'x_dir', 'y_dir', 'z_dir'   
+
+    # plt.figure()
+    # plt.title(electrode_names[electrode])
+
+    correlations_all_subjects_standing = max_correlations_with_other_frequencies[:,electrode,0, :,:]
+    correlations_all_subjects_walking = max_correlations_with_other_frequencies[:,electrode,1, :,:]
+    
+    average_correlations_grid_standing = correlations_all_subjects_standing.mean(axis=0)
+    average_correlations_grid_walking = correlations_all_subjects_walking.mean(axis=0)
+    
+    walking_standing_average_correlations_grid = (average_correlations_grid_standing + average_correlations_grid_walking)/2
+
+    grand_average_correlation_grid_matrix[electrode_count,:,:] = walking_standing_average_correlations_grid
+
+    electrode_count +=  1
+
+
+grand_average_correlations_grid = grand_average_correlation_grid_matrix.mean(axis=0)
+
+plt.imshow(grand_average_correlations_grid)
+plt.colorbar()
+
+plt.xticks(ticks = (0,1,2,3,4,5), labels = ('30 Hz', '35 Hz','40 Hz','45 Hz','50 Hz', '55 Hz'))
+plt.yticks(ticks = (0,1,2,3,4,5), labels = ('30 Hz', '35 Hz','40 Hz','45 Hz','50 Hz', '55 Hz'))
+
+plt.show()
