@@ -72,6 +72,8 @@ blackout_amplitudes = np.zeros([num_subjects,8])
 all_mean_self_absolute_phase_shifts = np.zeros([num_subjects,6,8,2])  # subject, frequency, electrode, condition
 self_split_amplitude_differences = np.zeros([num_subjects,6,8,2])  # subject, frequency, electrode, condition
 
+all_mean_self_split_correlations = np.zeros([num_subjects,6,8,2])  # subject, frequency, electrode, condition
+
 
 length = 1 # length of FFT in seconds
 all_evoked_FFTs = np.zeros([num_subjects,6,8,2,(length * sample_rate)]) # subject, frequency, electrode, condition, FFT data 
@@ -185,6 +187,11 @@ for subject in range(1,11):
                 phase_shift = functions.phase_shift_SSVEPs_split(data_linear_interpolation, triggers, period)
                 
                 all_mean_self_absolute_phase_shifts[subject-1, frequency_count, electrode, condition] = np.abs(phase_shift)
+                
+                ## get self correlation
+                
+                self_split_correlation = functions.compare_SSVEPs_split(data_linear_interpolation, triggers, period)
+                all_mean_self_split_correlations[subject-1, frequency_count, electrode, condition] = self_split_correlation
                 
                 # get self amplitude difference
                 amplitude_difference = functions.SSVEP_split_amplitude_difference(data_linear_interpolation, triggers, period)
@@ -1234,14 +1241,16 @@ for frequency in range(0,6):
 
 
 
+
 ## get the correlation between the SSVEP at one frequency and the time warped SSVEP at the next frequency
 
 max_correlations_with_other_frequencies = np.zeros([10,8,2,6,6])
 
+
 for subject in range(0,10):
     for electrode in range(0,8):
         for condition in range(0,2):
-            
+
             for frequency_1 in range(0,6): 
                 for frequency_2 in range(0,6): 
         
@@ -1264,13 +1273,29 @@ for subject in range(0,10):
                         
                     max_correlations_with_other_frequencies[subject,electrode,condition, frequency_1,frequency_2] = max_correlation
                     
-  
-electrodes_to_use = (2,3,4,6)
+                    
+
+correlation_cutoff = 0.4
+    
+electrodes_to_use = (2,3,5)
 grand_average_correlation_grid_matrix = np.zeros([len(electrodes_to_use),6,6])
 
 electrode_count = 0  
 
 for electrode in electrodes_to_use: ##'VEOG', 'blink', 'P3', 'P4', 'O2', 'Pz', 'O1', 'HEOG', 'x_dir', 'y_dir', 'z_dir'   
+
+    print(electrode_names[electrode])
+
+    # check which subjects have a significantly high signal to noise ratio
+    subjects_to_use = []
+    for subject in range(0,10):
+        
+        standing_self_correlations_all_frequencies = all_mean_self_split_correlations[subject,:,electrode,0]  # subject, frequency, electrode, condition
+        walking_self_correlations_all_frequencies = all_mean_self_split_correlations[subject,:,electrode,1]  # subject, frequency, electrode, condition
+       
+        if all(standing_self_correlations_all_frequencies > correlation_cutoff) and all(walking_self_correlations_all_frequencies > correlation_cutoff):
+            subjects_to_use.append(subject)
+            
 
     # plt.figure()
     # plt.title(electrode_names[electrode])
@@ -1278,17 +1303,59 @@ for electrode in electrodes_to_use: ##'VEOG', 'blink', 'P3', 'P4', 'O2', 'Pz', '
     correlations_all_subjects_standing = max_correlations_with_other_frequencies[:,electrode,0, :,:]
     correlations_all_subjects_walking = max_correlations_with_other_frequencies[:,electrode,1, :,:]
     
-    average_correlations_grid_standing = correlations_all_subjects_standing.mean(axis=0)
-    average_correlations_grid_walking = correlations_all_subjects_walking.mean(axis=0)
+    # average only the frequencies and subjects which have a self-correlation above the cutoff value
+    average_correlations_grid_standing = np.zeros([6,6])
+    average_correlations_grid_walking = np.zeros([6,6])
+    for frequency_1 in range(0,6):
+        for frequency_2 in range(0,6):
+            
+            # standing
+            subjects_to_use = []
+            for subject in range(0,10):
+                if all_mean_self_split_correlations[subject,frequency_1,electrode,0] > correlation_cutoff and all_mean_self_split_correlations[subject,frequency_2,electrode,0] > correlation_cutoff:
+                    subjects_to_use.append(subject)
+            average_correlations_grid_standing[frequency_1, frequency_2] = correlations_all_subjects_standing[subjects_to_use,frequency_1, frequency_2].mean(axis=0)
+            print(subjects_to_use)   
+            
+            # walking
+            subjects_to_use = []
+            for subject in range(0,10):
+                if all_mean_self_split_correlations[subject,frequency_1,electrode,1] > correlation_cutoff and all_mean_self_split_correlations[subject,frequency_2,electrode,1] > correlation_cutoff:
+                    subjects_to_use.append(subject)
+            average_correlations_grid_walking[frequency_1, frequency_2] = correlations_all_subjects_standing[subjects_to_use,frequency_1, frequency_2].mean(axis=0)
+            print(subjects_to_use)     
     
+    # average all subjects
+    # average_correlations_grid_standing = correlations_all_subjects_standing.mean(axis=0)
+    # average_correlations_grid_walking = correlations_all_subjects_walking.mean(axis=0)
+    
+    
+    # average walking and standing
     walking_standing_average_correlations_grid = (average_correlations_grid_standing + average_correlations_grid_walking)/2
 
     grand_average_correlation_grid_matrix[electrode_count,:,:] = walking_standing_average_correlations_grid
 
     electrode_count +=  1
+    
+    #plot
+    plt.figure()
+    plt.title(electrode_names[electrode])
+    
+    plt.imshow(walking_standing_average_correlations_grid)
+    plt.colorbar()
+
+    plt.xticks(ticks = (0,1,2,3,4,5), labels = ('30 Hz', '35 Hz','40 Hz','45 Hz','50 Hz', '55 Hz'))
+    plt.yticks(ticks = (0,1,2,3,4,5), labels = ('30 Hz', '35 Hz','40 Hz','45 Hz','50 Hz', '55 Hz'))
+
+    plt.show()
+    
 
 
 grand_average_correlations_grid = grand_average_correlation_grid_matrix.mean(axis=0)
+
+
+plt.figure()
+plt.title('Average all electrodes')
 
 plt.imshow(grand_average_correlations_grid)
 plt.colorbar()
