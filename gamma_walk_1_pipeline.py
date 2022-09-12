@@ -379,7 +379,7 @@ for electrode in range(0,8):
 
 electrode = 5 #('VEOG', 'blink', 'P3', 'P4', 'O2', 'Pz', 'O1', 'HEOG', 'x_dir', 'y_dir', 'z_dir')
 
-frequency_count = 1
+frequency_count = 2
 
 plt.figure()
 plt.suptitle(electrode_names[electrode] + '  ' + str(frequencies_to_use[frequency_count]) + ' Hz')
@@ -1236,6 +1236,13 @@ for frequency in range(0,6):
 
 
 
+
+
+
+
+
+
+
 ###########  Analysis of Waveform shape across frequencies #########
 
 
@@ -1273,11 +1280,17 @@ for subject in range(0,10):
                         
                     max_correlations_with_other_frequencies[subject,electrode,condition, frequency_1,frequency_2] = max_correlation
                     
+     
                     
-
+     
+        
+     
+## average the correlation and plot in a grid
 correlation_cutoff = 0.4
-    
-electrodes_to_use = (2,3,5)
+ 
+standing_or_walking = 1 # 0 = standing, 1 = walking
+   
+electrodes_to_use = (2,3,4,5,6)
 grand_average_correlation_grid_matrix = np.zeros([len(electrodes_to_use),6,6])
 
 electrode_count = 0  
@@ -1331,17 +1344,27 @@ for electrode in electrodes_to_use: ##'VEOG', 'blink', 'P3', 'P4', 'O2', 'Pz', '
     
     
     # average walking and standing
-    walking_standing_average_correlations_grid = (average_correlations_grid_standing + average_correlations_grid_walking)/2
+    #walking_standing_average_correlations_grid = (average_correlations_grid_standing + average_correlations_grid_walking)/2
+    # grand_average_correlation_grid_matrix[electrode_count,:,:] = walking_standing_average_correlations_grid
 
-    grand_average_correlation_grid_matrix[electrode_count,:,:] = walking_standing_average_correlations_grid
+    if standing_or_walking == 0:
+        grand_average_correlation_grid_matrix[electrode_count,:,:] = average_correlations_grid_standing
+    elif standing_or_walking == 1:
+        grand_average_correlation_grid_matrix[electrode_count,:,:] = average_correlations_grid_walking
 
     electrode_count +=  1
     
     #plot
     plt.figure()
-    plt.title(electrode_names[electrode])
     
-    plt.imshow(walking_standing_average_correlations_grid)
+    
+    if standing_or_walking == 0:
+        plt.title(electrode_names[electrode] + ' Standing')
+        plt.imshow(average_correlations_grid_standing)
+    elif standing_or_walking == 1:
+        plt.title(electrode_names[electrode] + ' Walking')
+        plt.imshow(average_correlations_grid_walking)
+        
     plt.colorbar()
 
     plt.xticks(ticks = (0,1,2,3,4,5), labels = ('30 Hz', '35 Hz','40 Hz','45 Hz','50 Hz', '55 Hz'))
@@ -1355,7 +1378,11 @@ grand_average_correlations_grid = grand_average_correlation_grid_matrix.mean(axi
 
 
 plt.figure()
-plt.title('Average all electrodes')
+if standing_or_walking == 0:
+    plt.title('Average all electrodes Standing')
+elif standing_or_walking == 1:
+    plt.title('Average all electrodes Walking')
+ 
 
 plt.imshow(grand_average_correlations_grid)
 plt.colorbar()
