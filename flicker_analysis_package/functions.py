@@ -128,10 +128,12 @@ def make_SSVEPs(data, triggers, period):
         segment_matrix[seg_count,:] = segment
 
         seg_count += 1
-    
+        
+
     SSVEP = segment_matrix.mean(axis=0) # average to make SSVEP
     
     SSVEP = SSVEP - SSVEP.mean() # baseline correct
+    
     
     return SSVEP
 
