@@ -22,7 +22,7 @@ import statistics
 
 path = '/home/james/Active_projects/mentalab_dry_electrodes/mentalab_test/subject_data/'
 
-electrode_names = ('O1', 'O2', 'P3', 'P4', 'P7', 'P8', 'HEOG', 'VEOG', 'x_dir', 'y_dir', 'z_dir')
+electrode_names = ('EOG', 'C5 sigi', 'C6 sigi', 'Dry ref FCz', 'P3 Dry', 'P4 dry', 'P5 gel', 'P6 gel')
 
 condition_names = ('sigi_stand', 'sigi_walk', 'flicker_stand', 'flicker_walk', 'blackout')
 
@@ -32,92 +32,112 @@ sample_rate = 1000
 
 num_subjects = 10
 
-period = 25
+period = 111
 
 
 
 
-for subject in range(1,2):
+for subject in (0,1,2,4,5,6,7,8,9):
     
-    print(subject)
+
+    print('Subject ' + str(subject))
     
     plt.figure()
-    plt.title(subject)
+    plt.suptitle('Subject ' + str(subject))
+
+    plot_count = 0
     
-    electrode = 1
+    for electrode in (4,5,6,7):
+        
+        
+        plot_count += 1
+        plt.subplot(2,2,plot_count)
+        plt.title(electrode_names[electrode])
     
     # load data, all conditions should be one data file
     
-    file_name = path + 'subject_' + str(subject+1) + '/subject_' + str(subject+1) + '_chan_' + str(electrode) + '_data.npy'
-    
-    data = np.load(file_name)
-    
-    plt.plot(data)
-    
-    
-    # get Accelerometer data
-    
-    accelerometer_x_file_name = path + 'subject_' + str(subject+1) + '/subject_' + str(subject+1) + '_acc_chan_1_data.npy'  
-    
-    accelerometer_x_data = np.load(accelerometer_x_file_name)
-        
-    
-    accelerometer_y_file_name = path + 'subject_' + str(subject+1) + '/subject_' + str(subject+1) + '_acc_chan_2_data.npy'  
-    
-    accelerometer_y_data = np.load(accelerometer_y_file_name)
-        
-    
-    accelerometer_z_file_name = path + 'subject_' + str(subject+1) + '/subject_' + str(subject+1) + '_acc_chan_3_data.npy'  
-    
-    accelerometer_z_data = np.load(accelerometer_z_file_name)
-      
-    plot_scale = 1000
-    plt.plot(accelerometer_x_data*plot_scale)
-    plt.plot(accelerometer_y_data*plot_scale)
-    plt.plot(accelerometer_z_data*plot_scale)
-    
-    # get gyroscope data
 
-    gyroscope_x_file_name = path + 'subject_' + str(subject+1) + '/subject_' + str(subject+1) + '_acc_chan_4_data.npy'  
-    
-    gyroscope_x_data = np.load(gyroscope_x_file_name)
-    
-    
-    gyroscope_y_file_name = path + 'subject_' + str(subject+1) + '/subject_' + str(subject+1) + '_acc_chan_6_data.npy'  
-    
-    gyroscope_y_data = np.load(gyroscope_y_file_name)
+        file_name = path + 'subject_' + str(subject+1) + '/subject_' + str(subject+1) + '_chan_' + str(electrode) + '_data.npy'
         
+        data = np.load(file_name)
     
-    gyroscope_z_file_name = path + 'subject_' + str(subject+1) + '/subject_' + str(subject+1) + '_acc_chan_5_data.npy'  
-    
-    gyroscope_z_data = np.load(gyroscope_z_file_name)    
         
+        #     data = data-data.mean()
+        #     plt.plot(data, label = electrode_names[electrode])
+        # plt.legend()
+        
+        
+        # get Accelerometer data
+        
+        # accelerometer_x_file_name = path + 'subject_' + str(subject+1) + '/subject_' + str(subject+1) + '_acc_chan_1_data.npy'  
+        
+        # accelerometer_x_data = np.load(accelerometer_x_file_name)
+            
+        
+        # accelerometer_y_file_name = path + 'subject_' + str(subject+1) + '/subject_' + str(subject+1) + '_acc_chan_2_data.npy'  
+        
+        # accelerometer_y_data = np.load(accelerometer_y_file_name)
+            
+        
+        # accelerometer_z_file_name = path + 'subject_' + str(subject+1) + '/subject_' + str(subject+1) + '_acc_chan_3_data.npy'  
+        
+        # accelerometer_z_data = np.load(accelerometer_z_file_name)
+          
+        # # plot_scale = 1000
+        # # plt.plot(accelerometer_x_data*plot_scale)
+        # # plt.plot(accelerometer_y_data*plot_scale)
+        # # plt.plot(accelerometer_z_data*plot_scale)
+        
+        # # get gyroscope data
+    
+        # gyroscope_x_file_name = path + 'subject_' + str(subject+1) + '/subject_' + str(subject+1) + '_acc_chan_4_data.npy'  
+        
+        # gyroscope_x_data = np.load(gyroscope_x_file_name)
+        
+        
+        # gyroscope_y_file_name = path + 'subject_' + str(subject+1) + '/subject_' + str(subject+1) + '_acc_chan_6_data.npy'  
+        
+        # gyroscope_y_data = np.load(gyroscope_y_file_name)
+            
+        
+        # gyroscope_z_file_name = path + 'subject_' + str(subject+1) + '/subject_' + str(subject+1) + '_acc_chan_5_data.npy'  
+        
+        # gyroscope_z_data = np.load(gyroscope_z_file_name)    
+            
+    
+     
+      #  plt.plot(gyroscope_x_data)
+        # plt.plot(gyroscope_y_data)
+        # plt.plot(gyroscope_z_data)
+        
+        
+        
+        for condition in range(0,5):
+            
+            ## load triggers for condition
+            
+            condition_name = condition_names[condition]
+            
+            trigger_file_name = path + 'subject_' + str(subject+1) + '/Subject_' + str(subject+1) + '_all_triggers_' + condition_name + '.npy'
+            
+            triggers = np.load(trigger_file_name)
+          
+            
+          
+            # trigger_time_series = np.zeros([len(data)],)
+            
+            # for trigger in triggers:
+            #     trigger_time_series[trigger] = -100000
 
- 
-  #  plt.plot(gyroscope_x_data)
-    plt.plot(gyroscope_y_data)
-    plt.plot(gyroscope_z_data)
-    
-    
-    
-    for condition in range(0,5):
-        
-        ## load triggers for condition
-        
-        condition_name = condition_names[condition]
-        
-        trigger_file_name = path + 'subject_' + str(subject+1) + '/Subject_' + str(subject+1) + '_all_triggers_' + condition_name + '.npy'
-        
-        triggers = np.load(trigger_file_name)
-        
-        trigger_time_series = np.zeros([len(data)],)
-        
-        for trigger in triggers:
-            trigger_time_series[trigger] = -1000000
+            # plt.plot(trigger_time_series)
+                
+                
+            ## make SSVEP
             
-        plt.plot(trigger_time_series)
-            
-            
+            SSVEP = functions.make_SSVEPs(data, triggers, period) # SIGI was always 40 Hz, length = 25
+        
     
-    
-    
+            plt.plot(SSVEP, label = condition_names[condition])
+        
+plt.legend()
+
