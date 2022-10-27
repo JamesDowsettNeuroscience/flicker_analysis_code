@@ -522,9 +522,107 @@ def linear_interpolation(data, triggers, time_1, time_2, trig_length):
     return data
 
 
-##Function for making induced FFT
-#Desc: Segment data into segments of a given length, do an FFT on each segment and then average the FFTs.
 
+## Function for making SSVEP and removing walking/motion artefact. Works using adaptive template subtraction, 
+## this requires a fairly predictable artefact such as consistent walking 
+# also include a timer to estimate how long code will take to run
+
+def make_SSVEP_artefact_removal(data, triggers, period, num_cycles_for_template, num_templates):
+
+    import numpy as np
+    from timeit import default_timer as timer
+    from datetime import timedelta
+    
+    length_artefact_segment = period * num_cycles_for_template
+
+    clean_segment_matrix = np.zeros([len(triggers),period])
+
+        
+    k = 0
+    trig_count = 0
+    
+    while trig_count < len(triggers) - num_cycles_for_template: # loop until end, stop before template will overlap with last trigger
+        
+        print('Trigger ' + str(trig_count) + ' of ' + str(len(triggers)))
+        
+        artefact_segment_start_time = triggers[trig_count] # start time of segment of data to be cleaned
+        
+        artefact_segment = data[artefact_segment_start_time:artefact_segment_start_time+length_artefact_segment] # segment of data to be cleaned
+    
+        template_matrix = np.zeros([num_templates,length_artefact_segment]) # empty matrix to put clean (long) segments into
+            
+    
+        template_count = 0
+        k = triggers[0] + 20 # start from the begining of the triggers plus 20 
+        
+        while (template_count < num_templates) and (k < len(data)-length_artefact_segment): # loop until enough templates or the end of the triggers
+     
+            temp_template = data[k:k+length_artefact_segment]
+    
+            if np.corrcoef(artefact_segment,temp_template)[0,1] > 0.9:
+   
+                ## check up to 20 data points ahead and behind for the best correlation
+                temp_corr_scores = np.zeros([40,])
+                
+                count = 0
+                for t in range(-20,20):
+                    temp_template = data[k+t:k+t+length_artefact_segment]
+                  #  plt.plot(temp_template,'c')
+                    temp_corr_scores[count] = np.corrcoef(artefact_segment,temp_template)[0,1]
+                    count += 1
+                    
+                best_time_index = np.argmax(temp_corr_scores) - 20
+                
+                best_template = data[k+best_time_index:k+best_time_index+length_artefact_segment]
+                
+                if np.corrcoef(artefact_segment,best_template)[0,1] < 1: #don't include the template if the correlation is 1, because this is the segment to clean itself
+                    
+                    template_matrix[template_count,:] = best_template
+                    template_count += 1
+            
+                best_template = best_template - best_template.mean()
+                
+              #  plt.plot(best_template,'r')
+                
+                k = k + 500 # skip ahead to save time, becasue another closely matching template is unlikely to follow immediatly, e.g. walking artefact is typically > 1Hz
+                
+            k += 1
+    
+        # average all the segments to make the template 
+        average_template = template_matrix[0:template_count,:].mean(axis=0)
+    
+    # subtract the template from the segment to be cleaned
+        cleaned_artefact_segment = artefact_segment - average_template
+        
+
+    
+    
+        ## put all the flicker segments from the cleaned segment into the clean segment matrix
+        trigger_time = artefact_segment_start_time
+        while trigger_time <= (artefact_segment_start_time + length_artefact_segment - period):
+            
+            segment = cleaned_artefact_segment[trigger_time - artefact_segment_start_time:trigger_time - artefact_segment_start_time+period]
+            
+            clean_segment_matrix[trig_count,:] = segment
+            
+            trig_count += 1
+            
+            trigger_time = triggers[trig_count] 
+            
+    
+    
+    clean_SSVEP = clean_segment_matrix[0:trig_count,:].mean(axis=0) # average segments to make the SSVEP
+    
+    clean_SSVEP = clean_SSVEP - clean_SSVEP.mean() # baseline correct
+    
+    return clean_SSVEP
+
+
+
+
+
+##Function for making induced FFT
+#Description: Segment data into segments of a given length, do an FFT on each segment and then average the FFTs.
 
 
 def induced_fft(data, triggers, length, sample_rate): # length = length of segment to use in seconds (1/length = the frequency resolution), sample rate in Hz

@@ -16,7 +16,7 @@ import random
 
 from flicker_analysis_package import functions
 
-trial_time = 30 # total time in seconds
+trial_time = 300 # total time in seconds
 
 period = 111
 
@@ -111,89 +111,10 @@ plt.plot(SSVEP)
 
 ####################  adaptive template subtraction with random segments from the rest of the data  ######################
 
-
-
-
-length_artefact_segment = period * 5
-
+num_cycles_for_template = 10
 num_templates = 20
 
-clean_segment_matrix = np.zeros([len(triggers),period])
-
-k = 0
-trig_count = 0
-
-while trig_count < len(triggers) - 10:
-    
-    print('Trigger ' + str(trig_count) + ' of ' + str(len(triggers)))
-    
-    artefact_segment_start_time = triggers[trig_count]
-    
-    artefact_segment = data[artefact_segment_start_time:artefact_segment_start_time+length_artefact_segment]
-
-    template_matrix = np.zeros([num_templates,length_artefact_segment])
-        
-
-    template_count = 0
-    k = period
-    
-    while (template_count < num_templates) and (k < len(data)-length_artefact_segment):
- 
-        temp_template = data[k:k+length_artefact_segment]
-
-        if np.corrcoef(artefact_segment,temp_template)[0,1] > 0.9:
-           
-            
-            ## check up to 20 data points ahead and behind for the best correlation
-            temp_corr_scores = np.zeros([40,])
-            
-            count = 0
-            for t in range(-20,20):
-                temp_template = data[k+t:k+t+length_artefact_segment]
-              #  plt.plot(temp_template,'c')
-                temp_corr_scores[count] = np.corrcoef(artefact_segment,temp_template)[0,1]
-                count += 1
-                
-            best_time_index = np.argmax(temp_corr_scores) - 20
-            
-            best_template = data[k+best_time_index:k+best_time_index+length_artefact_segment]
-            
-            template_matrix[template_count,:] = best_template
-            template_count += 1
-        
-            best_template = best_template - best_template.mean()
-            
-          #  plt.plot(best_template,'r')
-            
-            k = k + 500
-            
-        k += 1
-
-    average_template = template_matrix[0:template_count,:].mean(axis=0)
-
-  #  plt.plot(artefact_segment,'r')
-
-    cleaned_artefact_segment = artefact_segment - average_template
-    
- #   plt.plot(cleaned_artefact_segment,'g')
-
-
-    ## put the 9 segments from the one second segment into the clean segment matrix
-    trigger_time = artefact_segment_start_time
-    while trigger_time <= (artefact_segment_start_time + length_artefact_segment - period):
-        
-        segment = cleaned_artefact_segment[trigger_time - artefact_segment_start_time:trigger_time - artefact_segment_start_time+period]
-        
-        clean_segment_matrix[trig_count,:] = segment
-        
-        trig_count += 1
-        
-        trigger_time = triggers[trig_count] 
-        
-
-clean_SSVEP = clean_segment_matrix[0:trig_count,:].mean(axis=0) # average segments to make the SSVEP
-
-clean_SSVEP = clean_SSVEP - clean_SSVEP.mean() # baseline correct
+clean_SSVEP = functions.make_SSVEP_artefact_removal(data, triggers, period, num_cycles_for_template, num_templates)
 
 plt.plot(clean_SSVEP,'g')
 

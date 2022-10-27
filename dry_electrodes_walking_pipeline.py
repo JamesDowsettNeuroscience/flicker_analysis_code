@@ -204,7 +204,7 @@ for electrode in (4,5):  ### range(4,8): ##
         trig_count = 0
         
 
-        while trig_count < (len(triggers)-10): # loop untill 10 triggers before the end, because flicker is 9 Hz and artefact removal uses one second segments
+        while trig_count < (len(triggers)-10): # loop until 10 triggers before the end, because flicker is 9 Hz and artefact removal uses one second segments
             
             
             print(' ')
