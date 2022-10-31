@@ -7,7 +7,7 @@ Created on Mon Oct 31 13:58:52 2022
 """
 
 
-#########  Analysis of walking speeds Gamma   ####################
+#########  Analysis of walking speeds Alpha   ####################
 
 
 
