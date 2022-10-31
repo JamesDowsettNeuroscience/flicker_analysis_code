@@ -39,6 +39,7 @@ period = 25
 
 length = 1 # length of FFT in seconds
 
+## trigger times for linear interpolation
 trig_1_time = -1
 trig_2_time = 11
 trig_length = 4
@@ -233,7 +234,7 @@ all_evoked_FFTs = np.load(path + 'all_evoked_FFTs.npy')
 
 ### plot raw SSVEPs per electrode
 
-electrode_name = 'VEOG'
+electrode_name = 'P4'
 
 electrode = electrode_names.index(electrode_name)
 
@@ -375,6 +376,7 @@ plt.plot(0,0, 'b', label = 'Standing vs Walking 1.5 Hz')
 plt.plot(0,0, 'r', label = 'Walking 1 Hz vs 1.5 Hz')
 plt.plot(0,0, 'g', label = 'Walking 2 Hz vs 1.5 Hz')
 plt.legend()
+plt.ylabel('Absolute Phase Shift (degrees)')
 
 plt.subplot(1,2,2)
 x = np.arange(0,8)
@@ -383,6 +385,7 @@ plt.plot(0,0, 'b', label = 'Standing vs Walking 1.5 Hz')
 plt.plot(0,0, 'r', label = 'Walking 1 Hz vs 1.5 Hz')
 plt.plot(0,0, 'g', label = 'Walking 2 Hz vs 1.5 Hz')
 plt.legend()   
+plt.ylabel('Absolute Phase Shift (degrees)')
 
 
 
