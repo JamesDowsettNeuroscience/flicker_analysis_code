@@ -525,7 +525,6 @@ def linear_interpolation(data, triggers, time_1, time_2, trig_length):
 
 ## Function for making SSVEP and removing walking/motion artefact. Works using adaptive template subtraction, 
 ## this requires a fairly predictable artefact such as consistent walking 
-# also include a timer to estimate how long code will take to run
 
 def make_SSVEP_artefact_removal(data, triggers, period, num_cycles_for_template, num_templates):
 
@@ -537,9 +536,11 @@ def make_SSVEP_artefact_removal(data, triggers, period, num_cycles_for_template,
 
     clean_segment_matrix = np.zeros([len(triggers),period])
 
-        
+    correlation_threshold = 0.8  # correlation between segment to be cleaned and template must be above this value to be considered
+
     k = 0
     trig_count = 0
+    clean_segment_count = 0
     
     while trig_count < len(triggers) - num_cycles_for_template: # loop until end, stop before template will overlap with last trigger
         
@@ -549,75 +550,170 @@ def make_SSVEP_artefact_removal(data, triggers, period, num_cycles_for_template,
         
         artefact_segment = data[artefact_segment_start_time:artefact_segment_start_time+length_artefact_segment] # segment of data to be cleaned
     
-        template_matrix = np.zeros([num_templates,length_artefact_segment]) # empty matrix to put clean (long) segments into
-            
+       # print('Segment range = ' + str(int(np.ptp(artefact_segment))))
     
+        
+        segment_range = np.ptp(artefact_segment)
+        
+ 
         template_count = 0
         k = triggers[0] + 20 # start from the begining of the triggers plus 20 
-        
-        while (template_count < num_templates) and (k < len(data)-length_artefact_segment): # loop until enough templates or the end of the triggers
-     
-            temp_template = data[k:k+length_artefact_segment]
     
-            if np.corrcoef(artefact_segment,temp_template)[0,1] > 0.9:
-   
-                ## check up to 20 data points ahead and behind for the best correlation
-                temp_corr_scores = np.zeros([40,])
-                
-                count = 0
-                for t in range(-20,20):
-                    temp_template = data[k+t:k+t+length_artefact_segment]
-                  #  plt.plot(temp_template,'c')
-                    temp_corr_scores[count] = np.corrcoef(artefact_segment,temp_template)[0,1]
-                    count += 1
-                    
-                best_time_index = np.argmax(temp_corr_scores) - 20
-                
-                best_template = data[k+best_time_index:k+best_time_index+length_artefact_segment]
-                
-                if np.corrcoef(artefact_segment,best_template)[0,1] < 1: #don't include the template if the correlation is 1, because this is the segment to clean itself
-                    
-                    template_matrix[template_count,:] = best_template
-                    template_count += 1
-            
-                best_template = best_template - best_template.mean()
-                
-              #  plt.plot(best_template,'r')
-                
-                k = k + 500 # skip ahead to save time, becasue another closely matching template is unlikely to follow immediatly, e.g. walking artefact is typically > 1Hz
-                
-            k += 1
     
-        # average all the segments to make the template 
-        average_template = template_matrix[0:template_count,:].mean(axis=0)
-    
-    # subtract the template from the segment to be cleaned
-        cleaned_artefact_segment = artefact_segment - average_template
-        
+        if segment_range > 1500: # only try to remove artefact if the range of the segment to be cleaned is above this threshold
 
+            template_matrix = np.zeros([num_templates,length_artefact_segment]) # empty matrix to put clean (long) segments into
+
+            # collect segments to make the artefact template
+            while (template_count < num_templates) and (k < triggers[-1]-length_artefact_segment): # loop until enough templates or the end of the triggers
+         
+                temp_template = data[k:k+length_artefact_segment]
+        
+                if np.corrcoef(artefact_segment,temp_template)[0,1] > correlation_threshold:
+       
+                    ## check up to 20 data points ahead and behind for the best correlation
+                    
+                    temp_corr_scores = np.zeros([40,]) # keep track of correlation scores
+                    
+                    count = 0
+                    for t in range(-20,20):
+                        temp_template = data[k+t:k+t+length_artefact_segment]
+                      #  plt.plot(temp_template,'c')
+                        temp_corr_scores[count] = np.corrcoef(artefact_segment,temp_template)[0,1]
+                        count += 1
+                        
+                    best_time_index = np.argmax(temp_corr_scores) - 20 # choose the segment with the best correlation
+                    
+                    best_template = data[k+best_time_index:k+best_time_index+length_artefact_segment]
+                    
+                    #don't include the template if the correlation is 1, because this is the segment we are trying to clean
+                    if np.corrcoef(artefact_segment,best_template)[0,1] < 1: 
+                        
+                        template_matrix[template_count,:] = best_template
+                        template_count += 1
+                
+                    best_template = best_template - best_template.mean()
+                    
+                   # plt.plot(best_template,'r')
+                    
+                    k = k + 500 # skip ahead to save time, becasue another closely matching template is unlikely to follow immediatly, e.g. walking artefact is typically > 1Hz
+                    
+                k += 2 # move forward, more than on data point is OK because the initial template fit only needs to be approximate, the code will scan back and forward for the best fit
+    
+        if template_count > 5: # only average to make the template if there are more than 5 segments of data contributing to the template
+            # average all the segments to make the template 
+            average_template = template_matrix[0:template_count,:].mean(axis=0)
+               
+            # subtract the template from the segment to be cleaned
+            cleaned_artefact_segment = artefact_segment - average_template
+            
+        else: # if there are not enough template segments, just use the original segment of data
+            cleaned_artefact_segment = artefact_segment
+            
     
     
         ## put all the flicker segments from the cleaned segment into the clean segment matrix
         trigger_time = artefact_segment_start_time
-        while trigger_time <= (artefact_segment_start_time + length_artefact_segment - period):
+        while trigger_time <= (artefact_segment_start_time + length_artefact_segment):
             
             segment = cleaned_artefact_segment[trigger_time - artefact_segment_start_time:trigger_time - artefact_segment_start_time+period]
             
-            clean_segment_matrix[trig_count,:] = segment
+            if (len(segment) == period) and (np.ptp(segment) < 500): # check segment is the correct length and is within range of 200
+            
+                clean_segment_matrix[clean_segment_count,:] = segment # put clean segment into matrix
+                clean_segment_count += 1
+                
             
             trig_count += 1
-            
-            trigger_time = triggers[trig_count] 
+            trigger_time = triggers[trig_count] # move onto the next trigger
             
     
+        print(str(clean_segment_count) + ' good segments')
     
-    clean_SSVEP = clean_segment_matrix[0:trig_count,:].mean(axis=0) # average segments to make the SSVEP
+    
+    clean_SSVEP = clean_segment_matrix[0:clean_segment_count,:].mean(axis=0) # average segments to make the SSVEP
     
     clean_SSVEP = clean_SSVEP - clean_SSVEP.mean() # baseline correct
     
     return clean_SSVEP
 
 
+### make SSVEP with motion artefact removal based on pairing segments
+
+def make_SSVEP_artefact_removal_paired_segments(data, triggers, period):
+    
+    import numpy as np
+    
+    range_cutoff = 900
+    
+    
+    all_segments_matrix = np.zeros([len(triggers), period]) # empty matrix to put segments into
+    
+    seg_count = 0 # keep track of the number of segments
+    
+    # loop through all triggers and put the corresponding segment of data into the matrix
+    for trigger in triggers:
+    
+        # select a segment of data the lenght of the flicker period, starting from the trigger time 
+        segment =  data[trigger:trigger+period] 
+        
+        all_segments_matrix[seg_count,:] = segment
+        
+        seg_count += 1
+     
+    segments_to_use = [] # list 
+    segments_not_yet_used = list(range(0,len(triggers)))
+
+
+   # for each segment, try and find a segment with the lowest difference, e.g. the range of the summed wave closest to 0
+    for seg_count in range(0,len(triggers)):
+        
+        print('Segment ' + str(seg_count) + ' of ' + str(len(triggers)))
+        
+        if seg_count in segments_not_yet_used:
+            
+            segment = all_segments_matrix[seg_count,:]
+            
+            range_of_sum_scores = np.zeros([len(triggers),]) + 1000 # set all to arbitary high value first
+            
+            for seg_num in segments_not_yet_used:
+                
+                test_segment = all_segments_matrix[seg_num,:]
+                
+                range_of_sum_scores[seg_num] = np.ptp(segment + test_segment)
+
+            print(min(range_of_sum_scores)) 
+           
+            if min(range_of_sum_scores) < range_cutoff:
+                
+                best_seg = np.argmin(range_of_sum_scores)
+                
+                segments_to_use.append(seg_count)
+                segments_to_use.append(best_seg)
+                
+                if seg_count in segments_not_yet_used:
+                    segments_not_yet_used.remove(seg_count)
+                if best_seg in segments_not_yet_used:
+                    segments_not_yet_used.remove(best_seg)
+                    
+                    
+    print(' ')          
+    print('Used ' + str(len(segments_to_use)) + ' of ' + str(len(triggers)) + ' triggers')          
+    
+    
+    SSVEP = all_segments_matrix[segments_to_use,:].mean(axis=0) # average to make SSVEP
+    
+    SSVEP = SSVEP - SSVEP.mean() # baseline correct
+
+    # true_SSVEP = all_segments_matrix.mean(axis=0) # average to make SSVEP
+   
+    # true_SSVEP = true_SSVEP - true_SSVEP.mean()
+    
+    # plt.plot(true_SSVEP)
+    # plt.plot(SSVEP)
+    
+   
+    return SSVEP
 
 
 
