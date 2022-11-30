@@ -288,8 +288,10 @@ def compare_SSVEPs_split(data, triggers, period):
             SSVEP_1 = np.copy(SSVEP)
         elif random_half == 1:
             SSVEP_2 = np.copy(SSVEP)
-   
+
+    
     correlation = np.corrcoef(SSVEP_1, SSVEP_2)[0,1]
+
 
     return correlation
     
