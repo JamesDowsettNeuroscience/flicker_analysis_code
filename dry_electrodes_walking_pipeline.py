@@ -42,16 +42,20 @@ subjects_to_use = (1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 13, 14, 15, 17, 18, 20, 21, 2
 
 num_subjects = len(subjects_to_use)
 
+
+num_electrodes = 7  # dry reference, 2 gel, 2 dry, 2 dry with re-reference to dry reference
+
+
 #### matricies to store results  #################
 walking_frequencies = np.zeros([num_subjects,2]) # get frequency from the X (vertical) axis, for the two walking conditions
 
 walking_acc_amplitudes = np.zeros([num_subjects,2]) # get average peak to peak amplitude from the X (vertical) axis, for the two walking conditions
 
-all_SSVEPs = np.zeros([num_subjects, 5,5, period]) # subject, electrode, condition
+all_SSVEPs = np.zeros([num_subjects, num_electrodes,5, period]) # subject, electrode, condition
 
-self_correlation_scores = np.zeros([num_subjects, 5,5])
+self_correlation_scores = np.zeros([num_subjects, num_electrodes,5]) # 50/50 split self correlation- average scores
 
-SNR_scores = np.zeros([num_subjects, 5,5])
+SNR_scores = np.zeros([num_subjects, num_electrodes,5]) # Signal to noise ratio with the random shuffle peak-to-peak amplitude method
 
 
 ###################
@@ -66,14 +70,14 @@ for subject in subjects_to_use:
 
     # get Accelerometer data
     
-    accelerometer_x_file_name = path + 'subject_' + str(subject) + '/subject_' + str(subject) + '_acc_chan_1_data.npy'    
-    accelerometer_x_data = np.load(accelerometer_x_file_name)
+    # accelerometer_x_file_name = path + 'subject_' + str(subject) + '/subject_' + str(subject) + '_acc_chan_1_data.npy'    
+    # accelerometer_x_data = np.load(accelerometer_x_file_name)
     
-    accelerometer_y_file_name = path + 'subject_' + str(subject) + '/subject_' + str(subject) + '_acc_chan_2_data.npy'  
-    accelerometer_y_data = np.load(accelerometer_y_file_name)
+    # accelerometer_y_file_name = path + 'subject_' + str(subject) + '/subject_' + str(subject) + '_acc_chan_2_data.npy'  
+    # accelerometer_y_data = np.load(accelerometer_y_file_name)
     
-    accelerometer_z_file_name = path + 'subject_' + str(subject) + '/subject_' + str(subject) + '_acc_chan_3_data.npy'  
-    accelerometer_z_data = np.load(accelerometer_z_file_name)
+    # accelerometer_z_file_name = path + 'subject_' + str(subject) + '/subject_' + str(subject) + '_acc_chan_3_data.npy'  
+    # accelerometer_z_data = np.load(accelerometer_z_file_name)
     
     # plot_scale = 1 #1000
     # plt.plot(accelerometer_x_data*plot_scale)
@@ -179,10 +183,9 @@ for subject in subjects_to_use:
     
     electrode_count = 0
     
-    for electrode in range(3,8): ##(4,5):  ### 
+    for electrode in range(3,10): ##(4,5):  ### 
     
-        print(electrode_names[electrode])
-        print(' ')
+       
         
         # plot all electrodes, don't include dry reference
         # if electrode > 3:
@@ -192,17 +195,43 @@ for subject in subjects_to_use:
         
     # load data, all conditions should be one data file
     
-    
-        file_name = path + 'subject_' + str(subject) + '/subject_' + str(subject) + '_chan_' + str(electrode) + '_data.npy'
+        if electrode < 8:
+            
+             print(electrode_names[electrode])
+             print(' ')
+             
+             file_name = path + 'subject_' + str(subject) + '/subject_' + str(subject) + '_chan_' + str(electrode) + '_data.npy'
         
-        data = np.load(file_name)
+             data = np.load(file_name)
     
+        elif electrode == 8:
+            
+            file_name = path + 'subject_' + str(subject) + '/subject_' + str(subject) + '_chan_4_data.npy'
+            data = np.load(file_name)
+            
+            dry_ref_file_name = path + 'subject_' + str(subject) + '/subject_' + str(subject) + '_chan_3_data.npy'
+            dry_ref = np.load(dry_ref_file_name)
+            
+            data = data - dry_ref # re-reference to dry reference
+            
+        elif electrode == 9:
+            
+            file_name = path + 'subject_' + str(subject) + '/subject_' + str(subject) + '_chan_5_data.npy'
+            data = np.load(file_name)
+            
+            dry_ref_file_name = path + 'subject_' + str(subject) + '/subject_' + str(subject) + '_chan_3_data.npy'
+            dry_ref = np.load(dry_ref_file_name)
+            
+            data = data - dry_ref # re-reference to dry reference
+            
+        
+        #### filters  ####
     
-        # notch filter, first 50 Hz
+        ## notch filter, first 50 Hz
         b, a = signal.iirnotch(50, 30, sample_rate)
         data = signal.filtfilt(b, a, data)
         
-        # then 100 Hz
+        # # then 100 Hz
         b, a = signal.iirnotch(100, 30, sample_rate)
         data = signal.filtfilt(b, a, data)
     
@@ -210,9 +239,11 @@ for subject in subjects_to_use:
         # then 150 Hz
         b, a = signal.iirnotch(150, 30, sample_rate)
         data = signal.filtfilt(b, a, data)
+      
         
+      
     
-        ### plot raw data
+        ## plot raw data
         # plt.figure(1)
         # data = data-data.mean()
         # plt.plot(data, label = electrode_names[electrode])
@@ -239,6 +270,18 @@ for subject in subjects_to_use:
             print(str(len(triggers)) + ' triggers')  
             print(' ')
           
+            
+            ## linear interpolation
+            
+            if condition > 2: # only need linear interpolation on flicker and vlackout conditions, there is no trigger artefact for SIGI
+                
+                time_1 = -1
+                time_2 = 56
+                trig_length = 10
+                
+                data = functions.linear_interpolation(data, triggers, time_1, time_2, trig_length)
+                
+            
             ## make a time series of the triggers to visualize
             # plt.figure(1)
             # trigger_time_series = np.zeros([len(data)],)
@@ -261,6 +304,7 @@ for subject in subjects_to_use:
             # ### plot SSVEP 
             # if electrode > 3: # plot all electrodes, don't include dry reference
             #     plt.plot(SSVEP, label = condition_names[condition])
+            
             
             ## get self correlation score for SSVEP, average over 100 loops
             num_loops = 100
@@ -285,7 +329,7 @@ for subject in subjects_to_use:
 
             SNR_scores[subject_count, electrode_count, condition_count] = scores.mean()
       
-        
+            
       
             condition_count += 1  
       
@@ -321,6 +365,7 @@ all_SSVEPs = np.load(path + 'all_SSVEPs.npy')  # subject, electrode, condition, 
 
 self_correlation_scores = np.load(path + 'self_correlation_scores.npy')  # subject, electrode, condition
 
+SNR_scores = np.load(path + 'SNR_scores.npy')
 
 
 ## plot self correlations
@@ -373,3 +418,75 @@ for noise_type in range(0,2):
         plt.ylabel('Average Self correlation')
     elif noise_type == 1:
         plt.ylabel('SNR')
+
+
+## plot  SSVEPs
+
+for electrode in range(1,5):
+    
+    plt.figure()
+    plt.suptitle(electrode_names[electrode-1])
+    
+    for subject in range(0,18):
+        
+        plt.subplot(4,5,subject+1)
+        plt.title(subject+1)
+
+        for condition in range(0,5):
+            SSVEP = all_SSVEPs[subject,electrode,condition,:] 
+            plt.plot(SSVEP)
+        
+        # for electrode in range(1,5):
+            
+        #     blackout_SSVEP = all_SSVEPs[subject,electrode,4,:] 
+        
+        #     plt.plot(blackout_SSVEP)    
+    
+
+
+## plot SSVEPs comparing gel and dry standing
+
+for condition in ('SIGI', 'Flicker'):
+    
+    if condition == 'SIGI':
+        condition_num = 0
+    elif condition =='Flicker':
+        condition_num = 2
+        
+
+    for hemisphere in ('Left', 'Right'):
+    
+        plt.figure()
+        plt.suptitle(condition + ' ' + hemisphere)
+    
+        for subject in range(0,18):
+            
+            plt.subplot(4,5,subject+1)
+            
+        
+        
+            if hemisphere == 'Left':
+                
+                gel_SSVEP = all_SSVEPs[subject,3,condition_num,:] 
+                dry_SSVEP = all_SSVEPs[subject,1,condition_num,:] 
+                
+            elif hemisphere =='Right':
+                
+                gel_SSVEP = all_SSVEPs[subject,4,condition_num,:] 
+                dry_SSVEP = all_SSVEPs[subject,2,condition_num,:] 
+                
+            plt.plot(gel_SSVEP, label = 'Gel')
+            plt.plot(dry_SSVEP,label = 'Dry')        
+    
+    
+            correlation = np.corrcoef(gel_SSVEP, dry_SSVEP)[0,1]           
+    
+            plt.title(str(subject+1) + ' ' + str(np.round(correlation,3)))
+            
+            
+    plt.legend()        
+    
+    
+    
+
+

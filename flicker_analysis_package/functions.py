@@ -138,10 +138,7 @@ def make_SSVEPs(data, triggers, period):
     return SSVEP
 
 
-
-
-### signal to noise ratio by randomly shuffling the data points of each segment and then making the SSVEP, compare to true SSVEP
-## instead of peak to peak amplitude, use a time range around the peak
+### signal to noise ratio by randomly shuffling the data points of each segment and then making the SSVEP
 
 def SNR_random(data, triggers, period):
     
@@ -157,12 +154,56 @@ def SNR_random(data, triggers, period):
     for trigger in triggers:
         
         # select a segment of data the lenght of the flicker period, starting from the trigger time 
-        segment =  data[trigger:trigger+period] 
-        segment_matrix[seg_count,:] = segment
+        segment = np.copy(data[trigger:trigger+period]) 
+        segment_matrix[seg_count,:] = np.copy(segment)
         
         random.shuffle(segment)
 
-        random_segment_matrix[seg_count,:] = segment
+        random_segment_matrix[seg_count,:] = np.copy(segment)
+
+        seg_count += 1
+    
+    true_SSVEP = segment_matrix.mean(axis=0) # average to make SSVEP
+    random_SSVEP = random_segment_matrix.mean(axis=0) # average to make SSVEP of the randomly shuffled data
+
+    # true_SSVEP = true_SSVEP - true_SSVEP.mean() # baseline correct
+    # random_SSVEP = random_SSVEP - random_SSVEP.mean()
+
+
+    true_SSVEP_range = np.ptp(true_SSVEP )
+
+    random_SSVEP_range = np.ptp(random_SSVEP)
+
+    SNR = true_SSVEP_range/random_SSVEP_range
+    
+    return SNR
+
+
+
+
+### signal to noise ratio by randomly shuffling the data points of each segment and then making the SSVEP, compare to true SSVEP
+## instead of peak to peak amplitude, use a time range around the peak
+
+def SNR_random_peak_area(data, triggers, period):
+    
+    import numpy as np
+    import random
+    #import matplotlib.pyplot as plt
+    
+    segment_matrix = np.zeros([len(triggers), period]) # empty matrix to put segments into
+    random_segment_matrix = np.zeros([len(triggers), period]) # empty matrix to put the randomly shuffled segments into
+    seg_count = 0 # keep track of the number of segments
+    
+    # loop through all triggers and put the corresponding segment of data into the matrix
+    for trigger in triggers:
+        
+        # select a segment of data the lenght of the flicker period, starting from the trigger time 
+        segment =  np.copy(data[trigger:trigger+period]) 
+        segment_matrix[seg_count,:] = np.copy(segment)
+        
+        random.shuffle(segment)
+
+        random_segment_matrix[seg_count,:] = np.copy(segment)
 
         seg_count += 1
     
