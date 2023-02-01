@@ -50,6 +50,8 @@ trig_length_40Hz = 20
 laplacian = 1 # 0 = FCz reference, 1 = laplacian re-reference
 
 
+decoding_scores = np.zeros([64, 2, 6, 3]) # electrode, frequency, condition, subject
+
 for subject in range(1,4):
     
     print('\n Subject ' + str(subject) + '\n')
@@ -68,18 +70,22 @@ for subject in range(1,4):
             print('\n 10 Hz \n')
         elif frequency == 1:
             print('\n 40 Hz \n')
-        
-        for condition_count in range(3,6):
             
-            if condition_count == 0 or condition_count == 3:
-                plt.figure((subject*10)+ (frequency*50) + 0)
-                plt.suptitle('Subject ' + str(subject) + ' ' + frequency_names[frequency] + '  ' + condition_names[0])
-            elif condition_count == 1 or condition_count == 4:
-                plt.figure((subject*10)+ (frequency*50) + 1)
-                plt.suptitle('Subject ' + str(subject) + ' ' + frequency_names[frequency] + '  ' + condition_names[1])
-            elif condition_count == 2 or condition_count == 5:
-                plt.figure((subject*10)+ (frequency*50) + 2)
-                plt.suptitle('Subject ' + str(subject) + ' ' + frequency_names[frequency] + '  ' + condition_names[2])
+            
+        
+        for condition_count in range(0,6):
+            
+            #### figures for plotting individual SSVEPs
+            
+            # if condition_count == 0 or condition_count == 3:
+            #     plt.figure((subject*10)+ (frequency*50) + 0)
+            #     plt.suptitle('Subject ' + str(subject) + ' ' + frequency_names[frequency] + '  ' + condition_names[0])
+            # elif condition_count == 1 or condition_count == 4:
+            #     plt.figure((subject*10)+ (frequency*50) + 1)
+            #     plt.suptitle('Subject ' + str(subject) + ' ' + frequency_names[frequency] + '  ' + condition_names[1])
+            # elif condition_count == 2 or condition_count == 5:
+            #     plt.figure((subject*10)+ (frequency*50) + 2)
+            #     plt.suptitle('Subject ' + str(subject) + ' ' + frequency_names[frequency] + '  ' + condition_names[2])
                 
                 
             
@@ -234,16 +240,17 @@ for subject in range(1,4):
             all_triggers_combined = np.concatenate((all_movement_triggers, good_flicker_triggers_array), axis=0)
             all_triggers_combined = np.sort(all_triggers_combined) # sort into order
 
-            eyes_right_triggers = []
-            eyes_left_triggers = []
+
+            eyes_right_triggers_list = []
+            eyes_left_triggers_list = []
             
-            right_15_triggers = []
-            right_10_triggers = []
-            right_5_triggers = []
-            centre_triggers = []
-            left_5_triggers = []
-            left_10_triggers = []
-            left_15_triggers = []
+            # right_15_triggers = []
+            # right_10_triggers = []
+            # right_5_triggers = []
+            # centre_triggers = []
+            # left_5_triggers = []
+            # left_10_triggers = []
+            # left_15_triggers = []
 
             movement_direction = 'start'  # ignore first movement trigger is starting to move to the right            
 
@@ -267,13 +274,13 @@ for subject in range(1,4):
                         time_from_last_movement_trigger = t - last_movement_trigger
             
                         if time_from_last_movement_trigger < 12500 and movement_direction == 'right':
-                            eyes_left_triggers.append(t)
+                            eyes_left_triggers_list.append(t)
                         elif time_from_last_movement_trigger > 12500 and movement_direction == 'right':
-                            eyes_right_triggers.append(t)
+                            eyes_right_triggers_list.append(t)
                         elif time_from_last_movement_trigger < 12500 and movement_direction == 'left':
-                            eyes_right_triggers.append(t)
+                            eyes_right_triggers_list.append(t)
                         elif time_from_last_movement_trigger > 12500 and movement_direction == 'left':
-                            eyes_left_triggers.append(t)
+                            eyes_left_triggers_list.append(t)
             
             elif condition_count > 2: # control conditions
                 
@@ -291,33 +298,37 @@ for subject in range(1,4):
                     if t in good_flicker_triggers_list:
                         
                         if arm_positions[index] > 0:
-                            eyes_right_triggers.append(t)
+                            eyes_right_triggers_list.append(t)
                         elif arm_positions[index] < 0:
-                            eyes_left_triggers.append(t)
+                            eyes_left_triggers_list.append(t)
                        
-
-                        if arm_positions[index] == 15:
-                            right_15_triggers.append(t)
-                        elif arm_positions[index] == 10:
-                            right_10_triggers.append(t)
-                        elif arm_positions[index] == 5:
-                            right_5_triggers.append(t)
-                        elif arm_positions[index] == 0:
-                            centre_triggers.append(t)
-                        elif arm_positions[index] == -5:
-                            left_5_triggers.append(t)
-                        elif arm_positions[index] == -10:
-                            left_10_triggers.append(t)
-                        elif arm_positions[index] == -15:
-                            left_15_triggers.append(t)                            
+                                    # seperate triggers for each arm position
+                                    
+                        # if arm_positions[index] == 15:
+                        #     right_15_triggers.append(t)
+                        # elif arm_positions[index] == 10:
+                        #     right_10_triggers.append(t)
+                        # elif arm_positions[index] == 5:
+                        #     right_5_triggers.append(t)
+                        # elif arm_positions[index] == 0:
+                        #     centre_triggers.append(t)
+                        # elif arm_positions[index] == -5:
+                        #     left_5_triggers.append(t)
+                        # elif arm_positions[index] == -10:
+                        #     left_10_triggers.append(t)
+                        # elif arm_positions[index] == -15:
+                        #     left_15_triggers.append(t)                            
 
  
 
 
            ###########################################################
 
-
-                     
+            # convert to array
+            eyes_right_triggers = np.asarray(eyes_right_triggers_list)
+            eyes_left_triggers = np.asarray(eyes_left_triggers_list)
+            
+                 
             
             # ## make trigger time series
             # eyes_right_time_series = np.zeros([all_flicker_triggers[-1]+1,])
@@ -338,87 +349,288 @@ for subject in range(1,4):
             
             ########### make SSVEPs for each electrode  ################
                   
-            # values for y axis scaling
-            max_value = 0
-            min_value = 0
+            # # values for y axis scaling
+            # max_value = 0
+            # min_value = 0
               
                 
-            for target_position in range(0,7):  # in (0,1):
+            # for target_position in (0,1): # in range(0,7):  # 
                 
 
-                # if target_position == 0:
-                #     triggers = eyes_right_triggers
-                # elif target_position == 1:
-                #     triggers = eyes_left_triggers
-                if target_position == 0:
-                    triggers = right_15_triggers
-                elif target_position == 1:
-                    triggers = right_10_triggers
-                elif target_position == 2:
-                    triggers = right_5_triggers
-                elif target_position == 3:
-                    triggers = centre_triggers
-                elif target_position == 4:
-                    triggers = left_5_triggers
-                elif target_position == 5:
-                    triggers = left_10_triggers
-                elif target_position == 6:
-                    triggers = left_15_triggers
+            #     if target_position == 0:
+            #         triggers = eyes_right_triggers
+            #     elif target_position == 1:
+            #         triggers = eyes_left_triggers
+                    
+            #     # if target_position == 0:
+            #     #     triggers = right_15_triggers
+            #     # elif target_position == 1:
+            #     #     triggers = right_10_triggers
+            #     # elif target_position == 2:
+            #     #     triggers = right_5_triggers
+            #     # elif target_position == 3:
+            #     #     triggers = centre_triggers
+            #     # elif target_position == 4:
+            #     #     triggers = left_5_triggers
+            #     # elif target_position == 5:
+            #     #     triggers = left_10_triggers
+            #     # elif target_position == 6:
+            #     #     triggers = left_15_triggers
                     
                     
       
      
                 
-                plt_count = 0
-                for electrode in (6,7):  #range(0,64):
+            #     plt_count = 0
+            #     for electrode in (6,7):  #range(0,64):
                     
-                    plt_count += 1
+            #         plt_count += 1
                     
-                    data = all_data[electrode,:]
+            #         data = all_data[electrode,:]
             
-                    # ### linear interpolation
-                    if frequency == 0:
-                        trig_1_time = trig_1_time_10Hz
-                        trig_2_time = trig_2_time_10Hz
-                        trig_length =  trig_length_10Hz
-                    elif frequency == 1:
-                        trig_1_time = trig_1_time_40Hz
-                        trig_2_time = trig_2_time_40Hz
-                        trig_length =  trig_length_40Hz
+            #         # ### linear interpolation
+            #         if frequency == 0:
+            #             trig_1_time = trig_1_time_10Hz
+            #             trig_2_time = trig_2_time_10Hz
+            #             trig_length =  trig_length_10Hz
+            #         elif frequency == 1:
+            #             trig_1_time = trig_1_time_40Hz
+            #             trig_2_time = trig_2_time_40Hz
+            #             trig_length =  trig_length_40Hz
     
                     
-                    data_linear_interpolation = functions.linear_interpolation(data, triggers, trig_1_time, trig_2_time, trig_length)
+            #         data_linear_interpolation = functions.linear_interpolation(data, triggers, trig_1_time, trig_2_time, trig_length)
                     
             
-                    # make SSVEP
-                    SSVEP = functions.make_SSVEPs(data_linear_interpolation, triggers, period) # SIGI was always 40 Hz, length = 25
+            #         # make SSVEP
+            #         SSVEP = functions.make_SSVEPs(data_linear_interpolation, triggers, period) # SIGI was always 40 Hz, length = 25
             
             
-                    #plt.subplot(8,8,plt_count)
-                    plt.subplot(1,2,plt_count)
+            #         #plt.subplot(8,8,plt_count)
+            #         plt.subplot(1,2,plt_count)
                     
-                    # if target_position == 0:
-                    #     plt.plot(SSVEP, label = condition_names[condition_count] + ' right')
-                    # elif target_position == 1:
-                    #     plt.plot(SSVEP, label = condition_names[condition_count] + ' left')
+            #         if target_position == 0:
+            #             plt.plot(SSVEP, label = condition_names[condition_count] + ' right')
+            #         elif target_position == 1:
+            #             plt.plot(SSVEP, label = condition_names[condition_count] + ' left')
                     
-                    plt.plot(SSVEP, label = target_position)
+            #         # plt.plot(SSVEP, label = target_position)
                     
-                    plt.title(electrode_names[electrode] + '  ' + frequency_names[frequency])
+            #         plt.title(electrode_names[electrode] + '  ' + frequency_names[frequency])
                 
-                    if max(SSVEP) > max_value:
-                        max_value = max(SSVEP)
-                    if min(SSVEP) < min_value:
-                        min_value = min(SSVEP)
+            #         if max(SSVEP) > max_value:
+            #             max_value = max(SSVEP)
+            #         if min(SSVEP) < min_value:
+            #             min_value = min(SSVEP)
                         
                         
-            # adjust y axis      
-            plt_count = 0   
-            for electrode in (6,7):  #range(0,64):    
-                plt_count += 1
-                #plt.subplot(8,8,plt_count)
-                plt.subplot(1,2,plt_count)
-                plt.ylim(min_value, max_value)
+            # # adjust y axis      
+            # plt_count = 0   
+            # for electrode in (6,7):  #range(0,64):    
+            #     plt_count += 1
+            #     #plt.subplot(8,8,plt_count)
+            #     plt.subplot(1,2,plt_count)
+            #     plt.ylim(min_value, max_value)
                 
                 
-            plt.legend()
+            # plt.legend()
+            
+            
+            
+            
+            
+            ##########    Decode eye position       ##############
+        
+        
+                    # ### setup linear interpolation
+            if frequency == 0:
+                trig_1_time = trig_1_time_10Hz
+                trig_2_time = trig_2_time_10Hz
+                trig_length =  trig_length_10Hz
+            elif frequency == 1:
+                trig_1_time = trig_1_time_40Hz
+                trig_2_time = trig_2_time_40Hz
+                trig_length =  trig_length_40Hz
+          
+            
+            import random 
+            
+    
+                
+            for electrode in range(0,64):
+                
+                print(electrode)
+            
+                data = all_data[electrode,:] # load data
+                
+                
+                num_loops = 10
+                scores_right = np.zeros([num_loops,])
+                scores_left = np.zeros([num_loops,])
+                
+                for loop in range(0,num_loops):     
+                
+                    ## split triggers into training and test with a 50/50 split
+                    
+                    # first right
+                    
+                    num_eyes_right_triggers = len(eyes_right_triggers)
+                    
+                    seg_nums = np.arange(0,num_eyes_right_triggers) # an index for seach segment
+                 
+                    random.shuffle(seg_nums) # randomize the order
+                    
+                    training_trig_nums = seg_nums[0:int(num_eyes_right_triggers/2)]
+                    test_trig_nums = seg_nums[int(num_eyes_right_triggers/2):num_eyes_right_triggers]
+                    
+                    training_eyes_right_triggers = eyes_right_triggers[training_trig_nums]
+                    
+                    test_eyes_right_triggers = eyes_right_triggers[test_trig_nums]
+                    
+                   
+                    # then left
+                    
+                    num_eyes_left_triggers = len(eyes_left_triggers)
+                    
+                    seg_nums = np.arange(0,num_eyes_left_triggers) # an index for seach segment
+                 
+                    random.shuffle(seg_nums) # randomize the order
+                    
+                    training_trig_nums = seg_nums[0:int(num_eyes_left_triggers/2)]
+                    test_trig_nums = seg_nums[int(num_eyes_left_triggers/2):num_eyes_left_triggers]
+                    
+                    training_eyes_left_triggers = eyes_left_triggers[training_trig_nums]
+                    
+                    test_eyes_left_triggers = eyes_left_triggers[test_trig_nums]    
+                        
+                    
+            
+                    ### make training SSVEPs
+                    
+                    data_linear_interpolation = functions.linear_interpolation(data, training_eyes_right_triggers, trig_1_time, trig_2_time, trig_length)
+                    
+                    training_SSVEP_eyes_right = functions.make_SSVEPs(data_linear_interpolation, training_eyes_right_triggers, period) # 
+                    
+                    data_linear_interpolation = functions.linear_interpolation(data, training_eyes_left_triggers, trig_1_time, trig_2_time, trig_length)
+                    
+                    training_SSVEP_eyes_left = functions.make_SSVEPs(data_linear_interpolation, training_eyes_left_triggers, period) # 
+                    
+                
+                    # plt.plot(training_SSVEP_eyes_right,'r')
+                    # plt.plot(training_SSVEP_eyes_left,'g')
+                
+                
+                #  make test SSVEPs
+                    
+                    data_linear_interpolation = functions.linear_interpolation(data, test_eyes_right_triggers, trig_1_time, trig_2_time, trig_length)
+                    
+                    test_SSVEP_eyes_right = functions.make_SSVEPs(data_linear_interpolation, test_eyes_right_triggers, period) # 
+                    
+                    data_linear_interpolation = functions.linear_interpolation(data, test_eyes_left_triggers, trig_1_time, trig_2_time, trig_length)
+                    
+                    test_SSVEP_eyes_left = functions.make_SSVEPs(data_linear_interpolation, test_eyes_left_triggers, period) # 
+                    
+                    
+                    # plt.plot(test_SSVEP_eyes_right,'r')
+                    # plt.plot(test_SSVEP_eyes_left,'g')
+                    
+                    
+                    ## test eyes right decoding
+                    eyes_right_corr = np.corrcoef(training_SSVEP_eyes_right,test_SSVEP_eyes_right)[0,1]
+                    eyes_left_corr = np.corrcoef(training_SSVEP_eyes_left,test_SSVEP_eyes_right)[0,1]
+                    
+                    if eyes_right_corr > eyes_left_corr:
+                        scores_right[loop] = 1
+                        
+                        
+                    ## test eyes left decoding
+                    eyes_right_corr = np.corrcoef(training_SSVEP_eyes_right,test_SSVEP_eyes_left)[0,1]
+                    eyes_left_corr = np.corrcoef(training_SSVEP_eyes_left,test_SSVEP_eyes_left)[0,1]
+                    
+                    if eyes_left_corr > eyes_right_corr:
+                        scores_left[loop] = 1
+                       
+                    
+                    
+                percent_correct_right = np.sum(scores_right) * (100/num_loops)
+                percent_correct_left = np.sum(scores_left) * (100/num_loops)
+               
+                average_percent_correct = (percent_correct_right + percent_correct_left) / 2
+                
+                decoding_scores[electrode, frequency, condition_count, subject-1] = average_percent_correct
+                
+             
+     
+             
+     
+        
+     
+
+    
+
+#### Topo plot
+
+for subject in range(0,3):
+    
+    for frequency in (0,1): # 0 = 10Hz, 1 = 40Hz
+        
+        fig = plt.figure()
+        plt.suptitle('Subject ' + str(subject+1) + ' ' + frequency_names[frequency])
+    
+        for condition_count in range(0,6):
+            
+            decoding_scores_for_condition = decoding_scores[:,frequency,condition_count,subject]
+            
+            values_to_plot = decoding_scores_for_condition  #  decoding_scores_for_condition.mean(axis=1)
+            
+            
+            plt.subplot(2,3,condition_count+1)
+            
+            plt.title(condition_names[condition_count])
+            
+            min_value = 50
+            max_value = 100
+            
+            # Initialize required fields
+            
+            channel_names = electrode_names
+            
+            import mne
+            
+            sfreq = sample_rate
+            
+            info = mne.create_info(channel_names, sfreq, ch_types = 'eeg')
+            
+            montage = 'standard_1005'
+            
+            info.set_montage(montage)
+                        
+              
+              
+            evoked_values = mne.EvokedArray(np.reshape(values_to_plot, (64,1)), info)
+            
+            evoked_values.set_montage(montage)
+            
+            mne.viz.plot_topomap(evoked_values.data[:, 0], evoked_values.info,
+            vmin=min_value, vmax=max_value, names=channel_names, show_names=True, show=True)
+            
+            im,cm = mne.viz.plot_topomap(evoked_values.data[:, 0], evoked_values.info,
+            vmin=min_value, vmax=max_value, names=channel_names, show_names=True, show=True)
+            
+                                    
+            # manually fiddle the position of colorbar
+            ax_x_start = 0.9
+            ax_x_width = 0.04
+            ax_y_start = 0.1
+            ax_y_height = 0.8
+            cbar_ax = fig.add_axes([ax_x_start, ax_y_start, ax_x_width, ax_y_height])
+            clb = fig.colorbar(im, cax=cbar_ax)
+            
+            
+            
+                
+            
+            
+            
+            
+            
