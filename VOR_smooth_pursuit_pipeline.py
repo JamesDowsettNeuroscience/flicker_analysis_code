@@ -30,7 +30,7 @@ frequency_names = ('10 Hz', '40 Hz')
 
 sample_rate = 5000
 
-num_subjects = 4
+num_subjects = 6
 
 period_10Hz = 500 # period of flicker in data points
 period_40Hz = 125 # period of flicker in data points
@@ -53,7 +53,7 @@ laplacian = 1 # 0 = FCz reference, 1 = laplacian re-reference
 
 
 
-for subject in range(1,5):
+for subject in range(1,num_subjects+1):
     
     print('\n Subject ' + str(subject) + '\n')
     
@@ -173,6 +173,9 @@ for subject in range(1,5):
         
             
             ## sort triggers 
+            
+            print('Sorting triggers ...')
+            
             good_flicker_triggers_list = []
             
             
@@ -592,7 +595,7 @@ for subject in range(1,5):
 
 decoding_scores = np.zeros([64, 2, 3, num_subjects]) # electrode, frequency, condition type , subject   
  
-for subject in range(1,5):
+for subject in range(1,num_subjects+1):
     
     print('\n Subject ' + str(subject) + '\n')
     
@@ -664,113 +667,34 @@ for subject in range(1,5):
         
             for electrode in range(0,64):
                 
-                print(electrode)
-            
+                
+                
+                ## get data from two conditions (active and control)
+
                 active_data = all_active_data[electrode,:]
                 control_data = all_control_data[electrode,:]
             
+                # linear interpolation
+                active_data = functions.linear_interpolation(active_data, active_triggers, trig_1_time, trig_2_time, trig_length)
+                control_data = functions.linear_interpolation(control_data, control_triggers, trig_1_time, trig_2_time, trig_length)
+            
+            
+                ## Decode correlations
             
                 num_loops = 10
-                scores_active = np.zeros([num_loops,])
-                scores_control = np.zeros([num_loops,])
-            
                 
-                for loop in range(0,num_loops):     
+                average_percent_correct = functions.decode_correlation(active_data, control_data, active_triggers, control_triggers, period, num_loops)
                 
-                    ## split triggers into training and test with a 50/50 split
-                    
-                    # first active
-                    
-                    num_active_triggers = len(active_triggers)
-                    
-                    seg_nums = np.arange(0,num_active_triggers) # an index for seach segment
-                 
-                    random.shuffle(seg_nums) # randomize the order
-                    
-                    training_trig_nums = seg_nums[0:int(num_active_triggers/2)]
-                    test_trig_nums = seg_nums[int(num_active_triggers/2):num_active_triggers]
-                    
-                    training_active_triggers = active_triggers[training_trig_nums]
-                    
-                    test_active_triggers = active_triggers[test_trig_nums]
-                    
-                   
-                    # then control
-                    
-                    num_control_triggers = len(control_triggers)
-                    
-                    seg_nums = np.arange(0,num_control_triggers) # an index for seach segment
-                 
-                    random.shuffle(seg_nums) # randomize the order
-                    
-                    training_trig_nums = seg_nums[0:int(num_control_triggers/2)]
-                    test_trig_nums = seg_nums[int(num_control_triggers/2):num_control_triggers]
-                    
-                    training_control_triggers = control_triggers[training_trig_nums]
-                    
-                    test_control_triggers = control_triggers[test_trig_nums]    
-                        
-                                
-                        
-                    ### make training SSVEPs
-                    
-                    data_linear_interpolation = functions.linear_interpolation(active_data, training_active_triggers, trig_1_time, trig_2_time, trig_length)
-                    
-                    training_SSVEP_active = functions.make_SSVEPs(data_linear_interpolation, training_active_triggers, period) # 
-                    
-                    data_linear_interpolation = functions.linear_interpolation(control_data, training_control_triggers, trig_1_time, trig_2_time, trig_length)
-                    
-                    training_SSVEP_control = functions.make_SSVEPs(data_linear_interpolation, training_control_triggers, period) # 
-                    
+                print('\nElectrode number: ' + str(electrode) + ' -- ' + electrode_names[electrode] + ' \nAverage percent correct = ' +  str(average_percent_correct))
                 
-                    # plt.plot(training_SSVEP_active,'r')
-                    # plt.plot(training_SSVEP_control,'g')
+                decoding_scores[electrode, frequency, condition_type, subject-1] = average_percent_correct
                 
-                            
-                #  make test SSVEPs
-                    
-                    data_linear_interpolation = functions.linear_interpolation(active_data, test_active_triggers, trig_1_time, trig_2_time, trig_length)
-                    
-                    test_SSVEP_active = functions.make_SSVEPs(data_linear_interpolation, test_active_triggers, period) # 
-                    
-                    data_linear_interpolation = functions.linear_interpolation(control_data, test_control_triggers, trig_1_time, trig_2_time, trig_length)
-                    
-                    test_SSVEP_control = functions.make_SSVEPs(data_linear_interpolation, test_control_triggers, period) # 
-                    
-                    
-                    # plt.plot(test_SSVEP_active,'r')
-                    # plt.plot(test_SSVEP_control,'g')
-                    
-                                
-                    ## test active condition decoding
-                    active_corr = np.corrcoef(training_SSVEP_active,test_SSVEP_active)[0,1]
-                    control_corr = np.corrcoef(training_SSVEP_control,test_SSVEP_active)[0,1]
-                    
-                    if active_corr > control_corr:
-                        scores_active[loop] = 1
-                        
-                        
-                    ## test control condition decoding
-                    active_corr = np.corrcoef(training_SSVEP_active,test_SSVEP_control)[0,1]
-                    control_corr = np.corrcoef(training_SSVEP_control,test_SSVEP_control)[0,1]
-                    
-                    if control_corr > active_corr:
-                        scores_control[loop] = 1
-                       
-                    
-                    
-                percent_correct_active = np.sum(scores_active) * (100/num_loops)
-                percent_correct_control = np.sum(scores_control) * (100/num_loops)
-               
-                average_percent_correct = (percent_correct_active + percent_correct_control) / 2
-                
-                decoding_scores[electrode, frequency, condition_type, subject-1] = average_percent_correct # electrode, frequency, condition type , subject
-                
-                
-        
-    
 
+### save decoding scores
 
+np.save(path + 'decoding_scores_' + str(num_loops) + '_loops', decoding_scores)
+
+decoding_scores = np.load(path + 'decoding_scores_' + str(num_loops) + '_loops.npy')
 
 
 
@@ -779,13 +703,22 @@ for subject in range(1,5):
 
 fig = plt.figure()
 
+print('\nPz decoding accuracy: ')
+
 for frequency in (0,1): # 0 = 10Hz, 1 = 40Hz
     
   #  plt.suptitle(frequency_names[frequency])
+  
+    print('\n' + frequency_names[frequency] + '\n')
 
     for condition_type in range(0,3):
         
         decoding_scores_for_condition = decoding_scores[:,frequency,condition_type,:]
+        
+        print(condition_names[condition_type] )
+        print(decoding_scores_for_condition[18,:])
+        print('Average decoding score = ' + str(decoding_scores_for_condition[18,:].mean()))
+        print(' ')
         
         values_to_plot =  decoding_scores_for_condition.mean(axis=1)
         

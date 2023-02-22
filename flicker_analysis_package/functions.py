@@ -6,110 +6,130 @@ Created on Tue Nov 30 12:02:57 2021
 @author: prithasen
 """
 
-### PRE-PROCESSING USING MNE
-
-## Function for interpolating bad electrodes
-
-## Function for Laplacian re-referencing
-
-### Loading data, getting and sorting triggers (experiment specicfic)
 
 
-num_loops = 1000
-
-## Function for loading data from one channel using electrode number
-def load_data(file_name, electrode):
-    
-    import numpy as np
-    import mne
-    import os
-    
-    # read the EEG data with the MNE function
-    raw = mne.io.read_raw_brainvision(file_name + '.vhdr')
-    
-    #channel_names = raw.info.ch_names
-    
-    # Load data
-    print('  ')
-    print('Loading Electrode data ...')
-    print('  ')
-    
-    
-    data = np.array(raw[electrode,:], dtype=object) 
-    data = data[0,]
-    data = data.flatten()
-
-
-    print('Saving ...')
-
-    electrode_data_file_name = file_name + '_' + raw.ch_names[electrode] +'_data'
-    
-    # save as a numpy array
-    np.save(os.path.join(file_name, electrode_data_file_name), data)
-    
-    
-    print('Done')
-    
-## Function for loading data from one channel using electrode name
-def load_data_electrode_name(file_name, electrode_name):
-    
-    import numpy as np
-    import mne
-    import os
-    
-    # read the EEG data with the MNE function
-    raw = mne.io.read_raw_brainvision(file_name + '.vhdr')
-    
-    channel_names = raw.info.ch_names
-    
-    electrode = channel_names.index(electrode_name)
-    
-    # Load data
-    print('  ')
-    print('Loading Electrode data ...')
-    print('  ')
-    
-    data = np.array(raw[electrode,:], dtype=object) 
-    data = data[0,]
-    data = data.flatten()
-    
-    print('Saving ...')
-
-    electrode_data_file_name = file_name + '_' + raw.ch_names[electrode] +'_data'
-    
-    # save as a numpy array
-    np.save(os.path.join(file_name, electrode_data_file_name), data)
-    
-    print('Done')
-
-    
-##Function for getting triggers from .vmrk file – save as numpy array
-
-##Function for sorting triggers into different conditions/frequencies
 
 ###COMMON ANALYSIS FUNCTIONS
 
 ##Function for high pass filter
-def high_pass_filter(sample_rate, data):
+def high_pass_filter(cutoff_frequency, sample_rate, data):
     
     from scipy import signal
     
-    high_pass_filter = signal.butter(2, 0.1, 'hp', fs=sample_rate, output='sos')
+    high_pass_filter = signal.butter(2, cutoff_frequency, 'hp', fs=sample_rate, output='sos')
     high_pass_filtered_data = signal.sosfilt(high_pass_filter, data)
     return high_pass_filtered_data
 
         
 ##Function for low pass filter 
-def low_pass_filter(sample_rate, data):
+def low_pass_filter(cutoff_frequency, sample_rate, data):
     
     from scipy import signal
     
-    low_pass_filter = signal.butter(3, 5, 'lp', fs=sample_rate, output='sos')
+    low_pass_filter = signal.butter(2, cutoff_frequency, 'lp', fs=sample_rate, output='sos')
     low_pass_filtered_data = signal.sosfilt(low_pass_filter, data)
     return low_pass_filtered_data
     
 
-##Function to determine good data
+###ANALYSIS FUNCTIONS that require making SSSVEPs
+
+
+## Decoding by correlation. Function takes two conditions: two arrays of data and corresponding triggers.
+## For each loop the function randomly selects half of the triggers for each condition to create "training SSVEPs"
+## With the remaining triggers, two "test SSVEPs" are created
+## A correlation for each "test SSVEP" is done with each "training SSVEP"; if the correlation with the correct SSVEP is higher,
+## it is awarded a score of one, if not it scores zero.
+## This procedure is repeated [num_loops] times and the percent correct answers is returned
+
+def decode_correlation(data_1, data_2, triggers_1, triggers_2, period, num_loops):
+    
+    import numpy as np
+    import random
+    # import matplotlib.pyplot as plt
+    
+    scores_condition_1 = np.zeros([num_loops,])
+    scores_condition_2 = np.zeros([num_loops,])
+    
+    for loop in range(0,num_loops):     
+
+        ## split triggers into training and test with a 50/50 split
+        
+        for condition in (1,2):
+
+            if condition == 1:
+                num_triggers = len(triggers_1)
+                seg_nums = np.arange(0,num_triggers) # an index for each segment
+            elif condition == 2:
+                num_triggers = len(triggers_2)
+                seg_nums = np.arange(0,num_triggers) 
+                
+         
+            random.shuffle(seg_nums) # randomize the order
+            
+            # get half of the triggers
+            training_trig_nums = seg_nums[0:int(num_triggers/2)] # first half
+            test_trig_nums = seg_nums[int(num_triggers/2):num_triggers] # second half
+            
+            # get the corresponding trigger times
+            if condition == 1:
+                training_triggers_condition_1 = triggers_1[training_trig_nums]  
+                test_triggers_condition_1 = triggers_1[test_trig_nums]
+            elif condition == 2:
+                training_triggers_condition_2 = triggers_2[training_trig_nums]
+                test_triggers_condition_2 = triggers_2[test_trig_nums]
+
+
+
+        ### make training SSVEPs
+        training_SSVEP_condition_1 = make_SSVEPs(data_1, training_triggers_condition_1, period) 
+        training_SSVEP_condition_2 = make_SSVEPs(data_2, training_triggers_condition_2, period) 
+
+        # plt.plot(training_SSVEP_condition_1,'r')
+        # plt.plot(training_SSVEP_condition_2,'b')
+    
+                
+        ####  make test SSVEPs
+        test_SSVEP_condition_1 = make_SSVEPs(data_1, test_triggers_condition_1, period) 
+        test_SSVEP_condition_2 = make_SSVEPs(data_2, test_triggers_condition_2, period) 
+
+    
+       # plt.plot(test_SSVEP_condition_1,'m')
+       # plt.plot(test_SSVEP_condition_2,'c')
+
+        ## test condition 1 decoding
+        corr_condition_1_test_and_condition_1_training = np.corrcoef(test_SSVEP_condition_1,training_SSVEP_condition_1)[0,1]
+        corr_condition_1_test_and_condition_2_training = np.corrcoef(test_SSVEP_condition_1,training_SSVEP_condition_2)[0,1]
+
+        if corr_condition_1_test_and_condition_1_training > corr_condition_1_test_and_condition_2_training:
+            scores_condition_1[loop] = 1 # score one point
+           
+
+        ## test condition 2 decoding
+        corr_condition_2_test_and_condition_1_training = np.corrcoef(test_SSVEP_condition_2,training_SSVEP_condition_1)[0,1]
+        corr_condition_2_test_and_condition_2_training = np.corrcoef(test_SSVEP_condition_2,training_SSVEP_condition_2)[0,1]
+       
+        if corr_condition_2_test_and_condition_2_training > corr_condition_2_test_and_condition_1_training:
+            scores_condition_2[loop] = 1 # score one point
+                        
+            
+                
+    percent_correct_condition_1 = np.sum(scores_condition_1) * (100/num_loops)
+    percent_correct_condition_2 = np.sum(scores_condition_2) * (100/num_loops)
+       
+    average_percent_correct = (percent_correct_condition_1 + percent_correct_condition_2) / 2
+    
+    return average_percent_correct 
+    
+    
+
+
+
+
+
+
+
+
+
 
 ##Function to make SSVEPs (use triggers & average)
 def make_SSVEPs(data, triggers, period):
@@ -181,79 +201,6 @@ def SNR_random(data, triggers, period):
 
 
 
-### signal to noise ratio by randomly shuffling the data points of each segment and then making the SSVEP, compare to true SSVEP
-## instead of peak to peak amplitude, use a time range around the peak
-
-def SNR_random_peak_area(data, triggers, period):
-    
-    import numpy as np
-    import random
-    #import matplotlib.pyplot as plt
-    
-    segment_matrix = np.zeros([len(triggers), period]) # empty matrix to put segments into
-    random_segment_matrix = np.zeros([len(triggers), period]) # empty matrix to put the randomly shuffled segments into
-    seg_count = 0 # keep track of the number of segments
-    
-    # loop through all triggers and put the corresponding segment of data into the matrix
-    for trigger in triggers:
-        
-        # select a segment of data the lenght of the flicker period, starting from the trigger time 
-        segment =  np.copy(data[trigger:trigger+period]) 
-        segment_matrix[seg_count,:] = np.copy(segment)
-        
-        random.shuffle(segment)
-
-        random_segment_matrix[seg_count,:] = np.copy(segment)
-
-        seg_count += 1
-    
-    true_SSVEP = segment_matrix.mean(axis=0) # average to make SSVEP
-    random_SSVEP = random_segment_matrix.mean(axis=0) # average to make SSVEP of the randomly shuffled data
-
-    true_SSVEP = true_SSVEP - true_SSVEP.mean() # baseline correct
-    random_SSVEP = random_SSVEP - random_SSVEP.mean()
-
-    for condition in ('true', 'random'):
-        
-        if condition == 'true':
-            SSVEP = np.copy(true_SSVEP)
-        elif condition == 'random':
-            SSVEP = np.copy(random_SSVEP)
-
-        SSVEP_repeated = np.tile(SSVEP, 2) # repeat the SSVEP in case the peak area is too near the beginning or end, loops around to the start  
-    
-        max_SSVEP_index = np.argmax(SSVEP) # get the index of the peak of the SSVEP
-        
-        ## get the average of the 5 data points around the peak of the SSVEP
-        if (len(SSVEP) - max_SSVEP_index) <= 2: # if the peak is near the end of the SSVEP, 
-            average_peak_area = SSVEP_repeated[max_SSVEP_index-2:max_SSVEP_index+3].mean()
-        elif max_SSVEP_index <= 2: # if the peak index is near the begining of the SSVEP, repeat the SSVEP and move forward by the length of the SSVEP
-            average_peak_area = SSVEP_repeated[max_SSVEP_index+len(SSVEP)-2:max_SSVEP_index+len(SSVEP)+3].mean()
-        else: # otherwise, just average the area around the peak
-            average_peak_area = SSVEP[max_SSVEP_index-2:max_SSVEP_index+3].mean()
-        
-        min_SSVEP_index = np.argmin(SSVEP) # get the index of the trough of the SSVEP
-        
-        ## get the average of the 5 data points around the trough of the SSVEP
-        if (len(SSVEP) - min_SSVEP_index) <= 2: # if the trough is near the end of the SSVEP, 
-            average_trough_area = SSVEP_repeated[min_SSVEP_index-2:min_SSVEP_index+3].mean()
-        elif min_SSVEP_index <= 2: # if the trough index is near the begining of the SSVEP, move forward by the length of the SSVEP
-            average_trough_area = SSVEP_repeated[min_SSVEP_index+len(SSVEP)-2:min_SSVEP_index+len(SSVEP)+3].mean()
-        else: # otherwise, just average the area around the trough
-            average_trough_area = SSVEP[min_SSVEP_index-2:min_SSVEP_index+3].mean()
-    
-    
-        SSVEP_range = np.abs(average_peak_area - average_trough_area)
-
-        if condition == 'true':
-            true_SSVEP_range = np.copy(SSVEP_range)
-        elif condition == 'random':
-            random_SSVEP_range = np.copy(SSVEP_range)
-    
-    SNR = true_SSVEP_range/random_SSVEP_range
-    
-    return SNR
-
 
 
 ## Randomly split the triggers and create two SSVEPs, return the amplitude difference between the two 
@@ -294,6 +241,7 @@ def SSVEP_split_amplitude_difference(data, triggers, period):
     amplitude_difference = np.ptp(SSVEP_1) - np.ptp(SSVEP_2)
 
     return amplitude_difference
+
 
 ##  Randomly split the triggers from one condition to create two SSVEPs and return the correlation between the two
 def compare_SSVEPs_split(data, triggers, period):
@@ -381,34 +329,11 @@ def phase_shift_SSVEPs_split(data, triggers, period):
     # plt.legend()
 
 
-##Function to make SSVEPs with offset (use triggers & average)
-def make_SSVEPs_offset(data, triggers, period, offset):
-    import numpy as np
-
-    segment_matrix = np.zeros([len(triggers), period]) # empty matrix to put segments into
-    
-    seg_count = 0 # keep track of the number of segments
-    
-    # loop through all triggers and put the corresponding segment of data into the matrix
-    for trigger in triggers:
-        
-        # select a segment of data the lenght of the flicker period, starting from the trigger time 
-        segment =  data[trigger-offset:trigger+period-offset] 
-        
-        segment_matrix[seg_count,:] = segment
-    
-        seg_count += 1
-    
-    SSVEP = segment_matrix.mean(axis=0) # average to make SSVEP
-    
-    SSVEP = SSVEP - SSVEP.mean() # baseline correct
-    
-    return SSVEP
-
 
 
 
 ##Function to make SSVEPs (randomly shuffle data in each segment, then average - way of calculating signal-to-noise ratio)
+## returns signal strength as a Z score
 def make_SSVEPs_random(data, triggers, period, num_loops):
     ## make SSVEP with all segments
     
@@ -490,63 +415,7 @@ def make_SSVEPs_random(data, triggers, period, num_loops):
     print('Z_score = ', Z_score)
     
     return Z_score
-    
-##Function for only random SSVEPs and z score, with offset. Not necessary once trigger artefact is removed
-def randomSSVEPs_zscore(SSVEP, data, all_triggers, period, num_loops, offset):
-    
-    import numpy as np
-  #  import matplotlib.pyplot as plt
-    import random
-    
-    random_amplitudes = np.zeros([num_loops,])
-    
-    for loop in range(0,num_loops):
-        
-        print(loop)
-        # make random SSVEP 
-        
-        shuffled_segment_matrix =  np.zeros([len(all_triggers), period])  
-        
-        # loop through all triggers and put the corresponding segment of data into the matrix
-        seg_count = 0 # keep track of the number of segments
-        
-        for trigger in all_triggers:
-            
-            segment =  data[trigger-offset:trigger+period-offset] 
-        
-            random.shuffle(segment) # randomly shuffle the data points
-            
-            shuffled_segment_matrix[seg_count,:] = segment
-            
-            seg_count += 1
-        
-        random_SSVEP = shuffled_segment_matrix.mean(axis=0) # average to make SSVEP
-        
-        random_SSVEP = random_SSVEP - random_SSVEP.mean() # baseline correct
-        
-        random_amplitudes[loop] = np.ptp(random_SSVEP)
-    
-    
-  #  plt.plot(random_SSVEP,'k') # plot the last random shuffle, just to see
-    
- #   plt.plot(SSVEP,'b') # plot the true SSVEP
-    
-    true_amplitude = np.ptp(SSVEP)
-    
-    print('True amplitude = ', true_amplitude)
-    
-    average_noise = random_amplitudes.mean()
-    
-    print('Amplitude noise = ', average_noise)
-    
-    std_noise = np.std(random_amplitudes)
-    
-    print('Standard Deviation noise = ', std_noise)
-    
-    Z_score  = (true_amplitude-average_noise) / std_noise
-    
-    print('Z_score = ', Z_score)
-
+   
 
 
 ##Function for linear interpolation of trigger artefacts (plot SSVEP showing before and after in this function)
@@ -566,198 +435,6 @@ def linear_interpolation(data, triggers, time_1, time_2, trig_length):
 
 
 
-## Function for making SSVEP and removing walking/motion artefact. Works using adaptive template subtraction, 
-## this requires a fairly predictable artefact such as consistent walking 
-
-def make_SSVEP_artefact_removal(data, triggers, period, num_cycles_for_template, num_templates):
-
-    import numpy as np
-    from timeit import default_timer as timer
-    from datetime import timedelta
-    
-    length_artefact_segment = period * num_cycles_for_template
-
-    clean_segment_matrix = np.zeros([len(triggers),period])
-
-    correlation_threshold = 0.8  # correlation between segment to be cleaned and template must be above this value to be considered
-
-    k = 0
-    trig_count = 0
-    clean_segment_count = 0
-    
-    while trig_count < len(triggers) - num_cycles_for_template: # loop until end, stop before template will overlap with last trigger
-        
-        print('Trigger ' + str(trig_count) + ' of ' + str(len(triggers)))
-        
-        artefact_segment_start_time = triggers[trig_count] # start time of segment of data to be cleaned
-        
-        artefact_segment = data[artefact_segment_start_time:artefact_segment_start_time+length_artefact_segment] # segment of data to be cleaned
-    
-       # print('Segment range = ' + str(int(np.ptp(artefact_segment))))
-    
-        
-        segment_range = np.ptp(artefact_segment)
-        
- 
-        template_count = 0
-        k = triggers[0] + 20 # start from the begining of the triggers plus 20 
-    
-    
-        if segment_range > 1500: # only try to remove artefact if the range of the segment to be cleaned is above this threshold
-
-            template_matrix = np.zeros([num_templates,length_artefact_segment]) # empty matrix to put clean (long) segments into
-
-            # collect segments to make the artefact template
-            while (template_count < num_templates) and (k < triggers[-1]-length_artefact_segment): # loop until enough templates or the end of the triggers
-         
-                temp_template = data[k:k+length_artefact_segment]
-        
-                if np.corrcoef(artefact_segment,temp_template)[0,1] > correlation_threshold:
-       
-                    ## check up to 20 data points ahead and behind for the best correlation
-                    
-                    temp_corr_scores = np.zeros([40,]) # keep track of correlation scores
-                    
-                    count = 0
-                    for t in range(-20,20):
-                        temp_template = data[k+t:k+t+length_artefact_segment]
-                      #  plt.plot(temp_template,'c')
-                        temp_corr_scores[count] = np.corrcoef(artefact_segment,temp_template)[0,1]
-                        count += 1
-                        
-                    best_time_index = np.argmax(temp_corr_scores) - 20 # choose the segment with the best correlation
-                    
-                    best_template = data[k+best_time_index:k+best_time_index+length_artefact_segment]
-                    
-                    #don't include the template if the correlation is 1, because this is the segment we are trying to clean
-                    if np.corrcoef(artefact_segment,best_template)[0,1] < 1: 
-                        
-                        template_matrix[template_count,:] = best_template
-                        template_count += 1
-                
-                    best_template = best_template - best_template.mean()
-                    
-                   # plt.plot(best_template,'r')
-                    
-                    k = k + 500 # skip ahead to save time, becasue another closely matching template is unlikely to follow immediatly, e.g. walking artefact is typically > 1Hz
-                    
-                k += 2 # move forward, more than on data point is OK because the initial template fit only needs to be approximate, the code will scan back and forward for the best fit
-    
-        if template_count > 5: # only average to make the template if there are more than 5 segments of data contributing to the template
-            # average all the segments to make the template 
-            average_template = template_matrix[0:template_count,:].mean(axis=0)
-               
-            # subtract the template from the segment to be cleaned
-            cleaned_artefact_segment = artefact_segment - average_template
-            
-        else: # if there are not enough template segments, just use the original segment of data
-            cleaned_artefact_segment = artefact_segment
-            
-    
-    
-        ## put all the flicker segments from the cleaned segment into the clean segment matrix
-        trigger_time = artefact_segment_start_time
-        while trigger_time <= (artefact_segment_start_time + length_artefact_segment):
-            
-            segment = cleaned_artefact_segment[trigger_time - artefact_segment_start_time:trigger_time - artefact_segment_start_time+period]
-            
-            if (len(segment) == period) and (np.ptp(segment) < 500): # check segment is the correct length and is within range of 200
-            
-                clean_segment_matrix[clean_segment_count,:] = segment # put clean segment into matrix
-                clean_segment_count += 1
-                
-            
-            trig_count += 1
-            trigger_time = triggers[trig_count] # move onto the next trigger
-            
-    
-        print(str(clean_segment_count) + ' good segments')
-    
-    
-    clean_SSVEP = clean_segment_matrix[0:clean_segment_count,:].mean(axis=0) # average segments to make the SSVEP
-    
-    clean_SSVEP = clean_SSVEP - clean_SSVEP.mean() # baseline correct
-    
-    return clean_SSVEP
-
-
-### make SSVEP with motion artefact removal based on pairing segments
-
-def make_SSVEP_artefact_removal_paired_segments(data, triggers, period):
-    
-    import numpy as np
-    
-    range_cutoff = 900
-    
-    
-    all_segments_matrix = np.zeros([len(triggers), period]) # empty matrix to put segments into
-    
-    seg_count = 0 # keep track of the number of segments
-    
-    # loop through all triggers and put the corresponding segment of data into the matrix
-    for trigger in triggers:
-    
-        # select a segment of data the lenght of the flicker period, starting from the trigger time 
-        segment =  data[trigger:trigger+period] 
-        
-        all_segments_matrix[seg_count,:] = segment
-        
-        seg_count += 1
-     
-    segments_to_use = [] # list 
-    segments_not_yet_used = list(range(0,len(triggers)))
-
-
-   # for each segment, try and find a segment with the lowest difference, e.g. the range of the summed wave closest to 0
-    for seg_count in range(0,len(triggers)):
-        
-        print('Segment ' + str(seg_count) + ' of ' + str(len(triggers)))
-        
-        if seg_count in segments_not_yet_used:
-            
-            segment = all_segments_matrix[seg_count,:]
-            
-            range_of_sum_scores = np.zeros([len(triggers),]) + 1000 # set all to arbitary high value first
-            
-            for seg_num in segments_not_yet_used:
-                
-                test_segment = all_segments_matrix[seg_num,:]
-                
-                range_of_sum_scores[seg_num] = np.ptp(segment + test_segment)
-
-            print(min(range_of_sum_scores)) 
-           
-            if min(range_of_sum_scores) < range_cutoff:
-                
-                best_seg = np.argmin(range_of_sum_scores)
-                
-                segments_to_use.append(seg_count)
-                segments_to_use.append(best_seg)
-                
-                if seg_count in segments_not_yet_used:
-                    segments_not_yet_used.remove(seg_count)
-                if best_seg in segments_not_yet_used:
-                    segments_not_yet_used.remove(best_seg)
-                    
-                    
-    print(' ')          
-    print('Used ' + str(len(segments_to_use)) + ' of ' + str(len(triggers)) + ' triggers')          
-    
-    
-    SSVEP = all_segments_matrix[segments_to_use,:].mean(axis=0) # average to make SSVEP
-    
-    SSVEP = SSVEP - SSVEP.mean() # baseline correct
-
-    # true_SSVEP = all_segments_matrix.mean(axis=0) # average to make SSVEP
-   
-    # true_SSVEP = true_SSVEP - true_SSVEP.mean()
-    
-    # plt.plot(true_SSVEP)
-    # plt.plot(SSVEP)
-    
-   
-    return SSVEP
-
 
 
 ##Function for making induced FFT
@@ -771,7 +448,9 @@ def induced_fft(data, triggers, length, sample_rate): # length = length of segme
     
     length_of_segment = int(length * sample_rate)
     
-    segment_matrix = np.zeros([len(triggers), length_of_segment]) # empty matrix to put segments into
+    estimated_num_segs = int((len(data)/length_of_segment) + 1)
+    
+    segment_matrix = np.zeros([estimated_num_segs, length_of_segment]) # empty matrix to put segments into
     
     seg_count = 0
    
@@ -846,18 +525,8 @@ def evoked_fft(data, triggers, length, sample_rate): # length = length of segmen
     return fft_SSVEP
             
 
-###ANALYSIS FUNCTIONS that require making SSSVEPs
 
-##Permutation tests on two conditions
-#Desc: Make two SSVEPs by randomly assigning segments from condition 1 and condition 2 to two make two groups, and compare the difference in amplitude. Repeat this may times (e.g. 1000) and create a distribution of amplitude differences, which can be compared to the true difference.
 
-##Permutation tests on signal-to-noise
-#Desc: Make SSVEPs using a random subset of triggers (start with a small number), repeat many times (e.g.1000). Then repeat entire test with a different number of segments. Progressively increase number of segments and keep track of the resulting SSVEP.
-
-##Simulated SSVEPs (for data without flicker)
-#Desc: Add a simulated SSVEP (e.g. a sine wave) to the data and create a numpy array of “trigger times”, such that the data can be used with the above functions.
-
-##Plots (for plotting example SSVEPs)
 
 
 ##### ANALYSIS FUNCTIONS ON SSVEPs that are already averaged

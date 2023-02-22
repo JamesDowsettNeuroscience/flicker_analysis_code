@@ -41,7 +41,8 @@ num_trials = len(file_names)
 
 start_times = np.load(path + 'start_times.npy')
 
-plt.figure()
+plt.figure(1)
+plt.figure(2)
 
 plot_count = 0
 
@@ -50,7 +51,7 @@ for trial in range(0,len(file_names)):
     print('\n Trial: ' + str(trial) + '\n')
     
     plot_count += 1
-    plt.subplot(6,6,plot_count)
+
     #plt.figure()
 
     file_name = file_names[trial]
@@ -93,11 +94,21 @@ for trial in range(0,len(file_names)):
     if '30Hz' in file_name:
         period = period_30Hz
         #plt.subplot(1,2,1)
+        plt.figure(1)
+        plt.subplot(6,6,plot_count)
+        plt.title('30 Hz')
+        plt.figure(2)
+        plt.subplot(6,6,plot_count)
         plt.title('30 Hz')
        # plt.title('Trial ' + str(trial) + '  30Hz')
     elif '40Hz' in file_name:
         period = period_40Hz
        # plt.subplot(1,2,2)
+        plt.figure(1)
+        plt.subplot(6,6,plot_count)
+        plt.title('40 Hz')
+        plt.figure(2)
+        plt.subplot(6,6,plot_count)
         plt.title('40 Hz')
         #plt.title('Trial ' + str(trial) + '  ' + file_name + '  40Hz')
     
@@ -114,7 +125,22 @@ for trial in range(0,len(file_names)):
         
         SSVEP = functions.make_SSVEPs(data, triggers, period) 
         
+        plt.figure(1)
+        plt.subplot(6,6,plot_count)
+        
         plt.plot(SSVEP, label = chan_names[electrode])
+        
+        
+        length = 100
+        induced_fft = functions.induced_fft(data, triggers, length, sample_rate) # length = length of segment to use in seconds (1/length = the frequency resolution), sample rate in Hz
+            
+        time_axis = np.arange(0,sample_rate,1/length)    
+    
+        plt.figure(2)
+        plt.subplot(6,6,plot_count)
+        
+        plt.plot(time_axis,induced_fft)
+        plt.xlim([0, 10])
 
   #  plt.legend()
   #  plt.ylim([-0.0000015, 0.0000015])
