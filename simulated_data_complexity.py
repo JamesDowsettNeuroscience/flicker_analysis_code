@@ -15,7 +15,7 @@ import scipy.stats
 
 ##### make simulated data of random noise and a sine wave SSVEP with triggers in noise
 
-length_of_data_in_seconds = 10 #600
+length_of_data_in_seconds = 600
 sample_rate = 5000
 
 length_of_data = length_of_data_in_seconds * sample_rate
@@ -23,7 +23,7 @@ length_of_data = length_of_data_in_seconds * sample_rate
 
 num_triggers_to_use = 1000
 
-amplitude_of_noise = 0
+amplitude_of_noise = 10
 
 print('Amplitude of noise = ' + str(amplitude_of_noise))
 
