@@ -16,12 +16,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import mne
 
-
+import pickle
 
 ### information about the experiment:
 
-path = '/media/james/USB DISK/coma_flicker_data/flicker_coma_data_02_08_22/' # put path here
 
+path = '/home/james/Active_projects/coma_flicker/extracted_files_and_triggers/'
 
 frequency_names = ('30 Hz', '40 Hz')
 
@@ -36,54 +36,54 @@ period_40Hz = 125 #
 file_names = np.load(path + 'file_names_used.npy')
 
 
-num_trials = len(file_names)
+trial_names = pickle.load(open(path + "trial_names.pkl", "rb" ) )
+
+chan_names = pickle.load(open(path + "chan_names.p", "rb" ) )
+
+num_trials = len(trial_names)
 
 
 start_times = np.load(path + 'start_times.npy')
 
-plt.figure(1)
-plt.figure(2)
+
+laplacian = 0 ## choose to use laplacian montage or not: 0 = normal reference, 1 = laplacian re-reference
+
+
+#plt.figure()
+
 
 plot_count = 0
 
-for trial in range(0,len(file_names)):
+for trial_name in trial_names[20:33]:
     
-    print('\n Trial: ' + str(trial) + '\n')
+    print('\n '  + trial_name + '\n')
     
     plot_count += 1
 
-    #plt.figure()
+    plt.figure()
+    plt.suptitle(trial_name)
 
-    file_name = file_names[trial]
-    
     
     ## load triggers
     
-    triggers = np.load(path + 'file_' + str(trial) + '_triggers.npy')
-    
+    triggers = np.load(path + trial_name + '_triggers.npy')
     
     
     ## load data
+    if laplacian == 0:
+        all_data = np.load(path + trial_name + '_all_data.npy')
+        
+        average_reference = all_data.mean(0)
+        #all_data = all_data - all_data.mean(0)
+        
+    elif laplacian == 1:
+        all_data = np.load(path + trial_name + '_all_data_laplacian.npy')
     
-    raw = mne.io.read_raw_brainvision(path + file_name, preload=True)
-    
-    chan_names = raw.ch_names
-    
-    photo_data = np.array(raw[34,:], dtype=object) 
-    photo_data = photo_data[0,]
-    photo_data = photo_data.flatten()
-      
-    VEOG_data = np.array(raw[33,:], dtype=object) 
-    VEOG_data = VEOG_data[0,]
-    VEOG_data =VEOG_data.flatten()
-      
-    trigger_data = photo_data - VEOG_data
-    
-    #plt.plot(trigger_data)
+ 
     
     ## make trigger time series
     
-    trigger_time_series = np.zeros([len(trigger_data),])
+    trigger_time_series = np.zeros([np.shape(all_data)[1],])
     for trigger in triggers:
         trigger_time_series[trigger] = 0.001
         
@@ -91,59 +91,37 @@ for trial in range(0,len(file_names)):
     
     
     
-    if '30Hz' in file_name:
+    if '30Hz' in trial_name:
         period = period_30Hz
         #plt.subplot(1,2,1)
-        plt.figure(1)
-        plt.subplot(6,6,plot_count)
-        plt.title('30 Hz')
-        plt.figure(2)
-        plt.subplot(6,6,plot_count)
-        plt.title('30 Hz')
-       # plt.title('Trial ' + str(trial) + '  30Hz')
-    elif '40Hz' in file_name:
+
+        # plt.subplot(6,6,plot_count)
+        # plt.title(trial_name)
+    elif '40Hz' in trial_name:
         period = period_40Hz
        # plt.subplot(1,2,2)
-        plt.figure(1)
-        plt.subplot(6,6,plot_count)
-        plt.title('40 Hz')
-        plt.figure(2)
-        plt.subplot(6,6,plot_count)
-        plt.title('40 Hz')
-        #plt.title('Trial ' + str(trial) + '  ' + file_name + '  40Hz')
+
+        # plt.subplot(6,6,plot_count)
+        # plt.title(trial_name)
+       
     
     
-    for electrode in (11, 16, 25):
+    for electrode in range(0,64):  #(11, 16, 25):
     
         
-        data = np.array(raw[electrode,:], dtype=object) 
-        
-        data = data[0,]
-        
-        data = data.flatten()
-        
+        data = all_data[electrode,:]
         
         SSVEP = functions.make_SSVEPs(data, triggers, period) 
         
-        plt.figure(1)
-        plt.subplot(6,6,plot_count)
-        
-        plt.plot(SSVEP, label = chan_names[electrode])
-        
-        
-        length = 100
-        induced_fft = functions.induced_fft(data, triggers, length, sample_rate) # length = length of segment to use in seconds (1/length = the frequency resolution), sample rate in Hz
-            
-        time_axis = np.arange(0,sample_rate,1/length)    
-    
-        plt.figure(2)
-        plt.subplot(6,6,plot_count)
-        
-        plt.plot(time_axis,induced_fft)
-        plt.xlim([0, 10])
+        average_reference_SSVEP = functions.make_SSVEPs(average_reference, triggers, period) 
 
-  #  plt.legend()
-  #  plt.ylim([-0.0000015, 0.0000015])
+        plt.subplot(8,8,electrode+1)
+        
+        plt.plot(SSVEP)  #, label = chan_names[electrode])
+        plt.plot(average_reference_SSVEP)
+        plt.plot(SSVEP-average_reference_SSVEP)
+        plt.title(chan_names[electrode])
+
+
     
-    
-plt.legend()    
+#plt.legend()    
