@@ -21,11 +21,11 @@ sample_rate = 5000
 length_of_data = length_of_data_in_seconds * sample_rate
 
 
-num_triggers_to_use = 1000
-
 amplitude_of_noise = 10
 
 print('Amplitude of noise = ' + str(amplitude_of_noise))
+
+plt.suptitle('Amplitude of noise = ' + str(amplitude_of_noise))
 
 noise = np.random.rand(length_of_data,) * amplitude_of_noise
 
@@ -40,6 +40,25 @@ period = int(sample_rate/flicker_frequency)
 time_vector = np.arange(0,period)
 one_cycle_sine_wave = np.sin(2 * np.pi * flicker_frequency/sample_rate * time_vector) * amplitude_of_SSVEP
 
+
+# function for comparing the fit of any SSVEP using a subset of triggers to the true SSVEP (using all triggers)
+def fit_abs(SSVEP_1, SSVEP_2):
+    absolute_difference = np.abs(SSVEP_1 - SSVEP_2)
+    mean_abs_difference = absolute_difference.mean()
+    return mean_abs_difference
+
+
+## function to compare the SSVEP with a slightly bigger SSVEP using the above fit function
+
+def fit_compare_bigger(running_SSVEP, test_SSVEP):
+    
+    bigger_running_SSVEP = running_SSVEP * 1.0001
+    
+    if fit_abs(bigger_running_SSVEP,test_SSVEP) < fit_abs(running_SSVEP,test_SSVEP):
+        return True
+    else:
+        return False
+    
 
 
 for condition_count in range(0,2):
@@ -58,9 +77,9 @@ for condition_count in range(0,2):
     
     k = 0
     while k < length_of_data:
-        if condition == 'null':
+        if condition == 'null': # in the null condition, there is no variation in the size of the SSVEP
             scaling_factor = 1
-        elif condition == 'variation':
+        elif condition == 'variation': # in the variation condition, the SSVEP is a random size each time
             scaling_factor = random.random()*2
 
         true_signal[k:k+period] = one_cycle_sine_wave * scaling_factor
@@ -83,62 +102,67 @@ for condition_count in range(0,2):
     # plt.plot(trigger_time_series)
     
     
-
-    SSVEP = functions.make_SSVEPs(data, triggers, period)
+    # make the true SSVEP
+    true_SSVEP = functions.make_SSVEPs(data, triggers, period)
     
+    plt.plot(true_SSVEP,'b', label = 'True SSVEP')
     
-    if condition == 'null':
-        plt.plot(SSVEP,'b', label = condition)
-    elif condition == 'variation':
-        plt.plot(SSVEP,'r', label = condition)
+     
         
     
     ### make smallest and largest SSVEP
     
     random.shuffle(triggers)
-
-    start_num = 10
-
-
-    small_triggers_count = start_num
-    big_triggers_count = start_num
-
-    small_triggers = triggers[0:start_num]
-    big_triggers = triggers[start_num:start_num*2]
     
-    start_num = start_num * 2
+    random_half_triggers_1 = triggers[0:int(len(triggers)/2)]
+    random_half_triggers_2 = triggers[int(len(triggers)/2):len(triggers)]
     
+    random_SSVEP_1 = functions.make_SSVEPs(data, random_half_triggers_1, period)
+    random_SSVEP_2 = functions.make_SSVEPs(data, random_half_triggers_2, period)
+
+    
+    if fit_compare_bigger(random_SSVEP_1, random_SSVEP_2):
+        running_SSVEP = np.copy(random_SSVEP_1)
+        bigger_triggers = np.copy(random_half_triggers_1)
+        smaller_triggers = np.copy(random_half_triggers_2)
+    else:
+        running_SSVEP = np.copy(random_SSVEP_2)
+        bigger_triggers = np.copy(random_half_triggers_2)
+        smaller_triggers = np.copy(random_half_triggers_1)
    
-    for trigger_num in range(start_num,len(triggers)):
         
-        print('Trigger ' + str(trigger_num) + ' of ' + str(len(triggers)))
+    running_SSVEP = functions.make_SSVEPs(data, bigger_triggers, period)
+    
+    num_loops = 10000
+    
+    for loop in range(0,num_loops):
         
-        trigger = triggers[trigger_num]
+        print('Loop ' + str(loop) + ' of ' + str(num_loops))
         
-        running_small_SSVEP = functions.make_SSVEPs(data, small_triggers, period)
+        temp_bigger_trigs = np.copy(bigger_triggers)
+        
+        # select a random trigger from the other triggers to swap with
+       
+        bigger_trigger_to_swap = random.randint(0, len(bigger_triggers)-1)
+        smaller_trigger_to_swap = random.randint(0, len(smaller_triggers)-1)
+        
+        temp_bigger_trigs[bigger_trigger_to_swap] = smaller_triggers[smaller_trigger_to_swap]
 
-        running_big_SSVEP = functions.make_SSVEPs(data, big_triggers, period)
+        temp_SSVEP = functions.make_SSVEPs(data, temp_bigger_trigs, period)
 
-        temp_small_triggers = np.append(small_triggers, trigger_num)
-
-        temp_small_SSVEP = functions.make_SSVEPs(data, temp_small_triggers, period)
-        
-        if np.ptp(temp_small_SSVEP) < np.ptp(running_small_SSVEP):
-            small_triggers = np.append(small_triggers,trigger)
+        if fit_compare_bigger(running_SSVEP, temp_SSVEP):
             
-        temp_big_triggers = np.append(big_triggers, trigger_num)
+            smaller_triggers[smaller_trigger_to_swap] = bigger_triggers[bigger_trigger_to_swap]
+            bigger_triggers[bigger_trigger_to_swap] = temp_bigger_trigs[bigger_trigger_to_swap]
+            
+            running_SSVEP = functions.make_SSVEPs(data, bigger_triggers, period)
+            
+            print('Bigger')
+            
+            
+    bigger_SSVEP =  functions.make_SSVEPs(data, bigger_triggers, period)     
 
-        temp_big_SSVEP = functions.make_SSVEPs(data, temp_big_triggers, period)
-
-        if np.ptp(temp_big_SSVEP) > np.ptp(running_big_SSVEP):
-            big_triggers = np.append(big_triggers,trigger)
-
-
-    small_SSVEP = functions.make_SSVEPs(data, small_triggers, period)
-    big_SSVEP = functions.make_SSVEPs(data, big_triggers, period)
-
-    plt.plot(small_SSVEP, label = condition + ' small')
-    plt.plot(big_SSVEP, label = condition + ' big')
+    plt.plot(bigger_SSVEP,'r', label = 'Bigger SSVEP')
 
    # correlation_split = functions.compare_SSVEPs_split(data, triggers, period)
     
