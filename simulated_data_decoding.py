@@ -7,6 +7,8 @@ Created on Tue Feb 21 17:29:18 2023
 """
 
 
+
+
 import numpy as np
 import matplotlib.pyplot as plt
 from flicker_analysis_package import functions
@@ -40,7 +42,7 @@ signal_2 = np.tile(sine_wave_2, num_flickers)
 triggers_1 = np.arange(0,len(signal_1),period)
 triggers_2 = np.arange(0,len(signal_2),period)
 
-numbers_of_loops_to_test = (1,10)
+numbers_of_loops_to_test = (1,10,100)
 
 for loop_counter in range(0,len(numbers_of_loops_to_test)): # loop for different numbers of repetitions for each decoding attempt
     
@@ -106,7 +108,7 @@ for loop_counter in range(0,len(numbers_of_loops_to_test)): # loop for different
     #plt.plot(scores)
     
     plt.subplot(1,3,loop_counter+1)  
-    plt.title(str(loop_counter) + ' loops')        
+    plt.title(str(num_loops) + ' loops')        
   
     
     max_value = max(average_for_each_experiment)

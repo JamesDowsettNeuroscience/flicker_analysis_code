@@ -158,6 +158,40 @@ def make_SSVEPs(data, triggers, period):
     return SSVEP
 
 
+##Function to make SSVEPs but randomly shuffling the data in each segment
+def make_SSVEPs_random(data, triggers, period):
+    import numpy as np
+    import random
+
+    segment_matrix = np.zeros([len(triggers), period]) # empty matrix to put segments into
+    
+    seg_count = 0 # keep track of the number of segments
+    
+    # loop through all triggers and put the corresponding segment of data into the matrix
+    for trigger in triggers:
+        
+        # select a segment of data the lenght of the flicker period, starting from the trigger time 
+        segment =  data[trigger:trigger+period] 
+        
+        randomised_segment = np.copy(segment)
+        
+        random.shuffle(randomised_segment)
+        
+        segment_matrix[seg_count,:] = randomised_segment
+
+        seg_count += 1
+        
+
+    SSVEP = segment_matrix.mean(axis=0) # average to make SSVEP
+    
+    SSVEP = SSVEP - SSVEP.mean() # baseline correct
+    
+    
+    return SSVEP
+
+
+
+
 ### signal to noise ratio by randomly shuffling the data points of each segment and then making the SSVEP
 
 def SNR_random(data, triggers, period):
@@ -331,91 +365,6 @@ def phase_shift_SSVEPs_split(data, triggers, period):
 
 
 
-
-##Function to make SSVEPs (randomly shuffle data in each segment, then average - way of calculating signal-to-noise ratio)
-## returns signal strength as a Z score
-def make_SSVEPs_random(data, triggers, period, num_loops):
-    ## make SSVEP with all segments
-    
-    import numpy as np
-    import matplotlib.pyplot as plt
-    import random 
-
-    segment_matrix = np.zeros([len(triggers), period]) # empty matrix to put segments into
-    
-    seg_count = 0 # keep track of the number of segments
-    
-    # loop through all triggers and put the corresponding segment of data into the matrix
-    for trigger in triggers:
-        
-        # select a segment of data the lenght of the flicker period, starting from the trigger time 
-        segment =  data[trigger:trigger+period] 
-        
-        segment_matrix[seg_count,:] = segment
-    
-        seg_count += 1
-    
-    SSVEP = segment_matrix.mean(axis=0) # average to make SSVEP
-    
-    SSVEP = SSVEP - SSVEP.mean() # baseline correct
-    
-    
-    # permutation tests on noise
-    
-    
-    random_amplitudes = np.zeros([num_loops,])
-    
-    for loop in range(0,num_loops):
-        
-       # print(loop)
-        # make random SSVEP 
-        
-        shuffled_segment_matrix =  np.zeros([len(triggers), period])  
-        
-        # loop through all triggers and put the corresponding segment of data into the matrix
-        seg_count = 0 # keep track of the number of segments
-        
-        for trigger in triggers:
-            
-            segment =  data[trigger:trigger+period] 
-        
-            random.shuffle(segment) # randomly shuffle the data points
-            
-            shuffled_segment_matrix[seg_count,:] = segment
-            
-            seg_count += 1
-        
-        random_SSVEP = shuffled_segment_matrix.mean(axis=0) # average to make SSVEP
-        
-        random_SSVEP = random_SSVEP - random_SSVEP.mean() # baseline correct
-        
-        random_amplitudes[loop] = np.ptp(random_SSVEP)
-    
-    
-    # plt.plot(random_SSVEP,'k') # plot the last random shuffle, just to see
-    
-    # plt.plot(SSVEP,'b') # plot the true SSVEP
-    
-    
-    
-    true_amplitude = np.ptp(SSVEP)
-    
-    print('True amplitude = ', true_amplitude)
-    
-    average_noise = random_amplitudes.mean()
-    
-    print('Amplitude of noise = ', average_noise)
-    
-    std_noise = np.std(random_amplitudes)
-    
-    print('Standard Deviation noise = ', std_noise)
-    
-    Z_score  = (true_amplitude-average_noise) / std_noise
-    
-    print('Z_score = ', Z_score)
-    
-    return Z_score
-   
 
 
 ##Function for linear interpolation of trigger artefacts (plot SSVEP showing before and after in this function)

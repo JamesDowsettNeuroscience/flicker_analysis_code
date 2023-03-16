@@ -54,7 +54,7 @@ laplacian = 0 ## choose to use laplacian montage or not: 0 = normal reference, 1
 
 plot_count = 0
 
-for trial_name in trial_names[20:33]:
+for trial_name in trial_names[30:35]:
     
     print('\n '  + trial_name + '\n')
     
