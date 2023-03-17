@@ -51,77 +51,133 @@ laplacian = 0 ## choose to use laplacian montage or not: 0 = normal reference, 1
 
 #plt.figure()
 
+#############   SSVEPs    ########################
 
-plot_count = 0
+# plot_count = 0
 
-for trial_name in trial_names[30:35]:
+# for trial_name in trial_names[30:35]:
     
-    print('\n '  + trial_name + '\n')
+#     print('\n '  + trial_name + '\n')
     
-    plot_count += 1
+#     plot_count += 1
 
-    plt.figure()
-    plt.suptitle(trial_name)
+#     plt.figure()
+#     plt.suptitle(trial_name)
 
     
-    ## load triggers
+#     ## load triggers
     
-    triggers = np.load(path + trial_name + '_triggers.npy')
+#     triggers = np.load(path + trial_name + '_triggers.npy')
     
     
-    ## load data
-    if laplacian == 0:
-        all_data = np.load(path + trial_name + '_all_data.npy')
+#     ## load data
+#     if laplacian == 0:
+#         all_data = np.load(path + trial_name + '_all_data.npy')
         
-        average_reference = all_data.mean(0)
-        #all_data = all_data - all_data.mean(0)
+#         average_reference = all_data.mean(0)
+#         #all_data = all_data - all_data.mean(0)
         
-    elif laplacian == 1:
-        all_data = np.load(path + trial_name + '_all_data_laplacian.npy')
+#     elif laplacian == 1:
+#         all_data = np.load(path + trial_name + '_all_data_laplacian.npy')
     
  
     
-    ## make trigger time series
+#     ## make trigger time series
     
-    trigger_time_series = np.zeros([np.shape(all_data)[1],])
-    for trigger in triggers:
-        trigger_time_series[trigger] = 0.001
+#     trigger_time_series = np.zeros([np.shape(all_data)[1],])
+#     for trigger in triggers:
+#         trigger_time_series[trigger] = 0.001
         
-    #plt.plot(trigger_time_series)
+#     #plt.plot(trigger_time_series)
     
     
     
-    if '30Hz' in trial_name:
-        period = period_30Hz
-        #plt.subplot(1,2,1)
+#     if '30Hz' in trial_name:
+#         period = period_30Hz
+#         #plt.subplot(1,2,1)
 
-        # plt.subplot(6,6,plot_count)
-        # plt.title(trial_name)
-    elif '40Hz' in trial_name:
-        period = period_40Hz
-       # plt.subplot(1,2,2)
+#         # plt.subplot(6,6,plot_count)
+#         # plt.title(trial_name)
+#     elif '40Hz' in trial_name:
+#         period = period_40Hz
+#        # plt.subplot(1,2,2)
 
-        # plt.subplot(6,6,plot_count)
-        # plt.title(trial_name)
+#         # plt.subplot(6,6,plot_count)
+#         # plt.title(trial_name)
        
     
     
-    for electrode in range(0,64):  #(11, 16, 25):
+#     for electrode in range(0,64):  #(11, 16, 25):
     
         
-        data = all_data[electrode,:]
+#         data = all_data[electrode,:]
         
-        SSVEP = functions.make_SSVEPs(data, triggers, period) 
+#         SSVEP = functions.make_SSVEPs(data, triggers, period) 
         
-        average_reference_SSVEP = functions.make_SSVEPs(average_reference, triggers, period) 
+#         average_reference_SSVEP = functions.make_SSVEPs(average_reference, triggers, period) 
 
-        plt.subplot(8,8,electrode+1)
+#         plt.subplot(8,8,electrode+1)
         
-        plt.plot(SSVEP)  #, label = chan_names[electrode])
-        plt.plot(average_reference_SSVEP)
-        plt.plot(SSVEP-average_reference_SSVEP)
-        plt.title(chan_names[electrode])
+#         plt.plot(SSVEP)  #, label = chan_names[electrode])
+#         plt.plot(average_reference_SSVEP)
+#         plt.plot(SSVEP-average_reference_SSVEP)
+#         plt.title(chan_names[electrode])
 
 
     
 #plt.legend()    
+
+
+
+
+#######################  FFT compared to resting   #####################################
+
+
+
+# load file names and folders
+baseline_trial_names = np.load(path + 'balseline_trial_names.npy')
+
+## append the flicker and baseline file names into one array
+all_trial_names = np.asarray(trial_names)
+all_trial_names = np.append(all_trial_names,baseline_trial_names)
+
+patient_numbers = np.load(path + 'patient_numbers.npy')
+
+patient_numbers = np.sort(patient_numbers)
+
+
+for patient_number in patient_numbers:
+    
+    plt.figure()
+    plt.title('Patient ' + str(patient_number))
+    
+    trials = []
+    
+    for trial_name in all_trial_names:
+        if (str(patient_number) + '_') in trial_name:
+            trials.append(trial_name)
+    
+    print('\n' + str(patient_number))
+    print(trials)
+    print(' ')
+    
+    
+    for trial_name in trials:
+        
+        all_data = np.load(path + trial_name + '_all_data.npy')
+        
+        electrode = 48  ### 48 = POz
+        
+        data = all_data[electrode,:]
+        
+        length = 5
+        
+        fft_spectrum = functions.induced_fft(data, length, sample_rate)
+    
+        time_vector = np.arange(0,len(fft_spectrum)/length,1/length)
+    
+        plt.plot(time_vector,fft_spectrum, label = trial_name)
+
+    plt.ylim([0, fft_spectrum[2*length]])
+    plt.xlim([2, 60])
+    plt.legend()

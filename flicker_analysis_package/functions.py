@@ -390,7 +390,7 @@ def linear_interpolation(data, triggers, time_1, time_2, trig_length):
 #Description: Segment data into segments of a given length, do an FFT on each segment and then average the FFTs.
 
 
-def induced_fft(data, triggers, length, sample_rate): # length = length of segment to use in seconds (1/length = the frequency resolution), sample rate in Hz
+def induced_fft(data, length, sample_rate): # length = length of segment to use in seconds (1/length = the frequency resolution), sample rate in Hz
     
     import numpy as np
     from scipy import fftpack
@@ -406,22 +406,20 @@ def induced_fft(data, triggers, length, sample_rate): # length = length of segme
     k = 0
     
     while k < len(data) - length_of_segment: # loop until the end of data
-    
-        if k in triggers: # if data point is a trigger
-        
-            segment = data[k:k+length_of_segment] # get a segment of data
-    
-            segment = segment - segment.mean() # baseline correct
-                
-            segment_hanning = segment * np.hanning(length_of_segment) # multiply by hanning window
-                
-            fft_segment = np.abs(fftpack.fft(segment_hanning)) # FFT
-    
-            segment_matrix[seg_count,:] = fft_segment # put into matrix
-    
-            seg_count+=1
+
+        segment = data[k:k+length_of_segment] # get a segment of data
+
+        segment = segment - segment.mean() # baseline correct
             
-            k = k + length_of_segment # move forward the length of the segment, so segments are not overlapping
+        segment_hanning = segment * np.hanning(length_of_segment) # multiply by hanning window
+            
+        fft_segment = np.abs(fftpack.fft(segment_hanning)) # FFT
+
+        segment_matrix[seg_count,:] = fft_segment # put into matrix
+
+        seg_count+=1
+        
+        k = k + length_of_segment # move forward the length of the segment, so segments are not overlapping
     
         k+=1
     
