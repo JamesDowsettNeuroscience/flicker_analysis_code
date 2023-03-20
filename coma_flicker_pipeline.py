@@ -132,7 +132,12 @@ laplacian = 0 ## choose to use laplacian montage or not: 0 = normal reference, 1
 
 #######################  FFT compared to resting   #####################################
 
+# select the patients to include in analysis
+patient_numbers = np.load(path + 'patient_numbers.npy')
 
+patient_numbers = np.sort(patient_numbers)
+
+patient_numbers_to_use = [21, 25, 29, 30, 31, 32, 34, 35, 38, 41, 62]
 
 # load file names and folders
 baseline_trial_names = np.load(path + 'balseline_trial_names.npy')
@@ -141,15 +146,21 @@ baseline_trial_names = np.load(path + 'balseline_trial_names.npy')
 all_trial_names = np.asarray(trial_names)
 all_trial_names = np.append(all_trial_names,baseline_trial_names)
 
-patient_numbers = np.load(path + 'patient_numbers.npy')
+## for ALL patients, manually identify the dominat oscillation
+dominant_frequencies = np.zeros([len(patient_numbers),2])
+dominant_frequencies[:,0] = patient_numbers
+dominant_frequencies[:,1] = [ 6.4,  4.8,  5. ,  3. ,  4.2,  7.2,  4.4,  6.4,  7. ,  6.4,  6.6, 12.4,  1 ,  9.2]
 
-patient_numbers = np.sort(patient_numbers)
 
+peak_values = np.zeros([len(patient_numbers_to_use),3])
+peak_values_trial_1 = np.zeros([len(patient_numbers_to_use),3])
 
-for patient_number in patient_numbers:
+patient_count = 0
+
+for patient_number in patient_numbers_to_use:
     
     plt.figure()
-    plt.title('Patient ' + str(patient_number))
+    plt.suptitle('Patient ' + str(patient_number))
     
     trials = []
     
@@ -161,23 +172,79 @@ for patient_number in patient_numbers:
     print(trials)
     print(' ')
     
+    ## find the correct dominant frequency
+    dominant_frequency = dominant_frequencies[np.where(dominant_frequencies[:,0] == patient_number),1]
+    
+    
     
     for trial_name in trials:
         
+       # electrodes_to_use = [48, 1]
+        
+       # for electrode_count in range(0,2):
+
+        electrode = 48  #electrodes_to_use[electrode_count]  ### 48 = POz
+       
+     #   plt.subplot(1,2,electrode_count+1)
+        
+             
+
         all_data = np.load(path + trial_name + '_all_data.npy')
-        
-        electrode = 48  ### 48 = POz
-        
+
         data = all_data[electrode,:]
         
         length = 5
         
         fft_spectrum = functions.induced_fft(data, length, sample_rate)
     
-        time_vector = np.arange(0,len(fft_spectrum)/length,1/length)
-    
-        plt.plot(time_vector,fft_spectrum, label = trial_name)
+        freq_vector = np.arange(0,len(fft_spectrum)/length,1/length)
+        
+        
+        ## store values
+        
+        frequency_index = int(dominant_frequency[0,] * length)
+        
+        range_index = length
+        
+        peak_range = fft_spectrum[frequency_index-range_index:frequency_index+range_index+1]
+        
+        average_peak_range = peak_range.mean()
+        
+        if 'trial_0' in trial_name:
+        
+            if '30Hz' in trial_name:
+                peak_values[patient_count,0] = average_peak_range
+            elif '40Hz' in trial_name:
+                peak_values[patient_count,1] = average_peak_range
+            elif 'baseline' in trial_name:
+                peak_values[patient_count,2] = average_peak_range
+                        
+        if 'trial_1' in trial_name:
+        
+            if '30Hz' in trial_name:
+                peak_values_trial_1[patient_count,0] = average_peak_range
+            elif '40Hz' in trial_name:
+                peak_values_trial_1[patient_count,1] = average_peak_range
+            elif 'baseline' in trial_name:
+                peak_values_trial_1[patient_count,2] = average_peak_range
+                                
+        
+        
+        
+        ## plots
+        
+        
+        plt.title(chan_names[electrode])    
+        
+        plt.plot(freq_vector,fft_spectrum, label = trial_name)
 
-    plt.ylim([0, fft_spectrum[2*length]])
-    plt.xlim([2, 60])
+        plt.ylim([0, fft_spectrum[2*length]])
+        plt.xlim([2, 60])
+        
+        plt.axvline(x = dominant_frequency, color = 'k', linestyle='--')
+        plt.axvline(x = dominant_frequency-1, color = 'k', linestyle='-.')
+        plt.axvline(x = dominant_frequency+1, color = 'k', linestyle='-.')   
+            
     plt.legend()
+    patient_count += 1
+    
