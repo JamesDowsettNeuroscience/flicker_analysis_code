@@ -248,3 +248,82 @@ for patient_number in patient_numbers_to_use:
     plt.legend()
     patient_count += 1
     
+    
+    
+    
+## sort peak values to use for analysis
+
+peak_values[9,2] = peak_values_trial_1[9,2] # patient 41, baseline was pre recording and labeled as "trial_1"
+
+
+peak_values[3,:] = peak_values_trial_1[3,:] # patient 30 no baseline in trial 0, use trial 1
+
+trial_to_add = [peak_values_trial_1[4,:]] # patient 31 was good both trials, use both
+peak_values = np.append(peak_values,trial_to_add, axis=0)
+
+trial_to_add = [peak_values_trial_1[6,:]] # patient 34 was good both trials, use both
+peak_values = np.append(peak_values,trial_to_add, axis=0)
+
+
+scores_as_percentage_baseline_30Hz = (100/peak_values[:,2]) * peak_values[:,0] 
+scores_as_percentage_baseline_40Hz = (100/peak_values[:,1]) * peak_values[:,0]     
+
+average_30Hz = scores_as_percentage_baseline_30Hz.mean()
+average_40Hz = scores_as_percentage_baseline_40Hz.mean()
+
+
+
+## permutation tests
+
+print('running permutation tests ...\n')
+
+import random
+import scipy.stats
+
+
+num_loops = 100000
+
+for freq_to_test in(0,1):# 0 = 30 Hz, 1 = 40 Hz
+    
+    if freq_to_test == 0:
+        true_average = average_30Hz
+    elif freq_to_test == 1: 
+        true_average = average_40Hz
+    
+    average_shuffled_values = np.zeros([num_loops,])
+    
+    for loop in range(0,num_loops):
+        
+        shuffled_values = np.zeros([14,2])
+        
+        for k in range(0,len(peak_values)):
+            
+            if random.choice([0, 1]) == 0: # keep the same labels
+                shuffled_values[k,0] = peak_values[k,freq_to_test]
+                shuffled_values[k,1] = peak_values[k,2]
+            else: # swap the labels
+                shuffled_values[k,0] = peak_values[k,2]
+                shuffled_values[k,1] = peak_values[k,freq_to_test]
+                
+                
+        scores_as_percentage_baseline = (100/shuffled_values[:,1]) * shuffled_values[:,0] 
+    
+        average_shuffled_values[loop] = scores_as_percentage_baseline.mean()
+    
+    
+   # plt.hist(average_shuffled_values)
+
+
+    Z_score = (true_average - average_shuffled_values.mean()) / np.std(average_shuffled_values) # calculate Z score
+
+    
+    #find p-value for two-tailed test
+    p_value = scipy.stats.norm.sf(abs(Z_score))*2
+    
+    if freq_to_test == 0:
+        print('30 Hz Z score = ' + str(Z_score))
+        
+    elif freq_to_test == 1: 
+        print('40 Hz Z score = ' + str(Z_score))
+
+    print ('p = ' + str(p_value) + '\n')
