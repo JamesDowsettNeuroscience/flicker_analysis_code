@@ -671,195 +671,196 @@ for subject in range(1,num_subjects+1):
             active_SSVEP = functions.make_SSVEPs(active_data, active_triggers, period)
             control_SSVEP = functions.make_SSVEPs(control_data, control_triggers, period)
          
-            plt.plot(active_SSVEP)
-            plt.plot(control_SSVEP)
+            plt.plot(active_SSVEP, label = 'Moving')
+            plt.plot(control_SSVEP, label = 'Still')
              
+            plt.legend()
                 
              
      
         ############# decode each condition vs. control   ##############     
  
-# subjects_to_use = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15]
+subjects_to_use = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17]
 
-# decoding_scores = np.zeros([64, 2, 3, len(subjects_to_use)]) # electrode, frequency, condition type , subject   
+decoding_scores = np.zeros([64, 2, 3, len(subjects_to_use)]) # electrode, frequency, condition type , subject   
  
-# subject_count = 0
+subject_count = 0
 
-# for subject in subjects_to_use:
+for subject in subjects_to_use:
     
-#     print('\n Subject ' + str(subject) + '\n')
+    print('\n Subject ' + str(subject) + '\n')
     
-#     for frequency in range(0,2):
+    for frequency in range(0,2):
         
-#         print('\n ' + frequency_names[frequency])
-        
-        
-        
-#         # ### linear interpolation times
-#         if frequency == 0:
-#             trig_1_time = trig_1_time_10Hz
-#             trig_2_time = trig_2_time_10Hz
-#             trig_length =  trig_length_10Hz
-#         elif frequency == 1:
-#             trig_1_time = trig_1_time_40Hz
-#             trig_2_time = trig_2_time_40Hz
-#             trig_length =  trig_length_40Hz
+        print('\n ' + frequency_names[frequency])
         
         
-#         for condition_type in range(0,3):
+        
+        # ### linear interpolation times
+        if frequency == 0:
+            trig_1_time = trig_1_time_10Hz
+            trig_2_time = trig_2_time_10Hz
+            trig_length =  trig_length_10Hz
+        elif frequency == 1:
+            trig_1_time = trig_1_time_40Hz
+            trig_2_time = trig_2_time_40Hz
+            trig_length =  trig_length_40Hz
+        
+        
+        for condition_type in range(0,3):
             
-#             print(condition_names[condition_type])
+            print(condition_names[condition_type])
             
-#             if condition_type == 0:
-#                 conditions_to_use = (0,3)
-#             elif condition_type == 1:
-#                 conditions_to_use = (1,4)
-#             elif condition_type == 2:
-#                 conditions_to_use = (2,5)
+            if condition_type == 0:
+                conditions_to_use = (0,3)
+            elif condition_type == 1:
+                conditions_to_use = (1,4)
+            elif condition_type == 2:
+                conditions_to_use = (2,5)
                         
                 
-#             # get data and triggers for active and control conditions and save each seperatly
-#             for active_or_control in range(0,2):
+            # get data and triggers for active and control conditions and save each seperatly
+            for active_or_control in range(0,2):
                 
-#                 condition_count = conditions_to_use[active_or_control]
+                condition_count = conditions_to_use[active_or_control]
         
 
-#                 # get correct values for file name
-#                 if frequency == 0:
-#                     condition = condition_count+1
-#                     period = period_10Hz
-#                 elif frequency == 1:
-#                     condition = condition_count+7 
-#                     period = period_40Hz
+                # get correct values for file name
+                if frequency == 0:
+                    condition = condition_count+1
+                    period = period_10Hz
+                elif frequency == 1:
+                    condition = condition_count+7 
+                    period = period_40Hz
                  
-#                 ## load data    
-#                 if laplacian == 0:
-#                     all_data = np.load(path + 'S' + str(subject) + '_' + str(condition) + '_all_data.npy')
-#                 elif laplacian == 1:
-#                     all_data = np.load(path + 'S' + str(subject) + '_' + str(condition) + '_all_data_laplacian.npy')      
+                ## load data    
+                if laplacian == 0:
+                    all_data = np.load(path + 'S' + str(subject) + '_' + str(condition) + '_all_data.npy')
+                elif laplacian == 1:
+                    all_data = np.load(path + 'S' + str(subject) + '_' + str(condition) + '_all_data_laplacian.npy')      
                  
-#                 ## load triggers
+                ## load triggers
                 
-#                 if frequency == 0:
-#                     triggers = np.load(path + 'S' + str(subject) + '_' + str(condition_count) + '_10Hz_good_triggers.npy')
-#                 if frequency == 1:
-#                     triggers = np.load(path + 'S' + str(subject) + '_' + str(condition_count) + '_40Hz_good_triggers.npy')
+                if frequency == 0:
+                    triggers = np.load(path + 'S' + str(subject) + '_' + str(condition_count) + '_10Hz_good_triggers.npy')
+                if frequency == 1:
+                    triggers = np.load(path + 'S' + str(subject) + '_' + str(condition_count) + '_40Hz_good_triggers.npy')
                    
                 
                  
-#                 if active_or_control == 0:
-#                     all_active_data = np.copy(all_data)
-#                     active_triggers = np.copy(triggers)
-#                 elif active_or_control == 1:
-#                     all_control_data = np.copy(all_data)
-#                     control_triggers = np.copy(triggers)
+                if active_or_control == 0:
+                    all_active_data = np.copy(all_data)
+                    active_triggers = np.copy(triggers)
+                elif active_or_control == 1:
+                    all_control_data = np.copy(all_data)
+                    control_triggers = np.copy(triggers)
         
         
-#             for electrode in range(0,64):
+            for electrode in range(0,64):
                 
                 
                 
-#                 ## get data from two conditions (active and control)
+                ## get data from two conditions (active and control)
 
-#                 active_data = all_active_data[electrode,:]
-#                 control_data = all_control_data[electrode,:]
+                active_data = all_active_data[electrode,:]
+                control_data = all_control_data[electrode,:]
             
-#                 # linear interpolation
-#                 active_data = functions.linear_interpolation(active_data, active_triggers, trig_1_time, trig_2_time, trig_length)
-#                 control_data = functions.linear_interpolation(control_data, control_triggers, trig_1_time, trig_2_time, trig_length)
+                # linear interpolation
+                active_data = functions.linear_interpolation(active_data, active_triggers, trig_1_time, trig_2_time, trig_length)
+                control_data = functions.linear_interpolation(control_data, control_triggers, trig_1_time, trig_2_time, trig_length)
             
             
-#                 ## Decode correlations
+                ## Decode correlations
             
-#                 num_loops = 10
+                num_loops = 10
                 
-#                 average_percent_correct = functions.decode_correlation(active_data, control_data, active_triggers, control_triggers, period, num_loops)
+                average_percent_correct = functions.decode_correlation(active_data, control_data, active_triggers, control_triggers, period, num_loops)
                 
-#                 print('\nElectrode number: ' + str(electrode) + ' -- ' + electrode_names[electrode] + ' \nAverage percent correct = ' +  str(average_percent_correct) + '\n')
+                print('\nElectrode number: ' + str(electrode) + ' -- ' + electrode_names[electrode] + ' \nAverage percent correct = ' +  str(average_percent_correct) + '\n')
                 
-#                 decoding_scores[electrode, frequency, condition_type, subject_count] = average_percent_correct
+                decoding_scores[electrode, frequency, condition_type, subject_count] = average_percent_correct
                 
 
-#     subject_count += 1
+    subject_count += 1
     
     
 
-# ### save decoding scores
+### save decoding scores
 
-# np.save(path + 'decoding_scores_' + str(num_loops) + '_loops', decoding_scores)
+np.save(path + 'decoding_scores_' + str(num_loops) + '_loops', decoding_scores)
 
-# ### load decoding scores
+### load decoding scores
 
-# decoding_scores = np.load(path + 'decoding_scores_' + str(num_loops) + '_loops.npy')
-
-
+decoding_scores = np.load(path + 'decoding_scores_' + str(num_loops) + '_loops.npy')
 
 
-# #### Topo plot
 
-# fig = plt.figure()
 
-# print('\nPz decoding accuracy: ')
+#### Topo plot
 
-# for frequency in (0,1): # 0 = 10Hz, 1 = 40Hz
+fig = plt.figure()
+
+print('\nPz decoding accuracy: ')
+
+for frequency in (0,1): # 0 = 10Hz, 1 = 40Hz
     
-#   #  plt.suptitle(frequency_names[frequency])
+  #  plt.suptitle(frequency_names[frequency])
   
-#     print('\n' + frequency_names[frequency] + '\n')
+    print('\n' + frequency_names[frequency] + '\n')
 
-#     for condition_type in range(0,3):
+    for condition_type in range(0,3):
         
-#         decoding_scores_for_condition = decoding_scores[:,frequency,condition_type,:]
+        decoding_scores_for_condition = decoding_scores[:,frequency,condition_type,:]
         
-#         print(condition_names[condition_type] )
-#         print(decoding_scores_for_condition[18,:])
-#         print('Average decoding score = ' + str(decoding_scores_for_condition[18,:].mean()))
-#         print(' ')
+        print(condition_names[condition_type] )
+        print(decoding_scores_for_condition[18,:])
+        print('Average decoding score = ' + str(decoding_scores_for_condition[18,:].mean()))
+        print(' ')
         
-#         values_to_plot =  decoding_scores_for_condition.mean(axis=1)
+        values_to_plot =  decoding_scores_for_condition.mean(axis=1)
         
         
-#         plt.subplot(2,3,(condition_type+1) + (frequency*3))
+        plt.subplot(2,3,(condition_type+1) + (frequency*3))
         
-#         plt.title(condition_names[condition_type] + ' ' + frequency_names[frequency])
+        plt.title(condition_names[condition_type] + ' ' + frequency_names[frequency])
         
-#         min_value = 50
-#         max_value = 100
+        min_value = 50
+        max_value = 100
         
-#         # Initialize required fields
+        # Initialize required fields
         
-#         channel_names = electrode_names
+        channel_names = electrode_names
         
-#         import mne
+        import mne
         
-#         sfreq = sample_rate
+        sfreq = sample_rate
         
-#         info = mne.create_info(channel_names, sfreq, ch_types = 'eeg')
+        info = mne.create_info(channel_names, sfreq, ch_types = 'eeg')
         
-#         montage = 'standard_1005'
+        montage = 'standard_1005'
         
-#         info.set_montage(montage)
+        info.set_montage(montage)
                     
           
           
-#         evoked_values = mne.EvokedArray(np.reshape(values_to_plot, (64,1)), info)
+        evoked_values = mne.EvokedArray(np.reshape(values_to_plot, (64,1)), info)
         
-#         evoked_values.set_montage(montage)
+        evoked_values.set_montage(montage)
         
-#         mne.viz.plot_topomap(evoked_values.data[:, 0], evoked_values.info,
-#         vmin=min_value, vmax=max_value, names=channel_names, show_names=True, show=True)
+        mne.viz.plot_topomap(evoked_values.data[:, 0], evoked_values.info,
+        vmin=min_value, vmax=max_value, names=channel_names, show_names=True, show=True)
         
-#         im,cm = mne.viz.plot_topomap(evoked_values.data[:, 0], evoked_values.info,
-#         vmin=min_value, vmax=max_value, names=channel_names, show_names=True, show=True)
+        im,cm = mne.viz.plot_topomap(evoked_values.data[:, 0], evoked_values.info,
+        vmin=min_value, vmax=max_value, names=channel_names, show_names=True, show=True)
         
                                 
-#         # manually fiddle the position of colorbar
-#         ax_x_start = 0.9
-#         ax_x_width = 0.04
-#         ax_y_start = 0.1
-#         ax_y_height = 0.8
-#         cbar_ax = fig.add_axes([ax_x_start, ax_y_start, ax_x_width, ax_y_height])
-#         clb = fig.colorbar(im, cax=cbar_ax)
+        # manually fiddle the position of colorbar
+        ax_x_start = 0.9
+        ax_x_width = 0.04
+        ax_y_start = 0.1
+        ax_y_height = 0.8
+        cbar_ax = fig.add_axes([ax_x_start, ax_y_start, ax_x_width, ax_y_height])
+        clb = fig.colorbar(im, cax=cbar_ax)
         
         
         

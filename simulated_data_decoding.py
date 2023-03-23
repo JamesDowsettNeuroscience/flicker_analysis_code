@@ -18,7 +18,7 @@ plt.figure()
 
 period = 100
 
-num_flickers = 10 #1200
+num_flickers = 1200
 
 t = np.arange(0,period)
 

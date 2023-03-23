@@ -49,83 +49,150 @@ start_times = np.load(path + 'start_times.npy')
 laplacian = 0 ## choose to use laplacian montage or not: 0 = normal reference, 1 = laplacian re-reference
 
 
-#plt.figure()
 
-#############   SSVEPs    ########################
 
-# plot_count = 0
+############   SSVEPs    ########################
 
-# for trial_name in trial_names[30:35]:
-    
-#     print('\n '  + trial_name + '\n')
-    
-#     plot_count += 1
+# select the patients to include in analysis
+patient_numbers = np.load(path + 'patient_numbers.npy')
 
-#     plt.figure()
-#     plt.suptitle(trial_name)
+patient_numbers = np.sort(patient_numbers)
 
+patient_numbers_to_use = [21, 24, 25,  30, 34, 35, 62] ## OK SSVEPs with average reference
+
+#patient_numbers_to_use = [21, 25, 35, 41, 62] ## OK SSVEPs in lapacian
+
+linear_interpolation_time_1_30Hz = [97, 97, 97, 90, 95, 96, 95]
+linear_interpolation_time_2_30Hz = [142, 142, 143, 143, 142, 143, 144]
+
+linear_interpolation_time_1_40Hz = [-1, -1, -1, -1, -1, -19, -1]
+linear_interpolation_time_2_40Hz = [81,81,78, 82, 80, 80, 80]
+
+
+SSVEP_amplitudes = np.zeros([len(patient_numbers_to_use),2])
+
+patient_count = 0
+
+for patient_number in patient_numbers_to_use:
     
-#     ## load triggers
+    plt.figure()
+    plt.suptitle('Patient ' + str(patient_number) + '  ' + str(patient_count))   
     
-#     triggers = np.load(path + trial_name + '_triggers.npy')
+      
+    trials = []
+    
+    for trial_name in trial_names:
+        if (str(patient_number) + '_') in trial_name:
+            trials.append(trial_name)
     
     
-#     ## load data
-#     if laplacian == 0:
-#         all_data = np.load(path + trial_name + '_all_data.npy')
+    if patient_number == 34: # patient 34 trial 1 data is corrupted, do not use
+        trials.remove('Patient_34_trial_1_30Hz')
+        trials.remove('Patient_34_trial_1_40Hz')
         
-#         average_reference = all_data.mean(0)
-#         #all_data = all_data - all_data.mean(0)
-        
-#     elif laplacian == 1:
-#         all_data = np.load(path + trial_name + '_all_data_laplacian.npy')
     
+    if patient_number == 30: # patient 30 both trial were OK, just use trial 0 for now
+        trials.remove('Patient_30_trial_1_30Hz')
+        trials.remove('Patient_30_trial_1_40Hz')   
+        
+    
+    print('\n' + str(patient_number))
+    print(trials)
+    print(' ')
+    
+    for trial_name in trials:
+
+        ## load triggers
+        
+        triggers = np.load(path + trial_name + '_triggers.npy')
  
-    
-#     ## make trigger time series
-    
-#     trigger_time_series = np.zeros([np.shape(all_data)[1],])
-#     for trigger in triggers:
-#         trigger_time_series[trigger] = 0.001
-        
-#     #plt.plot(trigger_time_series)
-    
-    
-    
-#     if '30Hz' in trial_name:
-#         period = period_30Hz
-#         #plt.subplot(1,2,1)
+        ## load data
+        if laplacian == 0:
+            all_data = np.load(path + trial_name + '_all_data.npy')
 
-#         # plt.subplot(6,6,plot_count)
-#         # plt.title(trial_name)
-#     elif '40Hz' in trial_name:
-#         period = period_40Hz
-#        # plt.subplot(1,2,2)
-
-#         # plt.subplot(6,6,plot_count)
-#         # plt.title(trial_name)
-       
-    
-    
-#     for electrode in range(0,64):  #(11, 16, 25):
-    
+            average_reference = all_data.mean(0)
+            #all_data = all_data - all_data.mean(0)
+            
+        elif laplacian == 1:
+            all_data = np.load(path + trial_name + '_all_data_laplacian.npy')
         
-#         data = all_data[electrode,:]
+     
         
-#         SSVEP = functions.make_SSVEPs(data, triggers, period) 
+        ## make trigger time series
         
-#         average_reference_SSVEP = functions.make_SSVEPs(average_reference, triggers, period) 
-
-#         plt.subplot(8,8,electrode+1)
+        trigger_time_series = np.zeros([np.shape(all_data)[1],])
+        for trigger in triggers:
+            trigger_time_series[trigger] = 0.001
+            
+        #plt.plot(trigger_time_series)
         
-#         plt.plot(SSVEP)  #, label = chan_names[electrode])
-#         plt.plot(average_reference_SSVEP)
-#         plt.plot(SSVEP-average_reference_SSVEP)
-#         plt.title(chan_names[electrode])
-
-
+        
+        
+        if '30Hz' in trial_name:
+            period = period_30Hz
+            plt.subplot(1,2,1)
+            plt.title('30 Hz')
+            trig_1_time = linear_interpolation_time_1_30Hz[patient_count]
+            trig_2_time = linear_interpolation_time_2_30Hz[patient_count]
+           
+        elif '40Hz' in trial_name:
+            period = period_40Hz
+            plt.subplot(1,2,2)
+            plt.title('40 Hz')
     
-#plt.legend()    
+            trig_1_time = linear_interpolation_time_1_40Hz[patient_count]
+            trig_2_time = linear_interpolation_time_2_40Hz[patient_count]
+        
+        
+        
+        electrode = 48  #electrodes_to_use[electrode_count]  ### 48 = POz
+        #for electrode in range(0,64):  #(11, 16, 25):
+        
+        
+        data = all_data[electrode,:]
+        
+        # linear interpolation
+        trig_length = 15
+        if patient_number == 35 and '40Hz' in trial_name: # patient 35 needs a longer interpolation
+            trig_length = 30
+
+        data = functions.linear_interpolation(data, triggers, trig_1_time, trig_2_time, trig_length)
+  
+        if laplacian == 0:
+            average_reference = functions.linear_interpolation(average_reference, triggers, trig_1_time, trig_2_time, trig_length)
+            average_reference_SSVEP = functions.make_SSVEPs(average_reference, triggers, period) 
+           
+            SSVEP = functions.make_SSVEPs(data, triggers, period) 
+            SSVEP = SSVEP-average_reference_SSVEP # re-reference
+            
+        elif laplacian == 1:
+            
+            plt.plot(SSVEP, label = trial_name)
+            SSVEP = functions.make_SSVEPs(data, triggers, period) 
+         
+        ## record SSVEP amplitudes
+        if '30Hz' in trial_name:
+            SSVEP_amplitudes[patient_count,0] = np.ptp(SSVEP)
+        elif '40Hz' in trial_name:
+            SSVEP_amplitudes[patient_count,1] = np.ptp(SSVEP)
+        
+
+        plt.plot(SSVEP, label = trial_name)
+
+
+            #plt.subplot(8,8,electrode+1)
+           # plt.ylim([-0.00025, 0.00025])
+       # plt.plot(average_reference_SSVEP)
+       # 
+           # plt.title(chan_names[electrode] + ' '  + str(electrode))
+
+    plt.subplot(1,2,1)
+    plt.legend()    
+    plt.subplot(1,2,2)
+    plt.legend()    
+
+    patient_count += 1
+
 
 
 
@@ -294,7 +361,7 @@ for freq_to_test in(0,1):# 0 = 30 Hz, 1 = 40 Hz
     
     for loop in range(0,num_loops):
         
-        shuffled_values = np.zeros([14,2])
+        shuffled_values = np.zeros([len(peak_values),2])
         
         for k in range(0,len(peak_values)):
             
