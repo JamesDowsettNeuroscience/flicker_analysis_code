@@ -145,12 +145,13 @@ def make_SSVEPs(data, triggers, period):
         # select a segment of data the lenght of the flicker period, starting from the trigger time 
         segment =  data[trigger:trigger+period] 
         
-        segment_matrix[seg_count,:] = segment
-
-        seg_count += 1
+        if len(segment) == period:
+            segment_matrix[seg_count,:] = segment
+    
+            seg_count += 1
         
 
-    SSVEP = segment_matrix.mean(axis=0) # average to make SSVEP
+    SSVEP = segment_matrix[0:seg_count,:].mean(axis=0) # average to make SSVEP
     
     SSVEP = SSVEP - SSVEP.mean() # baseline correct
     
@@ -177,12 +178,13 @@ def make_SSVEPs_random(data, triggers, period):
         
         random.shuffle(randomised_segment)
         
-        segment_matrix[seg_count,:] = randomised_segment
-
-        seg_count += 1
+        if len(segment) == period:
+            segment_matrix[seg_count,:] = randomised_segment
+    
+            seg_count += 1
         
 
-    SSVEP = segment_matrix.mean(axis=0) # average to make SSVEP
+    SSVEP = segment_matrix[seg_count,:].mean(axis=0) # average to make SSVEP
     
     SSVEP = SSVEP - SSVEP.mean() # baseline correct
     
