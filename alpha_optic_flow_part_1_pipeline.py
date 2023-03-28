@@ -66,6 +66,8 @@ for subject in subjects_to_use:
             
             triggers = np.load(path + trial_name + '_all_triggers.npy')
             
+            all_acc_data = np.load(path + trial_name + '_all_acc_data.npy')
+            
             REF_2_data = all_data[6,:] # get the data for the second reference, to re-reference (left and right ears)
             
                         ## make time series to check triggers
@@ -174,47 +176,133 @@ for subject in subjects_to_use:
     subject_count += 1
                 
                 
+              
+ 
+
+
+
+##########   get individual alpha frequencies   ###############################
+
+subjects_to_use = np.arange(1,21)
+
+electrode = 0
+
+length = 5 # length of FFT in seconds
+
+
+plt.figure()
+plt.suptitle('Electrode: ' + electrode_names[electrode] + '  Freq resolution = ' + str(1/length) )
+
+
+freq_axis = np.arange(0,sample_rate,1/length)
+
+condition_colours = ('b', 'r', 'g')
+
+subject_count = 0
+
+alpha_peaks = np.zeros([len(subjects_to_use), 3])
+IAFs = np.zeros([len(subjects_to_use), 3])
+
+
+subject_count = 0
+
+for subject in subjects_to_use:
+    
+    print('\n Subject ' + str(subject) + '\n')
+      
+    plt.subplot(4,5,subject)
+   
+    
+    
+    for condition in(1,2,3):
+        
+        print('Condition ' + str(condition))
+        
+        block = 3
+
+        trial_name = 'subject_' + str(subject) + '_block_' + str(block) + '_condition_' + str(condition) 
+        
+        all_data = np.load(path + trial_name + '_all_data.npy')
+        
+        REF_2_data = all_data[6,:] # get the data for the second reference, to re-reference (left and right ears)
+
+        #for electrode in range(0,6):
+            
+        data = all_data[electrode,:]
+            
+        data = data - (REF_2_data/2) # re-reference
+            
+        induced_fft = functions.induced_fft(data, length, sample_rate)
+        
+        plt.plot(freq_axis, induced_fft, color = condition_colours[condition-1])
+        
+        alpha_range = induced_fft[8*length:14*length]
+        
+        alpha_peak = max(alpha_range)
+        alpha_peaks[subject_count, condition-1] = alpha_peak
+        
+        IAF = freq_axis[8*length + np.argmax(alpha_range)]
+        IAFs[subject_count, condition-1] = IAF
+        
+        plt.plot(IAF, alpha_peak, '*', color = condition_colours[condition-1])
+          
+    plt.xlim([4, 16])
+    plt.ylim([0, max(alpha_peaks[subject_count,:]) *1.1 ])
+    
+    plt.title('Subject: ' + str(subject) + ' ' + str(IAFs[subject_count, :]))
+                  
+    subject_count += 1
+                  
+                    
+                  
+             
+                
+             
+                
+             
+                
 
 ###### check block 1 and 2 correlations ##############
 
-block_1_and_2_correlations = np.zeros([subject_count,6,3,len(freq_bins)])
+# block_1_and_2_correlations = np.zeros([subject_count,6,3,len(freq_bins)])
 
-for subject in range(0,subject_count):
+# for subject in range(0,subject_count):
     
-    for electrode in range(0,6):
+#     for electrode in range(0,6):
     
-        for condition in range(0,3):
+#         for condition in range(0,3):
     
-            for current_bin in range(0,len(freq_bins)):
+#             for current_bin in range(0,len(freq_bins)):
                 
-                period = freq_bins[current_bin]
+#                 period = freq_bins[current_bin]
 
-                # subject, electrode, condition, block, freq bins, SSVEP data
-                block_1_SSVEP = all_SSVEPs[subject, electrode, condition, 0, current_bin, 0:period]
-                block_2_SSVEP = all_SSVEPs[subject, electrode, condition, 1, current_bin, 0:period]
+#                 # subject, electrode, condition, block, freq bins, SSVEP data
+#                 block_1_SSVEP = all_SSVEPs[subject, electrode, condition, 0, current_bin, 0:period]
+#                 block_2_SSVEP = all_SSVEPs[subject, electrode, condition, 1, current_bin, 0:period]
                 
-                block_1_and_2_correlations[subject, electrode, condition, current_bin] = np.corrcoef(block_1_SSVEP,block_2_SSVEP)[0,1]
+#                 block_1_and_2_correlations[subject, electrode, condition, current_bin] = np.corrcoef(block_1_SSVEP,block_2_SSVEP)[0,1]
     
     
-# plot block 1 and 2 correlations
-plt.figure()
-for electrode in range(0,6):
-    plt.subplot(3,2,electrode+1)
-    plt.title(electrode_names[electrode])
-    plt.ylim([0, 1])
-    for condition in range(0,3):
+# # plot block 1 and 2 correlations
+# plt.figure()
+# plt.suptitle('Average Block 1 : Block 2 correlations')
+# for electrode in range(0,6):
+#     plt.subplot(3,2,electrode+1)
+#     plt.title(electrode_names[electrode])
+#     plt.ylim([0, 1])
+#     for condition in range(0,3):
         
-        correlations_all_subjects = block_1_and_2_correlations[:, electrode, condition, :]
+#         correlations_all_subjects = block_1_and_2_correlations[:, electrode, condition, :]
     
-        average_correlations = correlations_all_subjects.mean(axis=0)
+#         average_correlations = correlations_all_subjects.mean(axis=0)
     
-        plt.plot(1000/freq_bins, average_correlations, label = condition_names[condition])
+#         plt.plot(1000/freq_bins, average_correlations, label = condition_names[condition])
         
-        # for current_bin in range(0,len(freq_bins)):
+#         # for current_bin in range(0,len(freq_bins)):
             
-        #     plt.scatter(np.ones([subject_count,])*(1000/freq_bins[current_bin])+(condition*0.1),correlations_all_subjects[:,current_bin])
+#         #     plt.scatter(np.ones([subject_count,])*(1000/freq_bins[current_bin])+(condition*0.1),correlations_all_subjects[:,current_bin])
     
-    plt.legend()
+#     plt.legend()
     
 
 
@@ -223,69 +311,121 @@ for electrode in range(0,6):
 
 ######### plot P3/P4 ratios ############
 
+# P3_P4_ratios = np.zeros([subject_count,3, len(freq_bins)])
 
+# plot_colors = ('b', 'r', 'g')
 
-
-P3_P4_ratios = np.zeros([subject_count,3, len(freq_bins)])
-
-plot_colors = ('b', 'r', 'g')
-
-for subject in range(0,subject_count):
+# for subject in range(0,subject_count):
     
-    for condition in range(0,3):
+#     for condition in range(0,3):
 
-      #  plt.figure()
-        for current_bin in range(0,len(freq_bins)):
+#       #  plt.figure()
+#         for current_bin in range(0,len(freq_bins)):
 
-            period = freq_bins[current_bin]
+#             period = freq_bins[current_bin]
             
-            # subject, electrode, condition, block, freq bins, SSVEP data
+#             # subject, electrode, condition, block, freq bins, SSVEP data
             
-            # SSVEP_P3 = all_SSVEPs[subject, 2, condition,block, current_bin, 0:period]
-            # SSVEP_P4 = all_SSVEPs[subject, 3, condition,block, current_bin, 0:period]
+#             # SSVEP_P3 = all_SSVEPs[subject, 2, condition,block, current_bin, 0:period]
+#             # SSVEP_P4 = all_SSVEPs[subject, 3, condition,block, current_bin, 0:period]
             
-            block_1_SSVEP_P3 = all_SSVEPs[subject, 2, condition,0, current_bin, 0:period]
-            block_1_SSVEP_P4 = all_SSVEPs[subject, 3, condition,0, current_bin, 0:period]
+#             block_1_SSVEP_P3 = all_SSVEPs[subject, 2, condition,0, current_bin, 0:period]
+#             block_1_SSVEP_P4 = all_SSVEPs[subject, 3, condition,0, current_bin, 0:period]
             
-            block_2_SSVEP_P3 = all_SSVEPs[subject, 2, condition,1, current_bin, 0:period]
-            block_2_SSVEP_P4 = all_SSVEPs[subject, 3, condition,1, current_bin, 0:period]
+#             block_2_SSVEP_P3 = all_SSVEPs[subject, 2, condition,1, current_bin, 0:period]
+#             block_2_SSVEP_P4 = all_SSVEPs[subject, 3, condition,1, current_bin, 0:period]
 
-            SSVEP_P3 = (block_1_SSVEP_P3 + block_2_SSVEP_P3)/2
-            SSVEP_P4 = (block_1_SSVEP_P4 + block_2_SSVEP_P4)/2
+#             SSVEP_P3 = (block_1_SSVEP_P3 + block_2_SSVEP_P3)/2
+#             SSVEP_P4 = (block_1_SSVEP_P4 + block_2_SSVEP_P4)/2
             
-            # plt.subplot(3,4,current_bin+1)
-            # plt.title(freq_bins[current_bin])      
-            # plt.plot(average_SSVEP_P3)
-            # plt.plot(average_SSVEP_P4)
+#             # plt.subplot(3,4,current_bin+1)
+#             # plt.title(freq_bins[current_bin])      
+#             # plt.plot(average_SSVEP_P3)
+#             # plt.plot(average_SSVEP_P4)
            
-            P3_P4_ratio = np.ptp(SSVEP_P3) / np.ptp(SSVEP_P4)
+#             P3_P4_ratio = np.ptp(SSVEP_P3) / np.ptp(SSVEP_P4)
             
-            P3_P4_ratios[subject, condition, current_bin] = P3_P4_ratio
+#             P3_P4_ratios[subject, condition, current_bin] = P3_P4_ratio
             
-           # print(P3_P4_ratio)
+#            # print(P3_P4_ratio)
             
             
-average_P3_P4_ratios = P3_P4_ratios.mean(axis=0)
+# average_P3_P4_ratios = P3_P4_ratios.mean(axis=0)
 
 
 
-plt.figure()
+# plt.figure()
+# plt.title('Average P3 / P4 ratios')
 
-for condition in range(0,3):
+# for condition in range(0,3):
     
-    plt.plot(1000/freq_bins,average_P3_P4_ratios[condition,:], label = condition_names[condition], color = plot_colors[condition])
+#     plt.plot(1000/freq_bins,average_P3_P4_ratios[condition,:], label = condition_names[condition], color = plot_colors[condition])
 
-   # for current_bin in range(0,len(freq_bins)):
+#    # for current_bin in range(0,len(freq_bins)):
         
-      #  plt.scatter(np.ones([subject_count,])*(1000/freq_bins[current_bin])+(condition*0.05),P3_P4_ratios[:,condition,current_bin], s=1, c=plot_colors[condition])
+#       #  plt.scatter(np.ones([subject_count,])*(1000/freq_bins[current_bin])+(condition*0.05),P3_P4_ratios[:,condition,current_bin], s=1, c=plot_colors[condition])
 
 
-plt.legend()        
+# plt.legend()        
 
-plt.plot(1000/freq_bins,np.ones(len(freq_bins)), 'k--')
-
-
-print('Frequency bins = ')
-print(1000/freq_bins)
+# plt.plot(1000/freq_bins,np.ones(len(freq_bins)), 'k--')
 
 
+# print('\nFrequency bins = ')
+# print(1000/freq_bins)
+
+
+
+
+
+
+
+
+#### plot accelorometer data
+
+# length = 5 # length of FFT in seconds
+
+# axis = 2
+
+# freq_axis = np.arange(0,sample_rate,1/length)
+
+# plt.figure()
+
+# plt.suptitle('Freq resolution = ' + str(1/length) + '  Axis = ' + str(axis))
+
+# condition_colours = ('b', 'r', 'g')
+
+# for subject in range(1,21):
+    
+#     print('\n Subject ' + str(subject) + '\n')
+    
+#     plt.subplot(4,5,subject)
+   
+#     plt.title('Subject: ' + str(subject))
+    
+#     for condition in(1,2,3):
+        
+#         print('Condition ' + str(condition))
+        
+#         for block in(1,2):
+            
+#             print('Block ' + str(block))
+            
+#             trial_name = 'subject_' + str(subject) + '_block_' + str(block) + '_condition_' + str(condition) 
+
+#             all_acc_data = np.load(path + trial_name + '_all_acc_data.npy')
+
+#             #for axis in range(0,3):
+            
+                
+#             axis_data = all_acc_data[axis,:]
+
+#             fft_acc = functions.induced_fft(axis_data, length, sample_rate)
+
+
+#             plt.plot(freq_axis,fft_acc, color = condition_colours[condition-1])
+        
+#             plt.xlim([2, 20])
+#             plt.ylim([0, 2000])
+            
+            
