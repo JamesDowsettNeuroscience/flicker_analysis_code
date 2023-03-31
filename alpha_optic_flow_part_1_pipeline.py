@@ -35,11 +35,19 @@ length = 1 # length of FFT in seconds
 
 
 ## frequency bins to sort triggers into
-freq_bins = np.arange(72,125,5) # make frequency bins
+#freq_bins = np.arange(72,125,5) # make frequency bins
 
-all_SSVEPs = np.zeros([num_subjects, 6, 3, 2, len(freq_bins), max(freq_bins)]) # subject, electrode, condition, block, freq bins, SSVEP data
+#freq_bins = 1000/np.arange(8,14,0.2) # make frequency bins
 
-all_SSVEP_amplitudes = np.zeros([num_subjects, 6, 3, 2, len(freq_bins)])
+freq_bins = 1000/np.arange(8,14,0.5) # make frequency bins
+
+number_of_triggers_per_bin = 200
+
+
+
+all_SSVEPs = np.zeros([num_subjects, 8, 3, 2, len(freq_bins), int(max(freq_bins))]) # subject, electrode, condition, block, freq bins, SSVEP data
+
+all_SSVEP_amplitudes = np.zeros([num_subjects, 8, 3, 2, len(freq_bins)])
 
 trials_with_no_triggers = []
 trials_with_low_trigger_count = []
@@ -104,79 +112,113 @@ for subject in range(1,21):
             if len(good_triggers) == 0:
                 print('Error: no triggers')
                 trials_with_no_triggers.append(trial_name)
-            
-            
-            
-            
-            ######## sort triggers by period into different frequency bins ##########
-
-            diff_triggers = np.diff(good_triggers)     
-            
-            numbers_of_triggers_per_bin = np.zeros([len(freq_bins),])
-            
-           # trigger_time_series = np.zeros([len(EOG_data),len(freq_bins)])
-            
-            for current_bin in range(0,len(freq_bins)):
-                
-            #    plt.figure(current_bin)
-                
-                period = freq_bins[current_bin]
-               
-                triggers_for_this_bin = []
-                
-                for trig_count in range(0,len(good_triggers)-1):
-                    
-   
-                    if diff_triggers[trig_count] < 128:
-                        
-                        # get the frequency bin with the period closest to the period of the flicker trigger
-                        freq_bin = np.argmin(np.abs(freq_bins - diff_triggers[trig_count]))
-            
-                        if freq_bin == current_bin:
-                            triggers_for_this_bin.append(good_triggers[trig_count])
-                           # trigger_time_series[good_triggers[trig_count],current_bin] = 1
-                            
-                num_triggers_for_bin = len(triggers_for_this_bin)
-                
-                print(str(num_triggers_for_bin) + ' segments ' + str(period) + ' ms = ' + str(np.round(sample_rate/freq_bins[current_bin],2)) + ' Hz')
-                
-                numbers_of_triggers_per_bin[current_bin] = num_triggers_for_bin
-                
-                ## save the triggers
-                triggers_for_this_bin_array = np.asarray(triggers_for_this_bin)
-                np.save(path + trial_name + '_bin_' + str(current_bin), triggers_for_this_bin_array)
-                
-             #   plt.suptitle(str(num_triggers_for_bin) + ' segments ' + str(period) + ' ms = ' + str(np.round(sample_rate/freq_bins[current_bin],2)) + ' Hz')
-                
-        
-                
-        
-                for electrode in range(0,6):
-                    
-                    # plt.subplot(2,3,electrode+1)
-                    # plt.title(electrode_names[electrode])
-                    
-                    data = all_data[electrode,:]
-                    
-                    data = data - (REF_2_data/2) # re-reference
-                    
-                    SSVEP = functions.make_SSVEPs(data, triggers_for_this_bin, period)
-                    
-                    # subject, electrode, condition, block, freq bins, SSVEP data
-                    all_SSVEPs[subject_count,electrode, condition-1, block-1, current_bin, 0:period] = SSVEP
-        
-                    all_SSVEP_amplitudes[subject_count,electrode, condition-1, block-1, current_bin] = np.ptp(SSVEP)
-                    
-                    #plt.plot(data, label = electrode_names[electrode])
-                  #  plt.plot(SSVEP, label = block)
-                
-                #plt.legend()
-                
-                
-            if min(numbers_of_triggers_per_bin) < 50:
-                trials_with_low_trigger_count.append(trial_name)
                 subject_numbers_with_low_trigger_counts.append(subject_count)
+            else:
+            
+  
+                ######## sort triggers by period into different frequency bins ##########
                 
+                
+                ## give each trigger a true frequency value, interpolated from integer period values with sliding window
+                diff_triggers = np.diff(good_triggers)     
+    
+                true_flicker_periods = np.zeros([len(diff_triggers),])
+            
+                # estimate the periods for the first 50, starting at 125, linear interpolate to the 50th value
+                sliding_selection = good_triggers[0:100]
+                diff_sliding_selection = np.diff(sliding_selection)
+                flicker_periods = diff_sliding_selection[diff_sliding_selection < 128]
+                period = flicker_periods.mean()
+                
+                true_flicker_periods[0:50] = np.linspace(125,period,50)
+                
+                # estimate the true flicker period with sliding window
+                k = 50
+                while k < len(good_triggers)-50:
+                    
+                    sliding_selection = good_triggers[k-50:k+50]
+                    diff_sliding_selection = np.diff(sliding_selection)
+                    flicker_periods = diff_sliding_selection[diff_sliding_selection < 128]
+                 
+                    period = flicker_periods.mean()
+                    true_flicker_periods[k] = period
+                
+                    k += 1
+         
+                true_flicker_periods[k:] = np.linspace(period,114,49)
+                
+                
+                
+                
+                
+               # trigger_time_series = np.zeros([len(EOG_data),len(freq_bins)])
+                
+                for current_bin in range(0,len(freq_bins)):
+                    
+                    period = freq_bins[current_bin] # period of the current frequency bin
+                    
+                   # get the index of the triggers whose period is closest to current bin period
+                    idx = np.argsort(np.abs(true_flicker_periods-period)) 
+                    
+                    closest_trigger_indices = idx[:number_of_triggers_per_bin].tolist()
+                                 
+                    triggers_for_this_bin = [good_triggers[i] for i in closest_trigger_indices]
+                   
+                   # triggers_for_this_bin = []
+    
+                   #  for trig_count in range(0,len(good_triggers)-1):
+                        
+       
+                   #      if diff_triggers[trig_count] < 128:
+                            
+                   #          # get the frequency bin with the period closest to the period of the flicker trigger
+                   #          freq_bin = np.argmin(np.abs(freq_bins - diff_triggers[trig_count]))
+                
+                   #          if freq_bin == current_bin:
+                   #              triggers_for_this_bin.append(good_triggers[trig_count])
+                   #             # trigger_time_series[good_triggers[trig_count],current_bin] = 1
+                                
+                    num_triggers_for_bin = len(triggers_for_this_bin)
+                    
+                    print(str(num_triggers_for_bin) + ' segments ' + str(period) + ' ms = ' + str(np.round(sample_rate/freq_bins[current_bin],2)) + ' Hz')
+                    
+                  #  numbers_of_triggers_per_bin[current_bin] = num_triggers_for_bin
+                    
+                    ## save the triggers
+                    triggers_for_this_bin_array = np.asarray(triggers_for_this_bin)
+                    np.save(path + trial_name + '_bin_' + str(current_bin), triggers_for_this_bin_array)
+                    
+                 #   plt.suptitle(str(num_triggers_for_bin) + ' segments ' + str(period) + ' ms = ' + str(np.round(sample_rate/freq_bins[current_bin],2)) + ' Hz')
+                    
+            
+                    
+            
+                    for electrode in range(0,8):
+                        
+                        # plt.subplot(2,3,electrode+1)
+                        # plt.title(electrode_names[electrode])
+                        
+                        data = all_data[electrode,:]
+                        
+                        data = data - (REF_2_data/2) # re-reference
+                        
+                        SSVEP = functions.make_SSVEPs(data, triggers_for_this_bin, int(period))
+                        
+                        # subject, electrode, condition, block, freq bins, SSVEP data
+                        all_SSVEPs[subject_count,electrode, condition-1, block-1, current_bin, 0:int(period)] = SSVEP
+            
+                        all_SSVEP_amplitudes[subject_count,electrode, condition-1, block-1, current_bin] = np.ptp(SSVEP)
+                        
+                        #plt.plot(data, label = electrode_names[electrode])
+                      #  plt.plot(SSVEP, label = block)
+                    
+                    #plt.legend()
+                    
+                    
+                # if min(numbers_of_triggers_per_bin) < 50:
+                #     trials_with_low_trigger_count.append(trial_name)
+                #     subject_numbers_with_low_trigger_counts.append(subject_count)
+                    
                 
     subject_count += 1
        
@@ -196,10 +238,11 @@ for bad_subject in subject_numbers_with_low_trigger_counts:
 
 
 
+
 ##########   get individual alpha frequencies   ###############################
 
 
-electrode = 3
+electrode = 0
 
 length = 5 # length of FFT in seconds
 
@@ -270,6 +313,75 @@ for subject in range(1,21):
     subject_count += 1
                   
                  
+
+
+
+
+
+
+
+############   Make simulated data ####################
+
+## add simulated SSVEPs to resting data 
+
+for subject in range(1,21):
+    
+    print('\n Subject ' + str(subject) + '\n')
+    
+    for condition in(1,2,3):
+        
+        print('Condition ' + str(condition))
+        
+
+        # load the resting data from block 3,
+        trial_name = 'subject_' + str(subject) + '_block_3_condition_' + str(condition) 
+        
+        all_data = np.load(path + trial_name + '_all_data.npy')
+
+        #
+        all_simulated_data = np.copy(all_data)
+
+        # load the triggers from block 1
+        trial_name = 'subject_' + str(subject) + '_block_1_condition_' + str(condition) 
+        
+        triggers = np.load(path + trial_name + '_all_triggers.npy')
+
+        for electrode in range(0,8):
+        
+            simulated_data = all_simulated_data[electrode,:]
+    
+            # use the mean amplitude of SSVEPs across all conditions and frequency bins
+            amplitudes_all_bins = all_SSVEP_amplitudes[subject-1, electrode,:,0,:]
+            
+            simulated_SSVEP_amplitude = amplitudes_all_bins.mean()
+    
+            for trigger_count in range(0,len(triggers)-1):
+                
+                time_to_next_trigger = triggers[trigger_count+1] - triggers[trigger_count]
+                
+                if time_to_next_trigger < 128 and (triggers[trigger_count+1] < len(simulated_data)):
+                    
+                    t = np.arange(0,time_to_next_trigger)
+                    
+                    ## control simulated SSVEP - no difference between conditions
+                    #simulated_SSVEP = simulated_SSVEP_amplitude * np.sin(2 * np.pi * 1/sample_rate * (sample_rate/time_to_next_trigger) * t)
+                
+                    ## simulated SSVEPs with an effect of condition
+                    simulated_SSVEP = simulated_SSVEP_amplitude * np.sin(2 * np.pi * 1/sample_rate * (sample_rate/time_to_next_trigger) * (t+(condition*0.5)))
+                
+                    simulated_data[triggers[trigger_count]:triggers[trigger_count]+time_to_next_trigger] = simulated_SSVEP + simulated_data[triggers[trigger_count]:triggers[trigger_count]+time_to_next_trigger]
+    
+            all_simulated_data[electrode,:] = simulated_data    
+
+        # save simulated_data
+        trial_name = 'subject_' + str(subject) + '_simulated_condition_' + str(condition) + '_all_data'
+        
+        np.save(path + trial_name, all_simulated_data)
+
+
+
+
+
 
 ##### compare SSVEP amplitudes with resting FFT  ########
 
@@ -490,62 +602,182 @@ flicker_frequencies_per_bin = np.round(1000/freq_bins,1)
 
 ################ Decoding #####################
 
-for electrode in range(0,6):
+plt.figure()
+
+for electrode in range(0,8):
     
-    decoding_accuracy = np.zeros([num_subjects,6,2, len(freq_bins)])
-      
-    subject_count = 0
-      
-    for subject in range(1,21):
-        
-        print('\n Subject ' + str(subject) + '\n')
-        
+    decoding_accuracy = np.zeros([num_subjects,8,3, len(freq_bins)])
     
-        for block in(1,2):
-            
-            print('\n Block ' + str(block) + '\n')
-            
+    #decoding_accuracy = np.zeros([num_subjects,6, len(freq_bins)])
+      
+
+    for block in (1,2,3):
         
-            trial_name = 'subject_' + str(subject) + '_block_' + str(block) + '_condition_1' 
-            all_data = np.load(path + trial_name + '_all_data.npy')
-            data_1 = all_data[electrode,:]
+        subject_count = 0
+        
+        for subject_number in subjects_to_use:
             
-            trial_name = 'subject_' + str(subject) + '_block_' + str(block) + '_condition_2' 
-            all_data = np.load(path + trial_name + '_all_data.npy')
-            data_2 = all_data[electrode,:]
+            subject = subject_number+1
             
-            trial_name = 'subject_' + str(subject) + '_block_' + str(block) + '_condition_3' 
-            all_data = np.load(path + trial_name + '_all_data.npy')
-            data_3 = all_data[electrode,:]
+            print('\n Subject ' + str(subject) + '  ' + electrode_names[electrode] + '  Block: ' + str(block) + '\n')
             
+            if block == 1 or block == 2:
+            # load data for condition 1
+                trial_name = 'subject_' + str(subject) + '_block_' + str(block) + '_condition_1' 
+                all_data = np.load(path + trial_name + '_all_data.npy')
+                data_1 = all_data[electrode,:]
+                REF_2_data = all_data[6,:] # get the data for the second reference, to re-reference (left and right ears)
+                data_1 = data_1 - (REF_2_data/2) # re-reference
+                
+                # load data for condition 2
+                trial_name = 'subject_' + str(subject) + '_block_' + str(block) + '_condition_2' 
+                all_data = np.load(path + trial_name + '_all_data.npy')
+                data_2 = all_data[electrode,:]
+                REF_2_data = all_data[6,:] # get the data for the second reference, to re-reference (left and right ears)
+                data_2 = data_2 - (REF_2_data/2) # re-reference
+                
+                # load data for condition 3
+                trial_name = 'subject_' + str(subject) + '_block_' + str(block) + '_condition_3' 
+                all_data = np.load(path + trial_name + '_all_data.npy')
+                data_3 = all_data[electrode,:]
+                REF_2_data = all_data[6,:] # get the data for the second reference, to re-reference (left and right ears)
+                data_3 = data_3 - (REF_2_data/2) # re-reference
+                
+            else: # simulated data
+            
+                # load data for condition 1
+                trial_name = 'subject_' + str(subject) + '_simulated_condition_1_all_data'
+                all_data = np.load(path + trial_name + '.npy')
+                data_1 = all_data[electrode,:]
+                REF_2_data = all_data[6,:] # get the data for the second reference, to re-reference (left and right ears)
+                data_1 = data_1 - (REF_2_data/2) # re-reference
+                
+                # load data for condition 2
+                trial_name = 'subject_' + str(subject) + '_simulated_condition_2_all_data'
+                all_data = np.load(path + trial_name + '.npy')
+                data_2 = all_data[electrode,:]
+                REF_2_data = all_data[6,:] # get the data for the second reference, to re-reference (left and right ears)
+                data_2 = data_2 - (REF_2_data/2) # re-reference
+                
+                # load data for condition 3
+                trial_name = 'subject_' + str(subject) + '_simulated_condition_3_all_data'
+                all_data = np.load(path + trial_name + '.npy')
+                data_3 = all_data[electrode,:]
+                REF_2_data = all_data[6,:] # get the data for the second reference, to re-reference (left and right ears)
+                data_3 = data_3 - (REF_2_data/2) # re-reference
+    
+    
+            # # load and concatenate data for condition 1
+            # trial_name = 'subject_' + str(subject) + '_block_1_condition_1' 
+            # all_data = np.load(path + trial_name + '_all_data.npy')
+            # data_1_block_1 = all_data[electrode,:]
+            
+            # trial_name = 'subject_' + str(subject) + '_block_2_condition_1' 
+            # all_data = np.load(path + trial_name + '_all_data.npy')
+            # data_1_block_2 = all_data[electrode,:]           
+            
+            # data_1 = np.concatenate((data_1_block_1, data_1_block_2))
+           
+            # # load and concatenate data for condition 2
+            # trial_name = 'subject_' + str(subject) + '_block_1_condition_2' 
+            # all_data = np.load(path + trial_name + '_all_data.npy')
+            # data_2_block_1 = all_data[electrode,:]
+            
+            # trial_name = 'subject_' + str(subject) + '_block_2_condition_2' 
+            # all_data = np.load(path + trial_name + '_all_data.npy')
+            # data_2_block_2 = all_data[electrode,:]           
+            
+            # data_2 = np.concatenate((data_2_block_1, data_2_block_2))
+                
+            # # load and concatenate data for condition 3
+            # trial_name = 'subject_' + str(subject) + '_block_1_condition_3' 
+            # all_data = np.load(path + trial_name + '_all_data.npy')
+            # data_3_block_1 = all_data[electrode,:]
+            
+            # trial_name = 'subject_' + str(subject) + '_block_2_condition_3' 
+            # all_data = np.load(path + trial_name + '_all_data.npy')
+            # data_3_block_2 = all_data[electrode,:]           
+            
+            # data_3 = np.concatenate((data_1_block_1, data_1_block_2))
+                   
+           
             
             for current_bin in range(0,len(freq_bins)):
                 
-                trial_name_1 = 'subject_' + str(subject) + '_block_' + str(block) + '_condition_1' 
-                triggers_1 = np.load(path + trial_name_1 + '_bin_' + str(current_bin) + '.npy')
+                if block == 1 or block == 3: # use triggers from block 1 for block 1 and simulated data
+                    
+                    # load  triggers for condition 1
+                    trial_name_1 = 'subject_' + str(subject) + '_block_1_condition_1' 
+                    triggers_1 = np.load(path + trial_name_1 + '_bin_' + str(current_bin) + '.npy')
+                    
+                    # load  triggers for condition 2
+                    trial_name_2 = 'subject_' + str(subject) + '_block_1_condition_2' 
+                    triggers_2 = np.load(path + trial_name_2 + '_bin_' + str(current_bin) + '.npy')
+                    
+                    # load  triggers for condition 3
+                    trial_name_3 = 'subject_' + str(subject) + '_block_1_condition_3' 
+                    triggers_3 = np.load(path + trial_name_3 + '_bin_' + str(current_bin) + '.npy')
+                    
+                elif block == 2:
+                    
+                    # load  triggers for condition 1
+                    trial_name_1 = 'subject_' + str(subject) + '_block_2_condition_1' 
+                    triggers_1 = np.load(path + trial_name_1 + '_bin_' + str(current_bin) + '.npy')
+                    
+                    # load  triggers for condition 2
+                    trial_name_2 = 'subject_' + str(subject) + '_block_2_condition_2' 
+                    triggers_2 = np.load(path + trial_name_2 + '_bin_' + str(current_bin) + '.npy')
+                    
+                    # load  triggers for condition 3
+                    trial_name_3 = 'subject_' + str(subject) + '_block_2_condition_3' 
+                    triggers_3 = np.load(path + trial_name_3 + '_bin_' + str(current_bin) + '.npy')
+                    
+                    
+    
+    
+    
+                # # load and concatenate data for condition 1
+                # trial_name_1_block_1 = 'subject_' + str(subject) + '_block_1_condition_1' 
+                # trial_name_1_block_2 = 'subject_' + str(subject) + '_block_2_condition_1' 
+                # triggers_1_block_1 = np.load(path + trial_name_1_block_1 + '_bin_' + str(current_bin) + '.npy')
+                # triggers_1_block_2 = np.load(path + trial_name_1_block_2 + '_bin_' + str(current_bin) + '.npy')
             
-                trial_name_2 = 'subject_' + str(subject) + '_block_' + str(block) + '_condition_2' 
-                triggers_2 = np.load(path + trial_name_2 + '_bin_' + str(current_bin) + '.npy')
-                
-                trial_name_3 = 'subject_' + str(subject) + '_block_' + str(block) + '_condition_3' 
-                triggers_3 = np.load(path + trial_name_3 + '_bin_' + str(current_bin) + '.npy')
+                # triggers_1 = np.concatenate((triggers_1_block_1,triggers_1_block_2+len(data_1_block_2)))
+            
+                # # load and concatenate data for condition 2
+                # trial_name_2_block_1 = 'subject_' + str(subject) + '_block_1_condition_2' 
+                # trial_name_2_block_2 = 'subject_' + str(subject) + '_block_2_condition_2' 
+                # triggers_2_block_1 = np.load(path + trial_name_2_block_1 + '_bin_' + str(current_bin) + '.npy')
+                # triggers_2_block_2 = np.load(path + trial_name_2_block_2 + '_bin_' + str(current_bin) + '.npy')
+            
+                # triggers_2 = np.concatenate((triggers_2_block_1,triggers_2_block_2+len(data_2_block_2)))
+            
+    
+                # # load and concatenate data for condition 3
+                # trial_name_3_block_1 = 'subject_' + str(subject) + '_block_1_condition_3' 
+                # trial_name_3_block_2 = 'subject_' + str(subject) + '_block_2_condition_3' 
+                # triggers_3_block_1 = np.load(path + trial_name_3_block_1 + '_bin_' + str(current_bin) + '.npy')
+                # triggers_3_block_2 = np.load(path + trial_name_3_block_2 + '_bin_' + str(current_bin) + '.npy')
+            
+                # triggers_3 = np.concatenate((triggers_3_block_1,triggers_3_block_2+len(data_3_block_2)))
     
     
-                SSVEP_1 = functions.make_SSVEPs(data_1, triggers_1, freq_bins[current_bin])
-                SSVEP_2 = functions.make_SSVEPs(data_2, triggers_2, freq_bins[current_bin])
-                SSVEP_3 = functions.make_SSVEPs(data_3, triggers_3, freq_bins[current_bin])
+                SSVEP_1 = functions.make_SSVEPs(data_1, triggers_1, int(freq_bins[current_bin]))
+                SSVEP_2 = functions.make_SSVEPs(data_2, triggers_2, int(freq_bins[current_bin]))
+                SSVEP_3 = functions.make_SSVEPs(data_3, triggers_3, int(freq_bins[current_bin]))
                 
                 period = freq_bins[current_bin]
                 num_loops = 10
                 
-                average_percent_correct = functions.decode_correlation_3way(data_1, data_2, data_3, triggers_1, triggers_2, triggers_3, period, num_loops)
+                average_percent_correct = functions.decode_correlation_3way(data_1, data_2, data_3, triggers_1, triggers_2, triggers_3, int(period), num_loops)
                 
                 decoding_accuracy[subject_count,electrode,block-1,current_bin] = average_percent_correct
+                #decoding_accuracy[subject_count,electrode,current_bin] = average_percent_correct
                 
-                print('Average percent correct = ' + str(average_percent_correct))
+                print(str(1000/freq_bins[current_bin]) + 'Hz  Average percent correct = ' + str(average_percent_correct))
                 
-                
-        subject_count += 1            
+                    
+            subject_count += 1            
                 
             
 
@@ -573,17 +805,42 @@ for electrode in range(0,6):
     decoding_scores_for_block_1 = decoding_accuracy[:,electrode,0,:]
     average_decoding_scores_block_1 = decoding_scores_for_block_1.mean(axis=0)
     
-    #plt.plot(flicker_frequencies_per_bin, average_decoding_scores_block_1)
-        
+    plt.subplot(1,3,1)
+    plt.plot(flicker_frequencies_per_bin, average_decoding_scores_block_1)
+    plt.ylim([0, 100]) 
+    plt.axhline(y = 33.33, color = 'k', linestyle = '--')
+    
     decoding_scores_for_block_2 = decoding_accuracy[:,electrode,1,:]
     average_decoding_scores_block_2 = decoding_scores_for_block_2.mean(axis=0)
     
-    #plt.plot(flicker_frequencies_per_bin, average_decoding_scores_block_2)
+    plt.subplot(1,3,2)
+    plt.plot(flicker_frequencies_per_bin, average_decoding_scores_block_2)
+    plt.ylim([0, 100]) 
+    plt.axhline(y = 33.33, color = 'k', linestyle = '--')
+    
+    decoding_scores_for_block_3 = decoding_accuracy[:,electrode,2,:]
+    average_decoding_scores_block_3 = decoding_scores_for_block_3.mean(axis=0)
+    
+    plt.subplot(1,3,3)
+    plt.plot(flicker_frequencies_per_bin, average_decoding_scores_block_3, label = electrode_names[electrode])
+    plt.ylim([0, 100]) 
+    plt.axhline(y = 33.33, color = 'k', linestyle = '--')
+        
         
     
-    grand_average_decoding_scores = (average_decoding_scores_block_1 + average_decoding_scores_block_2) /2
+    # grand_average_decoding_scores = (average_decoding_scores_block_1 + average_decoding_scores_block_2) /2
 
-    plt.plot(flicker_frequencies_per_bin, grand_average_decoding_scores, label = electrode_names[electrode])
+    # plt.subplot(1,3,3)
+    # plt.plot(flicker_frequencies_per_bin, grand_average_decoding_scores, label = electrode_names[electrode])
+    
+  
+    # average_decoding_scores = decoding_accuracy[:,electrode,:].mean(axis=0)
+    
+    # plt.plot(flicker_frequencies_per_bin, average_decoding_scores, label = electrode_names[electrode])
     
 
 plt.legend()
+plt.suptitle('Number segments per bin = ' + str(number_of_triggers_per_bin))
+
+
+
