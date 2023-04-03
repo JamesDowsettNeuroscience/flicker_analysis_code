@@ -31,7 +31,7 @@ frequency_names = ('10 Hz', '40 Hz')
 
 sample_rate = 5000
 
-num_subjects = 17
+num_subjects = 26
 
 period_10Hz = 500 # period of flicker in data points
 period_40Hz = 125 # period of flicker in data points
@@ -582,6 +582,8 @@ for subject in range(1,num_subjects+1):
              
 #### make example SSVEPs from Pz ###########
 
+print('\nPlot example SSVEPs from Pz\n')
+
 electrode = 18 # 18 = Pz
            
 for subject in range(1,num_subjects+1):
@@ -677,10 +679,15 @@ for subject in range(1,num_subjects+1):
             plt.legend()
                 
              
+                
+             
+                
+             
+                
      
         ############# decode each condition vs. control   ##############     
  
-subjects_to_use = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17]
+subjects_to_use = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
 
 decoding_scores = np.zeros([64, 2, 3, len(subjects_to_use)]) # electrode, frequency, condition type , subject   
  

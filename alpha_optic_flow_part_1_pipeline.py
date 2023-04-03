@@ -364,10 +364,10 @@ for subject in range(1,21):
                     t = np.arange(0,time_to_next_trigger)
                     
                     ## control simulated SSVEP - no difference between conditions
-                    #simulated_SSVEP = simulated_SSVEP_amplitude * np.sin(2 * np.pi * 1/sample_rate * (sample_rate/time_to_next_trigger) * t)
+                    simulated_SSVEP = simulated_SSVEP_amplitude * np.sin(2 * np.pi * 1/sample_rate * (sample_rate/time_to_next_trigger) * t)
                 
                     ## simulated SSVEPs with an effect of condition
-                    simulated_SSVEP = simulated_SSVEP_amplitude * np.sin(2 * np.pi * 1/sample_rate * (sample_rate/time_to_next_trigger) * (t+(condition*0.5)))
+                  #  simulated_SSVEP = simulated_SSVEP_amplitude * np.sin(2 * np.pi * 1/sample_rate * (sample_rate/time_to_next_trigger) * (t+(condition*10)))
                 
                     simulated_data[triggers[trigger_count]:triggers[trigger_count]+time_to_next_trigger] = simulated_SSVEP + simulated_data[triggers[trigger_count]:triggers[trigger_count]+time_to_next_trigger]
     
