@@ -762,6 +762,26 @@ for electrode in range(0,8):
                 # triggers_3 = np.concatenate((triggers_3_block_1,triggers_3_block_2+len(data_3_block_2)))
     
     
+                ## decode with universal decoder function
+                max_data_length = max(len(data_1), len(data_2), len(data_3))
+                
+                data_all_conditions = np.zeros([3,max_data_length])
+                data_all_conditions[0,0:len(data_1)] = data_1
+                data_all_conditions[1,0:len(data_2)] = data_2
+                data_all_conditions[2,0:len(data_3)] = data_3
+                   
+                triggers_all_conditions = np.zeros([3,number_of_triggers_per_bin])
+                triggers_all_conditions = triggers_all_conditions.astype(int)
+                triggers_all_conditions[0,:] = triggers_1
+                triggers_all_conditions[1,:] = triggers_2
+                triggers_all_conditions[2,:] = triggers_3
+               
+                num_triggers = number_of_triggers_per_bin
+                num_loops = 10
+                
+                average_percent_correct = functions.decode_correlations(data_all_conditions, triggers_all_conditions, 3, num_triggers, int(period), num_loops)
+                
+                # make SSVEPs
                 SSVEP_1 = functions.make_SSVEPs(data_1, triggers_1, int(freq_bins[current_bin]))
                 SSVEP_2 = functions.make_SSVEPs(data_2, triggers_2, int(freq_bins[current_bin]))
                 SSVEP_3 = functions.make_SSVEPs(data_3, triggers_3, int(freq_bins[current_bin]))

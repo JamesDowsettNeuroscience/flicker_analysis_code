@@ -687,7 +687,8 @@ for subject in range(1,num_subjects+1):
      
         ############# decode each condition vs. control   ##############     
  
-subjects_to_use = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26]
+# subjects 13 and 18, signal was corrupted
+subjects_to_use = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17,  19, 20, 21, 22, 23, 24, 25, 26]
 
 decoding_scores = np.zeros([64, 2, 3, len(subjects_to_use)]) # electrode, frequency, condition type , subject   
  
@@ -783,7 +784,7 @@ for subject in subjects_to_use:
                 
                 average_percent_correct = functions.decode_correlation(active_data, control_data, active_triggers, control_triggers, period, num_loops)
                 
-                print('\nElectrode number: ' + str(electrode) + ' -- ' + electrode_names[electrode] + ' \nAverage percent correct = ' +  str(average_percent_correct) + '\n')
+                print('\nSubject ' + str(subject) + ' ' + frequency_names[frequency] + '\n' + condition_names[condition_type] + '  \nElectrode number: ' + str(electrode) + ' -- ' + electrode_names[electrode] +  ' \nAverage percent correct = ' +  str(average_percent_correct) + '\n')
                 
                 decoding_scores[electrode, frequency, condition_type, subject_count] = average_percent_correct
                 

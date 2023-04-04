@@ -234,9 +234,73 @@ def decode_correlation_3way(data_1, data_2, data_3, triggers_1, triggers_2, trig
     
 
 
+### decoding with any number of conditions
 
+def decode_correlations(data_all_conditions, triggers_all_conditions, num_conditions, num_triggers, period, num_loops):
+    
+    import numpy as np
+    import random
 
+    scores = np.zeros([num_loops,num_conditions])
 
+   
+    for loop in range(0,num_loops):
+   
+        training_SSVEPs = np.zeros([num_conditions, period])
+        test_SSVEPs = np.zeros([num_conditions, period])
+    
+        # make test and training SSVEPs for each condition with random split of triggers
+        for condition in range(0,num_conditions):
+            
+            seg_nums = np.arange(0,num_triggers) # an index for each segment
+            
+            random.shuffle(seg_nums) # randomize the order
+            
+            triggers = triggers_all_conditions[condition,:]
+    
+            data = data_all_conditions[condition,:]
+    
+            # get half of the triggers
+            training_trig_nums = seg_nums[0:int(num_triggers/2)] # first half
+            test_trig_nums = seg_nums[int(num_triggers/2):num_triggers] # second half
+    
+            training_triggers = triggers[training_trig_nums]  
+            test_triggers = triggers[test_trig_nums]
+    
+            training_SSVEPs[condition,:] = make_SSVEPs(data, training_triggers, period) 
+            test_SSVEPs[condition,:] = make_SSVEPs(data, test_triggers, period) 
+    
+        
+        for condition in range(0,num_conditions):  
+    
+                ## test condition 1 decoding
+                corr_this_condition_test_and_training = np.corrcoef(training_SSVEPs[condition,:],test_SSVEPs[condition,:])[0,1]
+             
+                all_other_conditions =  [i for i in range(num_conditions) if i != condition] # test against all conditions except the current condition
+    
+                answer_correct = 1 # set to 1 for correct answer, if any other conditions score higher, set to 0
+                
+                for other_condition in all_other_conditions:
+                    
+                    corr_this_condition_training_other_condition_test = np.corrcoef(training_SSVEPs[condition,:],test_SSVEPs[other_condition,:])[0,1]
+                
+                    if corr_this_condition_training_other_condition_test > corr_this_condition_test_and_training:
+                        answer_correct = 0
+                        
+                if answer_correct == 1:
+                    scores[loop,condition] = 1 # score one point
+    
+
+    percent_correct_for_each_condition = np.zeros([num_conditions,])
+    
+    for condition in range(0,num_conditions): 
+        
+        percent_correct_for_each_condition[condition] = np.sum(scores[:,condition]) * (100/num_loops)
+        
+
+    average_percent_correct = percent_correct_for_each_condition.mean(axis=0)
+    
+    return average_percent_correct
 
 
 
