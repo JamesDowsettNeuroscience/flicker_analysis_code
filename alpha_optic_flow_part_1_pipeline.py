@@ -763,13 +763,16 @@ for electrode in range(0,8):
     
     
                 ## decode with universal decoder function
+                
+                # first put all data  into one matrix
                 max_data_length = max(len(data_1), len(data_2), len(data_3))
                 
                 data_all_conditions = np.zeros([3,max_data_length])
                 data_all_conditions[0,0:len(data_1)] = data_1
                 data_all_conditions[1,0:len(data_2)] = data_2
                 data_all_conditions[2,0:len(data_3)] = data_3
-                   
+                  
+                # put all triggers into one matrix
                 triggers_all_conditions = np.zeros([3,number_of_triggers_per_bin])
                 triggers_all_conditions = triggers_all_conditions.astype(int)
                 triggers_all_conditions[0,:] = triggers_1

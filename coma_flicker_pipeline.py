@@ -222,6 +222,8 @@ dominant_frequencies[:,1] = [ 6.4,  4.8,  5. ,  3. ,  4.2,  7.2,  4.4,  6.4,  7.
 peak_values = np.zeros([len(patient_numbers_to_use),3])
 peak_values_trial_1 = np.zeros([len(patient_numbers_to_use),3])
 
+true_peaks = np.zeros([len(patient_numbers_to_use),3])
+
 patient_count = 0
 
 for patient_number in patient_numbers_to_use:
@@ -243,7 +245,13 @@ for patient_number in patient_numbers_to_use:
     dominant_frequency = dominant_frequencies[np.where(dominant_frequencies[:,0] == patient_number),1]
     
     
-    
+    ## check if the patient had more than one session
+    more_than_one_session = 0
+    for trial_name in trials:
+        if 'trial_1' in trial_name:
+            more_than_one_session = 1
+            
+    ## loop through all trials for this patient
     for trial_name in trials:
         
        # electrodes_to_use = [48, 1]
@@ -277,14 +285,19 @@ for patient_number in patient_numbers_to_use:
         
         average_peak_range = peak_range.mean()
         
+        true_peak = fft_spectrum[frequency_index]
+        
         if 'trial_0' in trial_name:
         
             if '30Hz' in trial_name:
                 peak_values[patient_count,0] = average_peak_range
+                true_peaks[patient_count,0] = true_peak
             elif '40Hz' in trial_name:
                 peak_values[patient_count,1] = average_peak_range
+                true_peaks[patient_count,1] = true_peak
             elif 'baseline' in trial_name:
                 peak_values[patient_count,2] = average_peak_range
+                true_peaks[patient_count,2] = true_peak
                         
         if 'trial_1' in trial_name:
         
@@ -299,21 +312,41 @@ for patient_number in patient_numbers_to_use:
         
         
         ## plots
-        
-        
-        plt.title(chan_names[electrode])    
+        if more_than_one_session == 1:
+            if 'trial_0' in trial_name:
+                plt.subplot(1,2,1)        
+            if 'trial_1' in trial_name:
+                plt.subplot(1,2,2)
+            
+       # plt.title(chan_names[electrode] )    
+        plt.title(chan_names[electrode] + '  ' + str(dominant_frequency[0,0]) + ' Hz')    
         
         plt.plot(freq_vector,fft_spectrum, label = trial_name)
 
-        plt.ylim([0, fft_spectrum[2*length]])
-        plt.xlim([2, 60])
+        max_peak = max(true_peaks[patient_count,:]) * 1.5
+
+        plt.ylim([0, max_peak])
+        plt.xlim([2, 20])
         
         plt.axvline(x = dominant_frequency, color = 'k', linestyle='--')
-        plt.axvline(x = dominant_frequency-1, color = 'k', linestyle='-.')
-        plt.axvline(x = dominant_frequency+1, color = 'k', linestyle='-.')   
+        # plt.axvline(x = dominant_frequency-1, color = 'k', linestyle='-.')
+        # plt.axvline(x = dominant_frequency+1, color = 'k', linestyle='-.')   
+        
+        plt.xlabel('Frequency (Hz)')
+        plt.ylabel('Amplitude')
             
-    plt.legend()
+
+    if more_than_one_session == 1:
+        plt.subplot(1,2,1)
+        plt.legend()
+        plt.subplot(1,2,2)
+        plt.legend()
+    else:
+        plt.legend()
+    
     patient_count += 1
+    
+    
     
     
     
