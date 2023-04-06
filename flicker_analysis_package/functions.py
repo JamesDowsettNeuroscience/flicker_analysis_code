@@ -553,9 +553,11 @@ def linear_interpolation(data, triggers, time_1, time_2, trig_length):
     
     for trigger in triggers:
 
-        data[trigger+time_1:trigger+time_1+trig_length+1] = np.linspace(data[trigger+time_1], data[trigger+time_1+trig_length], num = trig_length+1)
-        data[trigger+time_2:trigger+time_2+trig_length+1] = np.linspace(data[trigger+time_2], data[trigger+time_2+trig_length], num = trig_length+1)
-    
+        if trigger+time_2+trig_length+1 < len(data):
+            
+            data[trigger+time_1:trigger+time_1+trig_length+1] = np.linspace(data[trigger+time_1], data[trigger+time_1+trig_length], num = trig_length+1)
+            data[trigger+time_2:trigger+time_2+trig_length+1] = np.linspace(data[trigger+time_2], data[trigger+time_2+trig_length], num = trig_length+1)
+        
     
     return data
 

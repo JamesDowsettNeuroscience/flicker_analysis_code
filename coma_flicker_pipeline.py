@@ -15,6 +15,7 @@ from flicker_analysis_package import functions
 import numpy as np
 import matplotlib.pyplot as plt
 import mne
+import math
 
 import pickle
 
@@ -248,7 +249,7 @@ for patient_number in patient_numbers_to_use:
     ## check if the patient had more than one session
     more_than_one_session = 0
     for trial_name in trials:
-        if 'trial_1' in trial_name:
+        if 'trial_1' in trial_name and (patient_number != 41):
             more_than_one_session = 1
             
     ## loop through all trials for this patient
@@ -310,6 +311,15 @@ for patient_number in patient_numbers_to_use:
                                 
         
         
+        # set condition names for plot legend
+        if '30Hz' in trial_name:
+            condition_name = '30 Hz Flicker'
+        elif '40Hz' in trial_name:
+            condition_name = '40 Hz Flicker'
+        elif 'baseline' in trial_name:
+           condition_name = 'Baseline'
+                            
+    
         
         ## plots
         if more_than_one_session == 1:
@@ -321,7 +331,7 @@ for patient_number in patient_numbers_to_use:
        # plt.title(chan_names[electrode] )    
         plt.title(chan_names[electrode] + '  ' + str(dominant_frequency[0,0]) + ' Hz')    
         
-        plt.plot(freq_vector,fft_spectrum, label = trial_name)
+        plt.plot(freq_vector,fft_spectrum, label = condition_name)
 
         max_peak = max(true_peaks[patient_count,:]) * 1.5
 
@@ -370,6 +380,35 @@ scores_as_percentage_baseline_40Hz = (100/peak_values[:,1]) * peak_values[:,0]
 
 average_30Hz = scores_as_percentage_baseline_30Hz.mean()
 average_40Hz = scores_as_percentage_baseline_40Hz.mean()
+
+
+## plot group data
+
+plt.figure()
+
+dot_size = 10
+
+std_error_scores_30Hz = np.std(scores_as_percentage_baseline_30Hz) / math.sqrt(len(scores_as_percentage_baseline_30Hz))
+
+plt.errorbar(0, scores_as_percentage_baseline_30Hz.mean(),yerr = std_error_scores_30Hz, solid_capstyle='projecting', capsize=5,  fmt='o', color= 'b', ecolor='b')  
+
+plt.scatter((np.zeros(len(scores_as_percentage_baseline_30Hz))), scores_as_percentage_baseline_30Hz, s=dot_size)
+
+
+std_error_scores_40Hz = np.std(scores_as_percentage_baseline_40Hz) / math.sqrt(len(scores_as_percentage_baseline_40Hz))
+
+plt.errorbar(1, scores_as_percentage_baseline_40Hz.mean(),yerr = std_error_scores_40Hz, solid_capstyle='projecting', capsize=5,  fmt='o', color= 'b', ecolor='b')  
+
+plt.scatter((np.ones(len(scores_as_percentage_baseline_40Hz))), scores_as_percentage_baseline_40Hz, s=dot_size)
+
+
+plt.axhline(y = 100, color = 'k', linestyle='--')
+
+plt.xticks((0,1), ('30 Hz', '40 Hz'))    
+plt.xlim([-0.5,1.5])
+
+plt.ylabel('Amplitude as percentage of Baseline')
+
 
 
 
@@ -427,3 +466,143 @@ for freq_to_test in(0,1):# 0 = 30 Hz, 1 = 40 Hz
         print('40 Hz Z score = ' + str(Z_score))
 
     print ('p = ' + str(p_value) + '\n')
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+######### Sleep mask pilot data as a control ##############
+
+trigger_times = [-1, 59]
+
+
+path = '/home/james/Active_projects/misc/Laura/sleep_mask_pilot_data/'
+
+subject_numbers = (2,3,7,8)
+
+POz_electrode_numbers = (62, 7, 7, 7)
+
+plt.figure(1)
+plt.figure(2)
+
+for subject in range(0,len(subject_numbers)):
+    
+    folder_name = 'VP0' + str(subject_numbers[subject]) + '_P3/'
+
+    for condition in range(0,2):
+        
+        if condition == 0:
+            file_name = 'blackout'
+            plot_name = 'Baseline'
+        elif condition == 1:
+            file_name = 'lux100'
+            plot_name = '40 Hz Flicker'
+    
+    
+        #    ### load raw data with MNE
+        raw = mne.io.read_raw_brainvision(path + folder_name + file_name + '.vhdr', preload=True)
+    
+        ### Ch63=POz
+        
+        electrode_number = POz_electrode_numbers[subject]
+        
+        data = np.array(raw[electrode_number,:], dtype=object) 
+        data = data[0,]
+        data = data.flatten()
+        
+        
+        length = 5
+        
+        fft_spectrum = functions.induced_fft(data, length, sample_rate)
+        
+        freq_vector = np.arange(0,len(fft_spectrum)/length,1/length)
+
+        plt.figure(1)
+        plt.subplot(2,2,subject+1)
+        
+        plt.plot(freq_vector, fft_spectrum, label = plot_name)
+        
+        plt.xlim([2, 45])
+        plt.ylim([0, max(fft_spectrum[8*5:14*5]) * 1.2])
+        
+        
+        #############  SSVEPs  ######################
+        
+        period = period_40Hz
+        
+        ### read triggers
+        
+        f = open(path + folder_name + file_name + '.vmrk') # open the .vmrk file, call it "f"
+        
+        # use readline() to read the first line 
+        line = f.readline()
+        
+        # empty lists to record trigger times 
+        triggers_list = []
+       
+        
+        # the names of the triggers, these can be seen in the .vmrk file
+
+        flicker_trigger_name = 'S  8'
+        
+        # use the read line to read further.
+        # If the file is not empty keep reading one line
+        # at a time, until the end
+        while line:
+
+            if flicker_trigger_name in line: # if the line contains a flicker trigger
+                
+                # get the trigger time from line
+                start = line.find(flicker_trigger_name + ',') + len(flicker_trigger_name) + 1
+                end = line.find(",1,")
+                trigger_time = line[start:end]       
+               
+                # append the trigger time to the correct condition
+                
+                triggers_list.append(trigger_time)
+                
+            
+            line = f.readline() # use realine() to read next line
+            
+        f.close() # close the file
+        
+        # convert to numpy arrays
+        triggers = np.array(triggers_list, dtype=int)
+
+        ### linear interpolation
+        trig_length = 15
+        data = functions.linear_interpolation(data, triggers, trigger_times[0], trigger_times[1], trig_length)
+
+        # make SSVEP
+        SSVEP = functions.make_SSVEPs(data, triggers, period) 
+        
+        plt.figure(2)    
+        plt.subplot(2,2,subject+1)
+        
+        plt.plot(SSVEP, label = plot_name)
+        
+    plt.figure(1)    
+    plt.xlabel('Frequency (Hz)')
+    plt.ylabel('Amplitude')
+    plt.legend()
+    
+    
+    plt.figure(2)    
+    plt.xlabel('Time (ms)')
+    plt.ylabel('Amplitude')
+    plt.legend()
+    
+     
+    
+    
