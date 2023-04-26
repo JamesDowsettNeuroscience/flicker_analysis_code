@@ -50,7 +50,7 @@ start_times = np.load(path + 'start_times.npy')
 laplacian = 0 ## choose to use laplacian montage or not: 0 = normal reference, 1 = laplacian re-reference
 
 
-
+plt.rcParams.update({'font.size': 10})
 
 ############   SSVEPs    ########################
 
@@ -77,7 +77,7 @@ patient_count = 0
 for patient_number in patient_numbers_to_use:
     
     plt.figure()
-    plt.suptitle('Patient ' + str(patient_number) + '  ' + str(patient_count))   
+    plt.suptitle('Patient ' + str(patient_number))   
     
       
     trials = []
@@ -132,20 +132,22 @@ for patient_number in patient_numbers_to_use:
         if '30Hz' in trial_name:
             period = period_30Hz
             plt.subplot(1,2,1)
-            plt.title('30 Hz')
+            #plt.title('30 Hz')
+            plt_label = '30 Hz'
             trig_1_time = linear_interpolation_time_1_30Hz[patient_count]
             trig_2_time = linear_interpolation_time_2_30Hz[patient_count]
            
         elif '40Hz' in trial_name:
             period = period_40Hz
+            plt_label = '40 Hz'
             plt.subplot(1,2,2)
-            plt.title('40 Hz')
+           # plt.title('40 Hz')
     
             trig_1_time = linear_interpolation_time_1_40Hz[patient_count]
             trig_2_time = linear_interpolation_time_2_40Hz[patient_count]
         
         
-        
+
         electrode = 48  #electrodes_to_use[electrode_count]  ### 48 = POz
         #for electrode in range(0,64):  #(11, 16, 25):
         
@@ -177,9 +179,26 @@ for patient_number in patient_numbers_to_use:
         elif '40Hz' in trial_name:
             SSVEP_amplitudes[patient_count,1] = np.ptp(SSVEP)
         
+        SSVEP = SSVEP * 1000000
+        time_axis = np.arange(0,(1000/sample_rate)*period,1000/sample_rate)
+        
+        plt.plot(time_axis,SSVEP, label = plt_label)
+        
+        if '30Hz' in trial_name:
+            plot_max = max(SSVEP)
+            plot_min = min(SSVEP)
+        
 
-        plt.plot(SSVEP, label = trial_name)
-
+    plt.subplot(1,2,1)
+    plt.title('30 Hz')
+    plt.ylim([plot_min, plot_max])
+    plt.ylabel('Amplitude (\u03BCV)')
+    plt.xlabel('Time (ms)')
+    plt.subplot(1,2,2)
+    plt.title('40 Hz')
+    plt.ylim([plot_min, plot_max])
+    plt.xlabel('Time (ms)')
+    
 
             #plt.subplot(8,8,electrode+1)
            # plt.ylim([-0.00025, 0.00025])
@@ -187,10 +206,10 @@ for patient_number in patient_numbers_to_use:
        # 
            # plt.title(chan_names[electrode] + ' '  + str(electrode))
 
-    plt.subplot(1,2,1)
-    plt.legend()    
-    plt.subplot(1,2,2)
-    plt.legend()    
+ #   plt.subplot(1,2,1)
+   # plt.legend()    
+    # plt.subplot(2,2,2)
+    # plt.legend()    
 
     patient_count += 1
 
@@ -199,6 +218,11 @@ for patient_number in patient_numbers_to_use:
 
 
 #######################  FFT compared to resting   #####################################
+
+
+plt.rcParams.update({'font.size': 14})
+
+plt.figure()
 
 # select the patients to include in analysis
 patient_numbers = np.load(path + 'patient_numbers.npy')
@@ -225,12 +249,15 @@ peak_values_trial_1 = np.zeros([len(patient_numbers_to_use),3])
 
 true_peaks = np.zeros([len(patient_numbers_to_use),3])
 
+patient_colours = ('r','g','b','c','m','k','b','g','b','c','m','k','r','g','b','c','m','k')
+plot_count = 0
+
 patient_count = 0
 
 for patient_number in patient_numbers_to_use:
     
-    plt.figure()
-    plt.suptitle('Patient ' + str(patient_number))
+    # plt.figure()       
+    # plt.suptitle('Patient ' + str(patient_number))
     
     trials = []
     
@@ -245,6 +272,13 @@ for patient_number in patient_numbers_to_use:
     ## find the correct dominant frequency
     dominant_frequency = dominant_frequencies[np.where(dominant_frequencies[:,0] == patient_number),1]
     
+    if dominant_frequency <= 5:
+        plt.subplot(1,3,1)
+    elif dominant_frequency > 5 and dominant_frequency <= 9:
+        plt.subplot(1,3,2)
+    elif dominant_frequency >= 9:
+        plt.subplot(1,3,3)
+                
     
     ## check if the patient had more than one session
     more_than_one_session = 0
@@ -262,99 +296,136 @@ for patient_number in patient_numbers_to_use:
         electrode = 48  #electrodes_to_use[electrode_count]  ### 48 = POz
        
      #   plt.subplot(1,2,electrode_count+1)
-        
-             
+        use_trial = 0
+        if 'baseline' in trial_name and 'trial_0' in trial_name:   
+            use_trial = 1
+        if patient_number == 41 and  'baseline' in trial_name:
+            use_trial = 1
+        if patient_number == 62:
+            use_trial = 0
+            
+            
+        if use_trial == 1:
 
-        all_data = np.load(path + trial_name + '_all_data.npy')
-
-        data = all_data[electrode,:]
-        
-        length = 5
-        
-        fft_spectrum = functions.induced_fft(data, length, sample_rate)
+            all_data = np.load(path + trial_name + '_all_data.npy')
     
-        freq_vector = np.arange(0,len(fft_spectrum)/length,1/length)
+            data = all_data[electrode,:]
+            
+            length = 5
+            
+            fft_spectrum = functions.induced_fft(data, length, sample_rate)
         
-        
-        ## store values
-        
-        frequency_index = int(dominant_frequency[0,] * length)
-        
-        range_index = length
-        
-        peak_range = fft_spectrum[frequency_index-range_index:frequency_index+range_index+1]
-        
-        average_peak_range = peak_range.mean()
-        
-        true_peak = fft_spectrum[frequency_index]
-        
-        if 'trial_0' in trial_name:
-        
-            if '30Hz' in trial_name:
-                peak_values[patient_count,0] = average_peak_range
-                true_peaks[patient_count,0] = true_peak
-            elif '40Hz' in trial_name:
-                peak_values[patient_count,1] = average_peak_range
-                true_peaks[patient_count,1] = true_peak
-            elif 'baseline' in trial_name:
-                peak_values[patient_count,2] = average_peak_range
-                true_peaks[patient_count,2] = true_peak
-                        
-        if 'trial_1' in trial_name:
-        
-            if '30Hz' in trial_name:
-                peak_values_trial_1[patient_count,0] = average_peak_range
-            elif '40Hz' in trial_name:
-                peak_values_trial_1[patient_count,1] = average_peak_range
-            elif 'baseline' in trial_name:
-                peak_values_trial_1[patient_count,2] = average_peak_range
-                                
-        
-        
-        # set condition names for plot legend
-        if '30Hz' in trial_name:
-            condition_name = '30 Hz Flicker'
-        elif '40Hz' in trial_name:
-            condition_name = '40 Hz Flicker'
-        elif 'baseline' in trial_name:
-           condition_name = 'Baseline'
-                            
-    
-        
-        ## plots
-        if more_than_one_session == 1:
+            freq_vector = np.arange(0,len(fft_spectrum)/length,1/length)
+            
+            
+            ## store values
+            
+            frequency_index = int(dominant_frequency[0,] * length)
+            
+            range_index = length
+            
+            peak_range = fft_spectrum[frequency_index-range_index:frequency_index+range_index+1]
+            
+            average_peak_range = peak_range.mean()
+            
+            true_peak = fft_spectrum[frequency_index]
+            
             if 'trial_0' in trial_name:
-                plt.subplot(1,2,1)        
+            
+                if '30Hz' in trial_name:
+                    peak_values[patient_count,0] = average_peak_range
+                    true_peaks[patient_count,0] = true_peak
+                elif '40Hz' in trial_name:
+                    peak_values[patient_count,1] = average_peak_range
+                    true_peaks[patient_count,1] = true_peak
+                elif 'baseline' in trial_name:
+                    peak_values[patient_count,2] = average_peak_range
+                    true_peaks[patient_count,2] = true_peak
+                            
             if 'trial_1' in trial_name:
-                plt.subplot(1,2,2)
             
-       # plt.title(chan_names[electrode] )    
-        plt.title(chan_names[electrode] + '  ' + str(dominant_frequency[0,0]) + ' Hz')    
-        
-        plt.plot(freq_vector,fft_spectrum, label = condition_name)
-
-        max_peak = max(true_peaks[patient_count,:]) * 1.5
-
-        plt.ylim([0, max_peak])
-        plt.xlim([2, 20])
-        
-        plt.axvline(x = dominant_frequency, color = 'k', linestyle='--')
-        # plt.axvline(x = dominant_frequency-1, color = 'k', linestyle='-.')
-        # plt.axvline(x = dominant_frequency+1, color = 'k', linestyle='-.')   
-        
-        plt.xlabel('Frequency (Hz)')
-        plt.ylabel('Amplitude')
+                if '30Hz' in trial_name:
+                    peak_values_trial_1[patient_count,0] = average_peak_range
+                elif '40Hz' in trial_name:
+                    peak_values_trial_1[patient_count,1] = average_peak_range
+                elif 'baseline' in trial_name:
+                    peak_values_trial_1[patient_count,2] = average_peak_range
+                                    
             
-
-    if more_than_one_session == 1:
-        plt.subplot(1,2,1)
-        plt.legend()
-        plt.subplot(1,2,2)
-        plt.legend()
-    else:
-        plt.legend()
+            
+            # set condition names for plot legend
+            if '30Hz' in trial_name:
+                condition_name = '30 Hz Flicker'
+            elif '40Hz' in trial_name:
+                condition_name = '40 Hz Flicker'
+            elif 'baseline' in trial_name:
+               condition_name = 'Baseline'
+                                    
+            
+             
+             ## plots
+            # if more_than_one_session == 1:
+            #      if 'trial_0' in trial_name:
+            #          plt.subplot(1,2,1)        
+            #      if 'trial_1' in trial_name:
+            #          plt.subplot(1,2,2)
+                 
+            # plt.title(chan_names[electrode] )    
+           # plt.title(chan_names[electrode] + '  ' + str(dominant_frequency[0,0]) + ' Hz')    
+               
+           # plt.plot(freq_vector,fft_spectrum, label = condition_name)
+            plt.plot(freq_vector,fft_spectrum, label = ('Patient ' + str(patient_number) + '    ' + str(dominant_frequency[0,0]) + ' Hz'), color = patient_colours[plot_count])
+    
+            max_peak = max(true_peaks[patient_count,:]) * 1.5
+    
+            #plt.ylim([0, max_peak])
+            plt.xlim([2, 15])
+            
+           # plt.axvline(x = dominant_frequency, color =  'k', linestyle='--')
+            plt.axvline(x = dominant_frequency, color =  patient_colours[plot_count], linestyle='--')
+            # plt.axvline(x = dominant_frequency-1, color = 'k', linestyle='-.')
+            # plt.axvline(x = dominant_frequency+1, color = 'k', linestyle='-.')   
+            
+            plot_count += 1
+            
+            plt.xlabel('Frequency (Hz)')
+          #  plt.ylabel('Amplitude')
+               
+    
+            # if more_than_one_session == 1:
+            #     plt.subplot(1,2,1)
+            #     plt.legend()
+            #     plt.subplot(1,2,1)
+            #     plt.legend()
+            # else:
+            #     plt.legend()
     
     patient_count += 1
+    
+    
+plt.subplot(1,3,1)   
+plt.legend() 
+plt.ylim([0,0.05]) 
+plt.ylabel('Amplitude')
+plt.title('4-5 Hz')  
+plt.subplot(1,3,2)   
+plt.legend()  
+plt.ylim([0,0.03])  
+plt.title('6-7 Hz')
+plt.subplot(1,3,3)   
+plt.legend(loc='upper right')
+plt.ylim([0.0005,0.003])   
+plt.xlim([2, 18]) 
+plt.title('Alpha?')
+    
+#plt.tight_layout()  
+    
+    
+    
+    
+    
+    
+    
     
     
     
@@ -362,6 +433,7 @@ for patient_number in patient_numbers_to_use:
     
     
 ## sort peak values to use for analysis
+
 
 peak_values[9,2] = peak_values_trial_1[9,2] # patient 41, baseline was pre recording and labeled as "trial_1"
 
@@ -382,30 +454,42 @@ average_30Hz = scores_as_percentage_baseline_30Hz.mean()
 average_40Hz = scores_as_percentage_baseline_40Hz.mean()
 
 
+
+
+
+
 ## plot group data
 
 plt.figure()
 
-dot_size = 10
+# plt.rcParams.update({'font.size': 16})
+
+dot_size = 50
 
 std_error_scores_30Hz = np.std(scores_as_percentage_baseline_30Hz) / math.sqrt(len(scores_as_percentage_baseline_30Hz))
 
-plt.errorbar(0, scores_as_percentage_baseline_30Hz.mean(),yerr = std_error_scores_30Hz, solid_capstyle='projecting', capsize=5,  fmt='o', color= 'b', ecolor='b')  
 
-plt.scatter((np.zeros(len(scores_as_percentage_baseline_30Hz))), scores_as_percentage_baseline_30Hz, s=dot_size)
+plt.scatter((np.zeros(len(scores_as_percentage_baseline_30Hz))), scores_as_percentage_baseline_30Hz, s=dot_size, color = 'c')
+
+plt.errorbar(0, scores_as_percentage_baseline_30Hz.mean(),yerr = std_error_scores_30Hz, solid_capstyle='projecting', capsize=10,  fmt='o', color= 'b', ecolor='b')  
+plt.scatter(0, scores_as_percentage_baseline_30Hz.mean(), s=100, color = 'b')
+
+
 
 
 std_error_scores_40Hz = np.std(scores_as_percentage_baseline_40Hz) / math.sqrt(len(scores_as_percentage_baseline_40Hz))
+plt.scatter((np.ones(len(scores_as_percentage_baseline_40Hz))), scores_as_percentage_baseline_40Hz, s=dot_size, color = 'y')
 
-plt.errorbar(1, scores_as_percentage_baseline_40Hz.mean(),yerr = std_error_scores_40Hz, solid_capstyle='projecting', capsize=5,  fmt='o', color= 'b', ecolor='b')  
 
-plt.scatter((np.ones(len(scores_as_percentage_baseline_40Hz))), scores_as_percentage_baseline_40Hz, s=dot_size)
+plt.errorbar(1, scores_as_percentage_baseline_40Hz.mean(),yerr = std_error_scores_40Hz, solid_capstyle='projecting', capsize=10,  fmt='o', color= 'b', ecolor='b')  
+plt.scatter(1, scores_as_percentage_baseline_40Hz.mean(), s=100,  color = 'b')
 
 
 plt.axhline(y = 100, color = 'k', linestyle='--')
 
 plt.xticks((0,1), ('30 Hz', '40 Hz'))    
 plt.xlim([-0.5,1.5])
+
 
 plt.ylabel('Amplitude as percentage of Baseline')
 
@@ -460,12 +544,12 @@ for freq_to_test in(0,1):# 0 = 30 Hz, 1 = 40 Hz
     p_value = scipy.stats.norm.sf(abs(Z_score))*2
     
     if freq_to_test == 0:
-        print('30 Hz Z score = ' + str(Z_score))
+        print('30 Hz Z score = '  + str(np.round(Z_score,2)))
         
     elif freq_to_test == 1: 
-        print('40 Hz Z score = ' + str(Z_score))
+        print('40 Hz Z score = ' + str(np.round(Z_score,2)))
 
-    print ('p = ' + str(p_value) + '\n')
+    print ('p = ' + str(np.round(p_value,2)) + '\n')
     
     
     
@@ -493,8 +577,10 @@ subject_numbers = (2,3,7,8)
 
 POz_electrode_numbers = (62, 7, 7, 7)
 
-plt.figure(1)
-plt.figure(2)
+plt.figure()
+plt.suptitle('Healthy controls 40 Hz Flicker')
+
+amplitudes = np.zeros([len(subject_numbers),2])
 
 for subject in range(0,len(subject_numbers)):
     
@@ -528,10 +614,12 @@ for subject in range(0,len(subject_numbers)):
         
         freq_vector = np.arange(0,len(fft_spectrum)/length,1/length)
 
-        plt.figure(1)
-        plt.subplot(2,2,subject+1)
+       # plt.figure(1)
+        plt.subplot(2,4,subject+1)
         
         plt.plot(freq_vector, fft_spectrum, label = plot_name)
+        
+        plt.xlabel('Frequency (Hz)')
         
         plt.xlim([2, 45])
         plt.ylim([0, max(fft_spectrum[8*5:14*5]) * 1.2])
@@ -587,22 +675,32 @@ for subject in range(0,len(subject_numbers)):
         # make SSVEP
         SSVEP = functions.make_SSVEPs(data, triggers, period) 
         
-        plt.figure(2)    
-        plt.subplot(2,2,subject+1)
+        SSVEP = SSVEP * 1000000
+        
+        amplitudes[subject, condition] = np.ptp(SSVEP)
+        
+
+        #plt.figure(2)    
+        plt.subplot(2,4,4 + subject+1)
         
         plt.plot(SSVEP, label = plot_name)
-        
-    plt.figure(1)    
-    plt.xlabel('Frequency (Hz)')
-    plt.ylabel('Amplitude')
-    plt.legend()
-    
-    
-    plt.figure(2)    
-    plt.xlabel('Time (ms)')
-    plt.ylabel('Amplitude')
-    plt.legend()
-    
-     
-    
-    
+        plt.xlabel('Time (ms)')
+  
+#  plt.figure(1)    
+plt.subplot(2,4,4)
+plt.legend()
+
+plt.subplot(2,4,1)
+plt.ylabel('Amplitude')
+
+ # plt.figure(2) 
+plt.subplot(2,4,8)   
+plt.legend()
+
+plt.subplot(2,4,5)   
+plt.ylabel('Peak to Peak Amplitude (\u03BCV)')
+
+  
+   
+print('\nAverage amplitude = ' + str(amplitudes[:,1].mean()))  
+  

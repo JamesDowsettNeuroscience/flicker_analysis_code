@@ -257,7 +257,7 @@ def decode_correlations(data_all_conditions, triggers_all_conditions, num_condit
             random.shuffle(seg_nums) # randomize the order
             
             triggers = triggers_all_conditions[condition,:]
-    
+            
             data = data_all_conditions[condition,:]
     
             # get half of the triggers
@@ -275,7 +275,9 @@ def decode_correlations(data_all_conditions, triggers_all_conditions, num_condit
     
                 ## test condition 1 decoding
                 corr_this_condition_test_and_training = np.corrcoef(training_SSVEPs[condition,:],test_SSVEPs[condition,:])[0,1]
-             
+
+              #  print(corr_this_condition_test_and_training)
+
                 all_other_conditions =  [i for i in range(num_conditions) if i != condition] # test against all conditions except the current condition
     
                 answer_correct = 1 # set to 1 for correct answer, if any other conditions score higher, set to 0
@@ -283,7 +285,9 @@ def decode_correlations(data_all_conditions, triggers_all_conditions, num_condit
                 for other_condition in all_other_conditions:
                     
                     corr_this_condition_training_other_condition_test = np.corrcoef(training_SSVEPs[condition,:],test_SSVEPs[other_condition,:])[0,1]
-                
+
+                   # print(corr_this_condition_training_other_condition_test)
+
                     if corr_this_condition_training_other_condition_test > corr_this_condition_test_and_training:
                         answer_correct = 0
                         

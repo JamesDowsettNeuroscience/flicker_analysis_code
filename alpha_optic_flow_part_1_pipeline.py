@@ -14,12 +14,14 @@ from flicker_analysis_package import functions
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.signal
+import math
 
 import random
 
 ### information about the experiment:
 
-path = '/media/james/Expansion/alpha_optic_flow/experiment_1_data/'
+#path = '/media/james/Expansion/alpha_optic_flow/experiment_1_data/'
+path = '/home/james/Active_projects/alpha_optic_flow/experiment_1_data/'
 
 condition_names = ('Eyes Track, head fixed', 'Head track, Eyes fixed', 'Both head and eyes track', 'Eyes Track, head fixed - control', 'Head track, Eyes fixed - control', 'Both head and eyes track - control')
 
@@ -40,6 +42,8 @@ length = 1 # length of FFT in seconds
 #freq_bins = 1000/np.arange(8,14,0.2) # make frequency bins
 
 freq_bins = 1000/np.arange(8,14,0.5) # make frequency bins
+
+shortest_periods = np.zeros([len(freq_bins,)]) # for each frequency bin find the shortest period from the triggers used
 
 number_of_triggers_per_bin = 200
 
@@ -163,6 +167,12 @@ for subject in range(1,21):
                     closest_trigger_indices = idx[:number_of_triggers_per_bin].tolist()
                                  
                     triggers_for_this_bin = [good_triggers[i] for i in closest_trigger_indices]
+                   
+                    actual_periods_used = true_flicker_periods[closest_trigger_indices]
+                    
+                    min_period = math.floor(min(actual_periods_used))
+                    
+                    shortest_periods[current_bin] = min_period
                    
                    # triggers_for_this_bin = []
     
@@ -782,17 +792,28 @@ for electrode in range(0,8):
                 num_triggers = number_of_triggers_per_bin
                 num_loops = 10
                 
-                average_percent_correct = functions.decode_correlations(data_all_conditions, triggers_all_conditions, 3, num_triggers, int(period), num_loops)
+                
+                
+                
+                #period = freq_bins[current_bin]
+                period = int(shortest_periods[current_bin]) ## use the shortest period
                 
                 # make SSVEPs
-                SSVEP_1 = functions.make_SSVEPs(data_1, triggers_1, int(freq_bins[current_bin]))
-                SSVEP_2 = functions.make_SSVEPs(data_2, triggers_2, int(freq_bins[current_bin]))
-                SSVEP_3 = functions.make_SSVEPs(data_3, triggers_3, int(freq_bins[current_bin]))
+                SSVEP_1 = functions.make_SSVEPs(data_1, triggers_1, period)
+                SSVEP_2 = functions.make_SSVEPs(data_2, triggers_2, period)
+                SSVEP_3 = functions.make_SSVEPs(data_3, triggers_3, period)
                 
-                period = freq_bins[current_bin]
+                
+                
+                
                 num_loops = 10
                 
-                average_percent_correct = functions.decode_correlation_3way(data_1, data_2, data_3, triggers_1, triggers_2, triggers_3, int(period), num_loops)
+                # Decode
+                
+               # average_percent_correct = functions.decode_correlation_3way(data_1, data_2, data_3, triggers_1, triggers_2, triggers_3, int(period), num_loops)
+               
+                average_percent_correct = functions.decode_correlations(data_all_conditions, triggers_all_conditions, 3, num_triggers, int(period), num_loops)
+                 
                 
                 decoding_accuracy[subject_count,electrode,block-1,current_bin] = average_percent_correct
                 #decoding_accuracy[subject_count,electrode,current_bin] = average_percent_correct
