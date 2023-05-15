@@ -32,7 +32,7 @@ sample_rate = 1000
 
 num_subjects = 20
 
-length = 1 # length of FFT in seconds
+length = 10 # length of FFT in seconds
 
 # trigger times for linear interpolation
 trigger_1_times = [-1, -1]
@@ -42,9 +42,14 @@ trig_length = 6
 
 subjects_to_use = [ 1,  2,  3, 5,  6,  7,  8,  9, 10, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 25, 27, 29, 30, 31]
 
+smallest_period = 90
+
 decoding_accuracy = np.zeros([len(subjects_to_use),8,2])
 
 SSVEP_amplitudes = np.zeros([len(subjects_to_use),8,2,3])
+
+evoked_FFTs = np.zeros([len(subjects_to_use),8,2,3, length*sample_rate])
+
 
 subject_count = 0
 
@@ -119,6 +124,7 @@ for subject in subjects_to_use:
             # find the condition with the minimum number of triggers, so all conditions can have the same number of triggers
             min_number_of_triggers = min(len(triggers_1),len(triggers_2),len(triggers_3))
             
+            ## choose to decode/make SSVEP with all available triggers, or some smaller subset
             # num_triggers = 200
             # if min_number_of_triggers < num_triggers:
             #     num_triggers = min_number_of_triggers
@@ -146,9 +152,13 @@ for subject in subjects_to_use:
             print('\nSubject ' + str(subject) + ' block' + str(block) + ' ' + electrode_names[electrode])
             #print('Number of triggers = ' + str(num_triggers))
             
-            # Decode
-            average_percent_correct = functions.decode_correlations(data_all_conditions, triggers_all_conditions, 3, num_triggers, period, num_loops)
-             
+            # Decode, use smallest Period, so same amount of data is being used in both conditions
+            #average_percent_correct = functions.decode_correlations(data_all_conditions, triggers_all_conditions, 3, num_triggers, smallest_period, num_loops)
+           
+            # Decode with full length of SSVEP
+            average_percent_correct = functions.decode_correlations(data_all_conditions, triggers_all_conditions, 3, num_triggers, smallest_period, num_loops)
+              
+            
             print('Decoding accuracy = ' + str(average_percent_correct) + '\n')
             
             decoding_accuracy[subject_count,electrode,block-1] = average_percent_correct
@@ -181,6 +191,19 @@ for subject in subjects_to_use:
             # plt.legend()
             
             
+            ### evoked FFT
+            
+            evoked_fft_1 = functions.evoked_fft(data_1, triggers_all_conditions[0,0:num_triggers], length, sample_rate)
+            evoked_fft_2 = functions.evoked_fft(data_2, triggers_all_conditions[1,0:num_triggers], length, sample_rate)
+            evoked_fft_3 = functions.evoked_fft(data_3, triggers_all_conditions[2,0:num_triggers], length, sample_rate)
+            
+            # put into matrix
+            evoked_FFTs[subject_count,electrode,block-1,0,:] = evoked_fft_1
+            evoked_FFTs[subject_count,electrode,block-1,1,:] = evoked_fft_2
+            evoked_FFTs[subject_count,electrode,block-1,2,:] = evoked_fft_3
+
+
+        
         
     subject_count += 1
     
@@ -188,6 +211,7 @@ for subject in subjects_to_use:
     
     
     
+  
 ## plot grand average decoding scores
 
 electrodes_to_use = [0,1,2,3,4,5,7]
@@ -198,7 +222,7 @@ import statistics
 
 plt.figure()
 
-plt.subplot(1,2,1)
+#plt.subplot(1,2,1)
 
 plt.title('9 Hz vs 11 Hz decoding \nwith ' + str(num_triggers) + ' segments per condition')
 
@@ -238,17 +262,21 @@ plt.ylim([0,100])
 plt.ylabel('Average Decoding Accuracy %')
 
 
+
+
+
 ### plot amplitudes
 
 condition_colours = ('b', 'r', 'g')
 
-
-plt.subplot(1,2,2)
+plt.figure()
+plt.suptitle('Peak to Peak Amplitudes')
+#plt.subplot(1,2,2)
 
 electrode_count = 0
 for electrode in electrodes_to_use:
     
-    condition_shift = [-0.3,0,0.3]
+    condition_shift = [-0.2,0,0.2]
     
     for condition in range(0,3):
 
@@ -277,6 +305,92 @@ plt.xticks(x, electrode_names_to_use)
   
 
 plt.ylabel('Peak to Peak Amplitude')
+
+
+
+
+
+
+
+
+### plotP3/P4 ratios
+
+plt.figure()
+
+plt.title('P3/P4 Ratio')
+
+for condition in range(0,3):
+
+    P3_block_1 = SSVEP_amplitudes[:,2,0, condition]
+    P4_block_1 = SSVEP_amplitudes[:,3,0, condition]
+    
+    P3_P4_ratios_block_1 = P3_block_1 / P4_block_1
+    
+    P3_block_2 = SSVEP_amplitudes[:,2,1, condition]
+    P4_block_2 = SSVEP_amplitudes[:,3,1, condition]
+    
+    P3_P4_ratios_block_2 = P3_block_2 / P4_block_2
+    
+ 
+    mean_block_1 = P3_P4_ratios_block_1.mean()
+    mean_block_2 = P3_P4_ratios_block_2.mean()
+
+    std_error_block_1 = np.std(P3_P4_ratios_block_1) / math.sqrt(len(P3_P4_ratios_block_1))
+    std_error_block_2 = np.std(P3_P4_ratios_block_2) / math.sqrt(len(P3_P4_ratios_block_2))
+
+    # plt.scatter(np.zeros([len(P3_P4_ratios_block_1),])+condition,P3_P4_ratios_block_1,s=1, c=condition_colours[condition])
+    # plt.scatter(np.zeros([len(scores_block_1),])+condition+0.1,P3_P4_ratios_block_2,s=1, c=condition_colours[condition])
+  
+    plt.errorbar(condition, mean_block_1,yerr = std_error_block_1, solid_capstyle='projecting', capsize=5,  fmt='o', color= condition_colours[condition], ecolor='b')  
+    plt.errorbar(condition+5, mean_block_2,yerr = std_error_block_2, solid_capstyle='projecting', capsize=5,  fmt='o', color=  condition_colours[condition], ecolor='b')  
+
+    #plt.plot([condition,condition+5], [mean_block_1, mean_block_2], color = 'c')
+
+    plt.axhline(y = 1, color = 'k', linestyle = '--')
+
+
+
+plt.ylabel('P3/P4 Ratio')
+
+plt.xticks(((1,6)), ('9 Hz', '11 Hz'))    
+  
+plt.plot(0,1,'b', label = 'Optic flow')
+plt.plot(0,1,'r', label = 'Random movement')
+plt.plot(0,1,'g', label = 'Static')
+
+plt.legend()
+
+
+
+
+
+
+### plot grand average evoked FFTs
+
+frequency_vector = np.linspace(0,sample_rate,length*sample_rate)
+
+plt.figure()
+
+for electrode in range(0,8):
+    
+    plt.subplot(2,4,electrode+1)
+    plt.title(electrode_names[electrode])
+    
+    for block in range(0,2):
+        
+        average_evoked_fft_1 = evoked_FFTs[:,electrode,block-1,0,:].mean(axis=0)
+        average_evoked_fft_2 = evoked_FFTs[:,electrode,block-1,1,:].mean(axis=0)
+        average_evoked_fft_3 = evoked_FFTs[:,electrode,block-1,2,:].mean(axis=0)
+
+        plt.plot(frequency_vector,average_evoked_fft_1,'b')
+        plt.plot(frequency_vector,average_evoked_fft_2,'r')
+        plt.plot(frequency_vector,average_evoked_fft_3,'g')
+
+        plt.xlim(8,23)
+        plt.ylim(0,0.004)
+
+    
+
 
 
 
