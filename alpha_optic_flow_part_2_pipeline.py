@@ -40,7 +40,7 @@ trigger_2_times = [54, 45]
 trig_length = 6
 
 
-subjects_to_use = [ 1,  2,  3, 5,  6,  7,  8,  9, 10, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 25, 27, 29, 30, 31]
+subjects_to_use = [1, 5,  6,  7,  8,  9, 10, 12, 13, 14, 15, 16, 19, 20, 21, 22, 23, 25, 27, 29, 30, 31]
 
 smallest_period = 90
 
@@ -55,10 +55,12 @@ subject_count = 0
 
 electrode = 2
 
+min_number_of_triggers_for_each_subject = np.zeros([32,2])
+
 for subject in subjects_to_use:
     
-    # plt.figure()
-    # plt.suptitle('Subject ' + str(subject) + '  ' + electrode_names[electrode])
+    plt.figure()
+    plt.suptitle('Subject ' + str(subject) + '  ' + electrode_names[electrode])
     
     for block in (1,2): # 9 and 11 Hz flicker blocks
 
@@ -73,9 +75,9 @@ for subject in subjects_to_use:
          
          
 
-        for electrode in range(0,8):
+        for electrode in range(0,1):
             
-        
+            print(electrode_names[electrode])
      
             # load data and triggers condition 1
             file_name = 'S' + str(subject) + '_block' + str(block) + '_cond1'
@@ -124,6 +126,8 @@ for subject in subjects_to_use:
             # find the condition with the minimum number of triggers, so all conditions can have the same number of triggers
             min_number_of_triggers = min(len(triggers_1),len(triggers_2),len(triggers_3))
             
+            min_number_of_triggers_for_each_subject[subject,block-1] = min_number_of_triggers
+            
             ## choose to decode/make SSVEP with all available triggers, or some smaller subset
             # num_triggers = 200
             # if min_number_of_triggers < num_triggers:
@@ -138,12 +142,19 @@ for subject in subjects_to_use:
             data_all_conditions[1,0:len(data_2)] = data_2
             data_all_conditions[2,0:len(data_3)] = data_3
                
+            # random shuffle the triggers
+            # random.shuffle(triggers_1)
+            # random.shuffle(triggers_2)
+            # random.shuffle(triggers_3)
+            
              # put all triggers into one matrix
+            start_trigger = 0
+             
             triggers_all_conditions = np.zeros([3,num_triggers])
             triggers_all_conditions = triggers_all_conditions.astype(int)
-            triggers_all_conditions[0,:] = triggers_1[0:num_triggers]
-            triggers_all_conditions[1,:] = triggers_2[0:num_triggers]
-            triggers_all_conditions[2,:] = triggers_3[0:num_triggers]
+            triggers_all_conditions[0,:] = triggers_1[start_trigger:start_trigger+num_triggers]
+            triggers_all_conditions[1,:] = triggers_2[start_trigger:start_trigger+num_triggers]
+            triggers_all_conditions[2,:] = triggers_3[start_trigger:start_trigger+num_triggers]
             
             
            
@@ -167,35 +178,35 @@ for subject in subjects_to_use:
             
             
             # # make SSVEPs
-            SSVEP_1 = functions.make_SSVEPs(data_1, triggers_all_conditions[0,0:num_triggers], period)
-            SSVEP_2 = functions.make_SSVEPs(data_2, triggers_all_conditions[1,0:num_triggers], period)
-            SSVEP_3 = functions.make_SSVEPs(data_3, triggers_all_conditions[2,0:num_triggers], period)
+            SSVEP_1 = functions.make_SSVEPs(data_1, triggers_1, period)
+            SSVEP_2 = functions.make_SSVEPs(data_2, triggers_2, period)
+            SSVEP_3 = functions.make_SSVEPs(data_3, triggers_3, period)
             
             
             SSVEP_amplitudes[subject_count,electrode,block-1,0] = np.ptp(SSVEP_1)
             SSVEP_amplitudes[subject_count,electrode,block-1,1] = np.ptp(SSVEP_2)
             SSVEP_amplitudes[subject_count,electrode,block-1,2] = np.ptp(SSVEP_3)
             
-            # if block == 1:
-            #     plt.subplot(1,2,1)
-            #     plt.title('9 Hz  ' + str(np.round(average_percent_correct)) + ' %')
-            # elif block == 2:
-            #     plt.subplot(1,2,2)
-            #     plt.title('11 Hz  ' + str(np.round(average_percent_correct)) + ' %')
+            if block == 1:
+                plt.subplot(1,2,1)
+                plt.title('9 Hz  ' + str(np.round(average_percent_correct)) + ' %')
+            elif block == 2:
+                plt.subplot(1,2,2)
+                plt.title('11 Hz  ' + str(np.round(average_percent_correct)) + ' %')
              
             
-            # plt.plot(SSVEP_1, label = condition_names[0])
-            # plt.plot(SSVEP_2, label = condition_names[1])
-            # plt.plot(SSVEP_3, label = condition_names[2])
+            plt.plot(SSVEP_1, label = condition_names[0])
+            plt.plot(SSVEP_2, label = condition_names[1])
+            plt.plot(SSVEP_3, label = condition_names[2])
             
-            # plt.legend()
+            plt.legend()
             
             
             ### evoked FFT
             
-            evoked_fft_1 = functions.evoked_fft(data_1, triggers_all_conditions[0,0:num_triggers], length, sample_rate)
-            evoked_fft_2 = functions.evoked_fft(data_2, triggers_all_conditions[1,0:num_triggers], length, sample_rate)
-            evoked_fft_3 = functions.evoked_fft(data_3, triggers_all_conditions[2,0:num_triggers], length, sample_rate)
+            evoked_fft_1 = functions.evoked_fft(data_1, triggers_1, length, sample_rate)
+            evoked_fft_2 = functions.evoked_fft(data_2, triggers_2, length, sample_rate)
+            evoked_fft_3 = functions.evoked_fft(data_3, triggers_3, length, sample_rate)
             
             # put into matrix
             evoked_FFTs[subject_count,electrode,block-1,0,:] = evoked_fft_1
@@ -420,7 +431,7 @@ for electrode in electrodes_to_use:
 pooled_scores_block_1 = np.concatenate((decoding_accuracy[:,0,0], decoding_accuracy[:,1,0], decoding_accuracy[:,2,0], decoding_accuracy[:,3,0], decoding_accuracy[:,4,0], decoding_accuracy[:,5,0]), axis=0)
 pooled_scores_block_2 = np.concatenate((decoding_accuracy[:,0,1], decoding_accuracy[:,1,1], decoding_accuracy[:,2,1], decoding_accuracy[:,3,1], decoding_accuracy[:,4,1], decoding_accuracy[:,5,1]), axis=0)
 
-print('Mean decoding accuracy across electrodes:')
+print('\nMean decoding accuracy across electrodes:')
 print('9 Hz: ' + str(pooled_scores_block_1.mean()))
 print('11 Hz: ' + str(pooled_scores_block_2.mean()))
 
