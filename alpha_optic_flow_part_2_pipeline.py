@@ -59,7 +59,7 @@ min_number_of_triggers_for_each_subject = np.zeros([32,2])
 
 for subject in subjects_to_use:
     
-    plt.figure()
+    plt.figure(subject)
     plt.suptitle('Subject ' + str(subject) + '  ' + electrode_names[electrode])
     
     for block in (1,2): # 9 and 11 Hz flicker blocks
@@ -188,10 +188,10 @@ for subject in subjects_to_use:
             SSVEP_amplitudes[subject_count,electrode,block-1,2] = np.ptp(SSVEP_3)
             
             if block == 1:
-                plt.subplot(1,2,1)
+                plt.subplot(1,3,1)
                 plt.title('9 Hz  ' + str(np.round(average_percent_correct)) + ' %')
             elif block == 2:
-                plt.subplot(1,2,2)
+                plt.subplot(1,3,2)
                 plt.title('11 Hz  ' + str(np.round(average_percent_correct)) + ' %')
              
             
@@ -218,6 +218,73 @@ for subject in subjects_to_use:
         
     subject_count += 1
     
+    
+    
+
+### get individual alpha frequencies from no filcker block
+
+length = 4
+
+block = 3
+
+electrode = 0
+
+plot_colours = ('b','r','g')
+
+alpha_peaks = np.zeros([len(subjects_to_use),8,3])
+IAFs = np.zeros([len(subjects_to_use),8,3])
+
+subject_count = 0
+
+for subject in subjects_to_use:
+    
+    plt.figure(subject)
+    plt.suptitle('Subject ' + str(subject))
+    
+    for electrode in range(0,4):
+        
+        plt.subplot(2,2,electrode+1)
+        
+    
+        for condition in range(0,3): 
+    
+            # load data from each condition 
+            file_name = 'S' + str(subject) + '_block' + str(block) + '_cond' + str(condition+1)
+        
+            all_data = np.load(path + file_name + '_all_data.npy')
+        
+            data = all_data[electrode,:]
+            REF_2_data = all_data[6,:] # get the data for the second reference, to re-reference (left and right ears)
+            data = data - (REF_2_data/2) # re-reference    
+        
+            induced_fft_spectrum = functions.induced_fft(data, length, sample_rate)
+        
+            # get alpha peak and frequency
+            alpha_range = induced_fft_spectrum[7*length:14*length]
+            
+            alpha_peak = max(alpha_range)
+            alpha_peaks[subject_count, electrode,condition] = alpha_peak
+            
+            IAF = 7 + (np.argmax(alpha_range)/length)
+            IAFs[subject_count, electrode,condition] = IAF
+            
+            plt.plot(IAF, alpha_peak, '*', color = plot_colours[condition])
+           
+        
+            ## plot
+            frequency_vector = np.linspace(0,sample_rate,length*sample_rate)
+    
+            plt.plot(frequency_vector,induced_fft_spectrum, color = plot_colours[condition])
+            
+            average_alpha_range = alpha_range.mean()
+            plt.plot(np.arange(7,14),np.ones(7,)*(average_alpha_range*1.2),'--', color =  plot_colours[condition])
+        
+            plt.xlim([2,20])
+            
+        plt.ylim([0,max(alpha_peaks[subject_count, electrode,:])*1.5])
+        plt.title( electrode_names[electrode] + '   ' + str(IAF) + ' Hz')
+        
+    subject_count += 1
     
     
     
