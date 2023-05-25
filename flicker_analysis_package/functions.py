@@ -122,116 +122,6 @@ def decode_correlation(data_1, data_2, triggers_1, triggers_2, period, num_loops
     
     
 
-## the same decoding as above but with three conditions
-
-def decode_correlation_3way(data_1, data_2, data_3, triggers_1, triggers_2, triggers_3, period, num_loops):
-    
-    import numpy as np
-    import random
-    # import matplotlib.pyplot as plt
-    
-    scores = np.zeros([num_loops,3])
-   
-    
-    for loop in range(0,num_loops):     
-
-        ## split triggers into training and test with a 50/50 split
-        
-        for condition in (1,2,3):
-
-            if condition == 1:
-                num_triggers = len(triggers_1)
-                seg_nums = np.arange(0,num_triggers) # an index for each segment
-            elif condition == 2:
-                num_triggers = len(triggers_2)
-                seg_nums = np.arange(0,num_triggers) 
-            elif condition == 3:
-                num_triggers = len(triggers_3)
-                seg_nums = np.arange(0,num_triggers) 
-                
-         
-            random.shuffle(seg_nums) # randomize the order
-            
-            # get half of the triggers
-            training_trig_nums = seg_nums[0:int(num_triggers/2)] # first half
-            test_trig_nums = seg_nums[int(num_triggers/2):num_triggers] # second half
-            
-            # get the corresponding trigger times
-            if condition == 1:
-                training_triggers_condition_1 = triggers_1[training_trig_nums]  
-                test_triggers_condition_1 = triggers_1[test_trig_nums]
-            elif condition == 2:
-                training_triggers_condition_2 = triggers_2[training_trig_nums]
-                test_triggers_condition_2 = triggers_2[test_trig_nums]
-            elif condition == 3:
-                training_triggers_condition_3 = triggers_3[training_trig_nums]
-                test_triggers_condition_3 = triggers_3[test_trig_nums]            
-
-
-
-        ### make training SSVEPs
-        training_SSVEP_condition_1 = make_SSVEPs(data_1, training_triggers_condition_1, period) 
-        training_SSVEP_condition_2 = make_SSVEPs(data_2, training_triggers_condition_2, period) 
-        training_SSVEP_condition_3 = make_SSVEPs(data_3, training_triggers_condition_3, period) 
-
-        # plt.plot(training_SSVEP_condition_1,'b')
-        # plt.plot(training_SSVEP_condition_2,'r')
-        # plt.plot(training_SSVEP_condition_3,'g')
-    
-                
-        ####  make test SSVEPs
-        test_SSVEP_condition_1 = make_SSVEPs(data_1, test_triggers_condition_1, period) 
-        test_SSVEP_condition_2 = make_SSVEPs(data_2, test_triggers_condition_2, period) 
-        test_SSVEP_condition_3 = make_SSVEPs(data_3, test_triggers_condition_3, period)
-
-    
-        # plt.plot(test_SSVEP_condition_1,'c')
-        # plt.plot(test_SSVEP_condition_2,'m')
-        # plt.plot(test_SSVEP_condition_3,'k')
-        
-
-        ## test condition 1 decoding
-        corr_condition_1_test_and_condition_1_training = np.corrcoef(test_SSVEP_condition_1,training_SSVEP_condition_1)[0,1]
-        corr_condition_1_test_and_condition_2_training = np.corrcoef(test_SSVEP_condition_1,training_SSVEP_condition_2)[0,1]
-        corr_condition_1_test_and_condition_3_training = np.corrcoef(test_SSVEP_condition_1,training_SSVEP_condition_3)[0,1]
-
-        if corr_condition_1_test_and_condition_1_training > corr_condition_1_test_and_condition_2_training and\
-            corr_condition_1_test_and_condition_1_training > corr_condition_1_test_and_condition_3_training:
-            
-            scores[loop,0] = 1 # score one point
-           
-
-        ## test condition 2 decoding
-        corr_condition_2_test_and_condition_1_training = np.corrcoef(test_SSVEP_condition_2,training_SSVEP_condition_1)[0,1]
-        corr_condition_2_test_and_condition_2_training = np.corrcoef(test_SSVEP_condition_2,training_SSVEP_condition_2)[0,1]
-        corr_condition_2_test_and_condition_3_training = np.corrcoef(test_SSVEP_condition_2,training_SSVEP_condition_3)[0,1]
-        
-        if corr_condition_2_test_and_condition_2_training > corr_condition_2_test_and_condition_1_training and\
-            corr_condition_2_test_and_condition_2_training > corr_condition_2_test_and_condition_3_training:
-                
-            scores[loop,1] = 1 # score one point
-                        
-        ## test condition 3 decoding
-        corr_condition_3_test_and_condition_1_training = np.corrcoef(test_SSVEP_condition_3,training_SSVEP_condition_1)[0,1]
-        corr_condition_3_test_and_condition_2_training = np.corrcoef(test_SSVEP_condition_3,training_SSVEP_condition_2)[0,1]
-        corr_condition_3_test_and_condition_3_training = np.corrcoef(test_SSVEP_condition_3,training_SSVEP_condition_3)[0,1]
-        
-        if corr_condition_3_test_and_condition_3_training > corr_condition_3_test_and_condition_1_training and\
-            corr_condition_3_test_and_condition_3_training > corr_condition_3_test_and_condition_2_training:
-                
-            scores[loop,2] = 1 # score one point
-                                   
-            
-                
-    percent_correct_condition_1 = np.sum(scores[:,0]) * (100/num_loops)
-    percent_correct_condition_2 = np.sum(scores[:,1]) * (100/num_loops)
-    percent_correct_condition_3 = np.sum(scores[:,2]) * (100/num_loops)
-       
-    average_percent_correct = (percent_correct_condition_1 + percent_correct_condition_2 + percent_correct_condition_3) / 3
-    
-    return average_percent_correct 
-    
-    
 
 
 ### decoding with any number of conditions
@@ -654,6 +544,112 @@ def evoked_fft(data, triggers, length, sample_rate): # length = length of segmen
 
     return fft_SSVEP
             
+
+
+
+#### Decode conditions using the induced FFT
+
+def decode_conditions_fft(data_all_conditions, num_conditions, num_loops, length, sample_rate, low_freq, high_freq):
+
+    import numpy as np
+    import random
+    from scipy import fftpack
+
+    scores = np.zeros([num_loops,num_conditions])
+
+    length_of_segment = int(length * sample_rate) # length of the segments of data used for the FFT
+
+    length_FFT_segment = (high_freq - low_freq) * length # length of the segment of the FFT for the frequency band of interest (e.g alpha band)
+
+    for loop in range(0,num_loops):
+   
+        training_data = np.zeros([num_conditions, length_FFT_segment])
+        test_data = np.zeros([num_conditions, length_FFT_segment])
+    
+        # make test and training FFTs for each condition with random split 
+        for condition in range(0,num_conditions):
+
+            data = data_all_conditions[condition,:]  # extract data          
+
+            estimated_num_segs = int((len(data)/length_of_segment) + 1)
+            
+            FFT_segment_matrix = np.zeros([estimated_num_segs, length_of_segment]) # empty matrix to put segments into
+            
+            seg_count = 0
+           
+            k = 0
+            
+            while k < len(data) - length_of_segment: # loop until the end of data
+
+                segment = data[k:k+length_of_segment] # get a segment of data
+
+                segment = segment - segment.mean() # baseline correct
+                    
+                segment_hanning = segment * np.hanning(length_of_segment) # multiply by hanning window
+                    
+                fft_segment = np.abs(fftpack.fft(segment_hanning)) # FFT
+
+                FFT_segment_matrix[seg_count,:] = fft_segment # put into matrix
+
+                seg_count+=1
+                
+                k = k + length_of_segment # move forward the length of the segment, so segments are not overlapping
+            
+                k+=1
+                       
+                
+            seg_nums = np.arange(0,estimated_num_segs) # an index for each segment
+
+            random.shuffle(seg_nums) # randomize the order
+
+            # average FFT spectrums with the two random halves of segments
+            fft_spectrum_training = FFT_segment_matrix[seg_nums[0:int(len(seg_nums)/2)],:].mean(axis=0)
+            fft_spectrum_test = FFT_segment_matrix[seg_nums[int(len(seg_nums)/2):-1],:].mean(axis=0)
+            
+            # plt.plot(fft_spectrum_training)
+            # plt.plot(fft_spectrum_test)
+
+            # put only the segment of the FT corresponding to the frequency band of interest into the matrix
+            training_data[condition,:] = fft_spectrum_training[low_freq*length: high_freq*length]
+            test_data[condition,:] = fft_spectrum_test[low_freq*length: high_freq*length]
+            
+        
+        for condition in range(0,num_conditions):  
+    
+                ## test condition 1 decoding
+                corr_this_condition_test_and_training = np.corrcoef(training_data[condition,:],test_data[condition,:])[0,1]
+
+              #  print(corr_this_condition_test_and_training)
+
+                all_other_conditions =  [i for i in range(num_conditions) if i != condition] # test against all conditions except the current condition
+    
+                answer_correct = 1 # set to 1 for correct answer, if any other conditions score higher, set to 0
+                
+                for other_condition in all_other_conditions:
+                    
+                    corr_this_condition_training_other_condition_test = np.corrcoef(training_data[condition,:],test_data[other_condition,:])[0,1]
+
+                   # print(corr_this_condition_training_other_condition_test)
+                   
+                    # check correlation with other condition, if it is more than the correct condition, change the score to zero
+                    if corr_this_condition_training_other_condition_test > corr_this_condition_test_and_training:
+                        answer_correct = 0
+                        
+                if answer_correct == 1:
+                    scores[loop,condition] = 1 # score one point
+    
+
+    percent_correct_for_each_condition = np.zeros([num_conditions,])
+    
+    for condition in range(0,num_conditions): 
+        
+        percent_correct_for_each_condition[condition] = np.sum(scores[:,condition]) * (100/num_loops)
+        
+
+    average_percent_correct = percent_correct_for_each_condition.mean(axis=0)
+    
+    return average_percent_correct
+
 
 
 

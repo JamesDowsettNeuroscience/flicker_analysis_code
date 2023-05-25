@@ -439,3 +439,113 @@ def make_SSVEP_artefact_removal_paired_segments(data, triggers, period):
     return SSVEP
 
     
+## the same decoding as above but with three conditions
+
+def decode_correlation_3way(data_1, data_2, data_3, triggers_1, triggers_2, triggers_3, period, num_loops):
+    
+    import numpy as np
+    import random
+    # import matplotlib.pyplot as plt
+    
+    scores = np.zeros([num_loops,3])
+   
+    
+    for loop in range(0,num_loops):     
+
+        ## split triggers into training and test with a 50/50 split
+        
+        for condition in (1,2,3):
+
+            if condition == 1:
+                num_triggers = len(triggers_1)
+                seg_nums = np.arange(0,num_triggers) # an index for each segment
+            elif condition == 2:
+                num_triggers = len(triggers_2)
+                seg_nums = np.arange(0,num_triggers) 
+            elif condition == 3:
+                num_triggers = len(triggers_3)
+                seg_nums = np.arange(0,num_triggers) 
+                
+         
+            random.shuffle(seg_nums) # randomize the order
+            
+            # get half of the triggers
+            training_trig_nums = seg_nums[0:int(num_triggers/2)] # first half
+            test_trig_nums = seg_nums[int(num_triggers/2):num_triggers] # second half
+            
+            # get the corresponding trigger times
+            if condition == 1:
+                training_triggers_condition_1 = triggers_1[training_trig_nums]  
+                test_triggers_condition_1 = triggers_1[test_trig_nums]
+            elif condition == 2:
+                training_triggers_condition_2 = triggers_2[training_trig_nums]
+                test_triggers_condition_2 = triggers_2[test_trig_nums]
+            elif condition == 3:
+                training_triggers_condition_3 = triggers_3[training_trig_nums]
+                test_triggers_condition_3 = triggers_3[test_trig_nums]            
+
+
+
+        ### make training SSVEPs
+        training_SSVEP_condition_1 = make_SSVEPs(data_1, training_triggers_condition_1, period) 
+        training_SSVEP_condition_2 = make_SSVEPs(data_2, training_triggers_condition_2, period) 
+        training_SSVEP_condition_3 = make_SSVEPs(data_3, training_triggers_condition_3, period) 
+
+        # plt.plot(training_SSVEP_condition_1,'b')
+        # plt.plot(training_SSVEP_condition_2,'r')
+        # plt.plot(training_SSVEP_condition_3,'g')
+    
+                
+        ####  make test SSVEPs
+        test_SSVEP_condition_1 = make_SSVEPs(data_1, test_triggers_condition_1, period) 
+        test_SSVEP_condition_2 = make_SSVEPs(data_2, test_triggers_condition_2, period) 
+        test_SSVEP_condition_3 = make_SSVEPs(data_3, test_triggers_condition_3, period)
+
+    
+        # plt.plot(test_SSVEP_condition_1,'c')
+        # plt.plot(test_SSVEP_condition_2,'m')
+        # plt.plot(test_SSVEP_condition_3,'k')
+        
+
+        ## test condition 1 decoding
+        corr_condition_1_test_and_condition_1_training = np.corrcoef(test_SSVEP_condition_1,training_SSVEP_condition_1)[0,1]
+        corr_condition_1_test_and_condition_2_training = np.corrcoef(test_SSVEP_condition_1,training_SSVEP_condition_2)[0,1]
+        corr_condition_1_test_and_condition_3_training = np.corrcoef(test_SSVEP_condition_1,training_SSVEP_condition_3)[0,1]
+
+        if corr_condition_1_test_and_condition_1_training > corr_condition_1_test_and_condition_2_training and\
+            corr_condition_1_test_and_condition_1_training > corr_condition_1_test_and_condition_3_training:
+            
+            scores[loop,0] = 1 # score one point
+           
+
+        ## test condition 2 decoding
+        corr_condition_2_test_and_condition_1_training = np.corrcoef(test_SSVEP_condition_2,training_SSVEP_condition_1)[0,1]
+        corr_condition_2_test_and_condition_2_training = np.corrcoef(test_SSVEP_condition_2,training_SSVEP_condition_2)[0,1]
+        corr_condition_2_test_and_condition_3_training = np.corrcoef(test_SSVEP_condition_2,training_SSVEP_condition_3)[0,1]
+        
+        if corr_condition_2_test_and_condition_2_training > corr_condition_2_test_and_condition_1_training and\
+            corr_condition_2_test_and_condition_2_training > corr_condition_2_test_and_condition_3_training:
+                
+            scores[loop,1] = 1 # score one point
+                        
+        ## test condition 3 decoding
+        corr_condition_3_test_and_condition_1_training = np.corrcoef(test_SSVEP_condition_3,training_SSVEP_condition_1)[0,1]
+        corr_condition_3_test_and_condition_2_training = np.corrcoef(test_SSVEP_condition_3,training_SSVEP_condition_2)[0,1]
+        corr_condition_3_test_and_condition_3_training = np.corrcoef(test_SSVEP_condition_3,training_SSVEP_condition_3)[0,1]
+        
+        if corr_condition_3_test_and_condition_3_training > corr_condition_3_test_and_condition_1_training and\
+            corr_condition_3_test_and_condition_3_training > corr_condition_3_test_and_condition_2_training:
+                
+            scores[loop,2] = 1 # score one point
+                                   
+            
+                
+    percent_correct_condition_1 = np.sum(scores[:,0]) * (100/num_loops)
+    percent_correct_condition_2 = np.sum(scores[:,1]) * (100/num_loops)
+    percent_correct_condition_3 = np.sum(scores[:,2]) * (100/num_loops)
+       
+    average_percent_correct = (percent_correct_condition_1 + percent_correct_condition_2 + percent_correct_condition_3) / 3
+    
+    return average_percent_correct 
+    
+    

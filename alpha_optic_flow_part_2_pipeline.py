@@ -32,7 +32,7 @@ sample_rate = 1000
 
 num_subjects = 20
 
-length = 10 # length of FFT in seconds
+evoked_FFT_length = 10 # length of FFT in seconds
 
 # trigger times for linear interpolation
 trigger_1_times = [-1, -1]
@@ -48,7 +48,7 @@ decoding_accuracy = np.zeros([len(subjects_to_use),8,2])
 
 SSVEP_amplitudes = np.zeros([len(subjects_to_use),8,2,3])
 
-evoked_FFTs = np.zeros([len(subjects_to_use),8,2,3, length*sample_rate])
+evoked_FFTs = np.zeros([len(subjects_to_use),8,2,3, evoked_FFT_length*sample_rate])
 
 
 subject_count = 0
@@ -59,8 +59,8 @@ min_number_of_triggers_for_each_subject = np.zeros([32,2])
 
 for subject in subjects_to_use:
     
-    plt.figure(subject)
-    plt.suptitle('Subject ' + str(subject) + '  ' + electrode_names[electrode])
+    # plt.figure(subject)
+    # plt.suptitle('Subject ' + str(subject) + '  ' + electrode_names[electrode])
     
     for block in (1,2): # 9 and 11 Hz flicker blocks
 
@@ -75,7 +75,7 @@ for subject in subjects_to_use:
          
          
 
-        for electrode in range(0,1):
+        for electrode in range(0,8):
             
             print(electrode_names[electrode])
      
@@ -129,11 +129,11 @@ for subject in subjects_to_use:
             min_number_of_triggers_for_each_subject[subject,block-1] = min_number_of_triggers
             
             ## choose to decode/make SSVEP with all available triggers, or some smaller subset
-            # num_triggers = 200
-            # if min_number_of_triggers < num_triggers:
-            #     num_triggers = min_number_of_triggers
+            num_triggers = 600
+            if min_number_of_triggers < num_triggers:
+                num_triggers = min_number_of_triggers
           
-            num_triggers = min_number_of_triggers    
+           # num_triggers = min_number_of_triggers    
            
            
             # first put all data  into one matrix
@@ -173,10 +173,8 @@ for subject in subjects_to_use:
             print('Decoding accuracy = ' + str(average_percent_correct) + '\n')
             
             decoding_accuracy[subject_count,electrode,block-1] = average_percent_correct
-            
-    
-            
-            
+
+
             # # make SSVEPs
             SSVEP_1 = functions.make_SSVEPs(data_1, triggers_1, period)
             SSVEP_2 = functions.make_SSVEPs(data_2, triggers_2, period)
@@ -187,26 +185,27 @@ for subject in subjects_to_use:
             SSVEP_amplitudes[subject_count,electrode,block-1,1] = np.ptp(SSVEP_2)
             SSVEP_amplitudes[subject_count,electrode,block-1,2] = np.ptp(SSVEP_3)
             
-            if block == 1:
-                plt.subplot(1,3,1)
-                plt.title('9 Hz  ' + str(np.round(average_percent_correct)) + ' %')
-            elif block == 2:
-                plt.subplot(1,3,2)
-                plt.title('11 Hz  ' + str(np.round(average_percent_correct)) + ' %')
+            ## plot SSVEPs
+            # if block == 1:
+            #     plt.subplot(1,3,1)
+            #     plt.title('9 Hz  ' + str(np.round(average_percent_correct)) + ' %')
+            # elif block == 2:
+            #     plt.subplot(1,3,2)
+            #     plt.title('11 Hz  ' + str(np.round(average_percent_correct)) + ' %')
              
             
-            plt.plot(SSVEP_1, label = condition_names[0])
-            plt.plot(SSVEP_2, label = condition_names[1])
-            plt.plot(SSVEP_3, label = condition_names[2])
+            # plt.plot(SSVEP_1, label = condition_names[0])
+            # plt.plot(SSVEP_2, label = condition_names[1])
+            # plt.plot(SSVEP_3, label = condition_names[2])
             
-            plt.legend()
+            # plt.legend()
             
             
             ### evoked FFT
             
-            evoked_fft_1 = functions.evoked_fft(data_1, triggers_1, length, sample_rate)
-            evoked_fft_2 = functions.evoked_fft(data_2, triggers_2, length, sample_rate)
-            evoked_fft_3 = functions.evoked_fft(data_3, triggers_3, length, sample_rate)
+            evoked_fft_1 = functions.evoked_fft(data_1, triggers_1, evoked_FFT_length, sample_rate)
+            evoked_fft_2 = functions.evoked_fft(data_2, triggers_2, evoked_FFT_length, sample_rate)
+            evoked_fft_3 = functions.evoked_fft(data_3, triggers_3, evoked_FFT_length, sample_rate)
             
             # put into matrix
             evoked_FFTs[subject_count,electrode,block-1,0,:] = evoked_fft_1
@@ -238,12 +237,12 @@ subject_count = 0
 
 for subject in subjects_to_use:
     
-    plt.figure(subject)
-    plt.suptitle('Subject ' + str(subject))
+    # plt.figure(subject)
+    # plt.suptitle('Subject ' + str(subject))
     
     for electrode in range(0,4):
         
-        plt.subplot(2,2,electrode+1)
+        # plt.subplot(2,2,electrode+1)
         
     
         for condition in range(0,3): 
@@ -268,27 +267,100 @@ for subject in subjects_to_use:
             IAF = 7 + (np.argmax(alpha_range)/length)
             IAFs[subject_count, electrode,condition] = IAF
             
-            plt.plot(IAF, alpha_peak, '*', color = plot_colours[condition])
-           
-        
-            ## plot
-            frequency_vector = np.linspace(0,sample_rate,length*sample_rate)
+             ## plots
+             
+            # plt.plot(IAF, alpha_peak, '*', color = plot_colours[condition])
+
+        #    
+        #     frequency_vector = np.linspace(0,sample_rate,length*sample_rate)
     
-            plt.plot(frequency_vector,induced_fft_spectrum, color = plot_colours[condition])
+        #     plt.plot(frequency_vector,induced_fft_spectrum, color = plot_colours[condition])
             
-            average_alpha_range = alpha_range.mean()
-            plt.plot(np.arange(7,14),np.ones(7,)*(average_alpha_range*1.2),'--', color =  plot_colours[condition])
+        #     average_alpha_range = alpha_range.mean()
+        #     plt.plot(np.arange(7,14),np.ones(7,)*(average_alpha_range*1.2),'--', color =  plot_colours[condition])
         
-            plt.xlim([2,20])
+        #     plt.xlim([2,20])
             
-        plt.ylim([0,max(alpha_peaks[subject_count, electrode,:])*1.5])
-        plt.title( electrode_names[electrode] + '   ' + str(IAF) + ' Hz')
+        # plt.ylim([0,max(alpha_peaks[subject_count, electrode,:])*1.5])
+        # plt.title( electrode_names[electrode] + '   ' + str(IAF) + ' Hz')
         
     subject_count += 1
     
     
     
     
+### Decode condition with induced FFT
+
+length = 1 # length of segments of data to perform FFT on (in seconds)
+
+block = 3
+
+# limit to the alpha band
+low_freq = 8
+high_freq = 14
+
+fft_decoding_accuracy = np.zeros([len(subjects_to_use),8])
+
+subject_count = 0
+
+for subject in subjects_to_use:
+    
+    print('\nSubject ' + str(subject))
+
+    for electrode in range(0,8):
+    
+        
+    
+        # load data for condition 1
+        file_name = 'S' + str(subject) + '_block' + str(block) + '_cond1' 
+        all_data = np.load(path + file_name + '_all_data.npy')
+        data_1 = all_data[electrode,:]
+        REF_2_data = all_data[6,:] # get the data for the second reference, to re-reference (left and right ears)
+        data_1 = data_1 - (REF_2_data/2) # re-reference  
+        
+        # load data for condition 2
+        file_name = 'S' + str(subject) + '_block' + str(block) + '_cond2' 
+        all_data = np.load(path + file_name + '_all_data.npy')
+        data_2 = all_data[electrode,:]
+        REF_2_data = all_data[6,:] # get the data for the second reference, to re-reference (left and right ears)
+        data_2 = data_2 - (REF_2_data/2) # re-reference  
+        
+        # load data for condition 3
+        file_name = 'S' + str(subject) + '_block' + str(block) + '_cond3' 
+        all_data = np.load(path + file_name + '_all_data.npy')
+        data_3 = all_data[electrode,:]
+        REF_2_data = all_data[6,:] # get the data for the second reference, to re-reference (left and right ears)
+        data_3 = data_3 - (REF_2_data/2) # re-reference  
+        
+        # use the shortest condition as the lenght of data for all conditions
+        min_length_data = min(len(data_1), len(data_2), len(data_3))
+       # min_length_data = 60000
+        
+        num_conditions = 3
+        
+        num_loops = 10
+        
+        # put data from each condition into one matrix
+        data_all_conditions = np.zeros([num_conditions,min_length_data])
+        data_all_conditions[0,:] = data_1[0:min_length_data] 
+        data_all_conditions[1,:] = data_2[0:min_length_data] 
+        data_all_conditions[2,:] = data_3[0:min_length_data] 
+        
+        
+        average_decoding_accuracy = functions.decode_conditions_fft(data_all_conditions, num_conditions, num_loops, length, sample_rate, low_freq, high_freq)
+            
+        fft_decoding_accuracy[subject_count,electrode] = average_decoding_accuracy
+        
+        print(electrode_names[electrode] + '  Decoding accuracy = ' + str(average_decoding_accuracy))    
+
+    subject_count += 1
+
+    
+
+
+
+
+
   
 ## plot grand average decoding scores
 
@@ -445,7 +517,8 @@ plt.legend()
 
 ### plot grand average evoked FFTs
 
-frequency_vector = np.linspace(0,sample_rate,length*sample_rate)
+
+frequency_vector = np.linspace(0,sample_rate,evoked_FFT_length*sample_rate)
 
 plt.figure()
 
@@ -510,6 +583,46 @@ print('\nPooled values across electrodes, Z score = ' + str(np.round(Z_score,2))
 
 
                                      
+
+  
+## plot grand average FFT decoding scores
+
+electrodes_to_use = [0,1,2,3,4,5,7]
+
+electrode_names_to_use = ('O1', 'O2', 'P3', 'P4', 'P7', 'P8', 'EOG')
+
+import statistics
+
+plt.figure()
+
+#plt.subplot(1,2,1)
+
+plt.title('FFT decoding')
+
+electrode_count = 0
+for electrode in electrodes_to_use:
+    
+
+    decoding_scores_for_electrode = fft_decoding_accuracy[:,electrode]
+ 
+    mean_score = decoding_scores_for_electrode.mean()
+  
+    std_error = np.std(decoding_scores_for_electrode) / math.sqrt(len(decoding_scores_for_electrode))
+   
+    plt.scatter(np.zeros([len(decoding_scores_for_electrode),])+electrode_count,decoding_scores_for_electrode,s=1, c='b')
+   
+    plt.errorbar(electrode_count, mean_score,yerr = std_error, solid_capstyle='projecting', capsize=5,  fmt='o', color= 'b', ecolor='b')  
+    
+    electrode_count += 1
+
+plt.axhline(y = 33.33, color = 'k', linestyle = '--')
+
+#plt.legend()
+x = np.arange(0,7)
+plt.xticks(x, electrode_names_to_use)    
+  
+plt.ylim([0,100])  
+plt.ylabel('Average Decoding Accuracy %')
 
 
 
