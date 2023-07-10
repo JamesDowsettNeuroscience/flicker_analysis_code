@@ -6,7 +6,9 @@ Created on Tue Feb 21 17:29:18 2023
 @author: James Dowsett
 """
 
-
+# simulate 10 Hz SSVEP in noise.
+# SSVEPs are identical in each condition
+# attempt to decode, should be 50% decoding accuracy, i.e. chance level
 
 
 import numpy as np
