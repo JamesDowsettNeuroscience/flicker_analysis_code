@@ -44,7 +44,7 @@ signal_2 = np.tile(sine_wave_2, num_flickers)
 triggers_1 = np.arange(0,len(signal_1),period)
 triggers_2 = np.arange(0,len(signal_2),period)
 
-numbers_of_loops_to_test = (1,10,100)
+numbers_of_loops_to_test = (1,10,20)
 
 for loop_counter in range(0,len(numbers_of_loops_to_test)): # loop for different numbers of repetitions for each decoding attempt
     
@@ -54,7 +54,7 @@ for loop_counter in range(0,len(numbers_of_loops_to_test)): # loop for different
     
     for experiment in range(0, repeats_of_experiment): # repeat the entire simulated experiment multiple times
     
-      #  print('\nExperiment ' + str(experiment))
+        print('\nExperiment ' + str(experiment))
         
         scores = np.zeros([num_subjects,])
         score_ranges = np.zeros([num_subjects,])
