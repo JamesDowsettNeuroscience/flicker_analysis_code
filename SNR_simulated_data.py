@@ -50,7 +50,7 @@ for SSVEP_amplitude in (1,2): # create two SSVEPs one small (amplitude = 1) one 
 simulated_triggers = np.arange(0, len(simulated_SSVEP_data)-period, period) # make triggers, stop one period length before the end
 
 
-num_noise_amplitudes = 1000
+num_noise_amplitudes = 100
 
 SSVEP_amplitudes_1 = np.zeros([num_noise_amplitudes,])
 SSVEP_amplitudes_2 = np.zeros([num_noise_amplitudes,])
@@ -72,7 +72,7 @@ FFT_SNR_2 = np.zeros([num_noise_amplitudes,])
 
 for noise_amplitude in range(0,num_noise_amplitudes):
     
-    print(noise_amplitude)
+    print('Noise amplitude = ' + str(noise_amplitude))
 
     ## add noise to the data
 
