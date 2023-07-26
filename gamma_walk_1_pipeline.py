@@ -19,10 +19,15 @@ import scipy.stats
 from random import choice
 import statistics
 
+import os
 
 ### information about the experiment: Gamma walk 1
 
-path = '/home/james/Active_projects/Gamma_walk/Gamma_walking_experiment_1/raw_data_for_analysis_package/'
+#path = '/home/james/Active_projects/Gamma_walk/Gamma_walking_experiment_1/raw_data_for_analysis_package/'
+
+path = 'D:\\Gamma_walk\\Gamma_walking_experiment_1\\raw_data_for_analysis_package'
+
+
 
 electrode_names = ('VEOG', 'blink', 'P3', 'P4', 'O2', 'Pz', 'O1', 'HEOG', 'x_dir', 'y_dir', 'z_dir')
 
@@ -100,7 +105,9 @@ for subject in range(1,11):
         
         data_file_name = 'subject_' + str(subject) + '_electrode_' + str(electrode) + '_data.npy'
         
-        raw_data = np.load(path + data_file_name)                
+        data_with_path = os.path.join(path,data_file_name)
+        
+        raw_data = np.load(data_with_path)                
 
 
 
@@ -113,13 +120,20 @@ for subject in range(1,11):
                 
                 ## load triggers from real SSVEP condition to match the number of triggers to use
                 triggers_file_name = 'subject_' + str(subject) + '_' + condition_names[condition] + '_' + str(frequency) + 'Hz_triggers.npy'   
-                triggers = np.load(path + triggers_file_name)    
+                
+                triggers_with_path = os.path.join(path,triggers_file_name)
+                
+                triggers = np.load(triggers_with_path)    
             
                 num_triggers_to_use = len(triggers)
                 
                 
                 # load the SIGI triggers
-                triggers = np.load(path + 'subject_' + str(subject) + '_SIGI_' + condition_names[condition] + '_triggers.npy')
+                triggers_file_name = 'subject_' + str(subject) + '_SIGI_' + condition_names[condition] + '_triggers.npy'
+                
+                triggers_with_path = os.path.join(path,triggers_file_name)
+                
+                triggers = np.load(triggers_with_path)    
                 
                 # only use the same number of triggers that there were in the real SSVEP condition
                 triggers = triggers[0:num_triggers_to_use]
@@ -164,7 +178,9 @@ for subject in range(1,11):
                 ## load triggers
                 triggers_file_name = 'subject_' + str(subject) + '_' + condition_names[condition] + '_' + str(frequency) + 'Hz_triggers.npy'
                 
-                triggers = np.load(path + triggers_file_name)
+                triggers_with_path = os.path.join(path,triggers_file_name)
+                
+                triggers = np.load(triggers_with_path)
                 
                 ### linear interpolation
                 data_linear_interpolation = functions.linear_interpolation(raw_data, triggers, trig_1_times[frequency_count], trig_2_times[frequency_count], trig_length)
@@ -222,7 +238,9 @@ for subject in range(1,11):
         ## load triggers
         triggers_file_name = 'subject_' + str(subject) + '_blackout_triggers.npy'
         
-        triggers = np.load(path + triggers_file_name)
+        triggers_with_path = os.path.join(path,triggers_file_name)
+        
+        triggers = np.load(triggers_with_path)
         
         ### linear interpolation, use 40 Hz trigger times, = frequency 2
         data_linear_interpolation = functions.linear_interpolation(raw_data, triggers, trig_1_times[2], trig_2_times[2], trig_length)
@@ -239,15 +257,87 @@ for subject in range(1,11):
 
 
 
-### save the Evoked FFTs, because this takes some time
+### save all the SSVEPs and FFT spectrums, because this takes some time
 
 #np.save(path + 'all_evoked_FFTs', all_evoked_FFTs)
 
+# np.save(os.path.join(path,'SIGI_SSVEPs'),SIGI_SSVEPs)
 
-all_evoked_ffts = np.load(path + 'all_evoked_FFTs.npy')
+# np.save(os.path.join(path,'SIGI_amplitudes'),SIGI_amplitudes)
 
-## Evoked FFT spectrums
+# np.save(os.path.join(path,'SIGI_walking_standing_correlations'),SIGI_walking_standing_correlations)
+ 
+# np.save(os.path.join(path,'SIGI_phase_scores'),SIGI_phase_scores)
+ 
 
+# np.save(os.path.join(path,'all_SSVEPs'),all_SSVEPs)
+
+# np.save(os.path.join(path,'SSVEP_amplitudes'),SSVEP_amplitudes)
+ 
+# np.save(os.path.join(path,'SSVEP_walking_standing_correlations'),SSVEP_walking_standing_correlations)
+
+# np.save(os.path.join(path,'SSVEP_phase_scores'),SSVEP_phase_scores)
+
+
+
+# np.save(os.path.join(path,'blackout_SSVEPs'),blackout_SSVEPs)
+
+# np.save(os.path.join(path,'blackout_amplitudes'),blackout_amplitudes)
+ 
+
+ 
+# np.save(os.path.join(path,'all_mean_self_absolute_phase_shifts'),all_mean_self_absolute_phase_shifts)
+
+# np.save(os.path.join(path,'self_split_amplitude_differences'),self_split_amplitude_differences)
+
+# np.save(os.path.join(path,'all_mean_self_split_correlations'),all_mean_self_split_correlations)
+
+
+
+
+## load all the above data
+
+all_evoked_FFTs = np.load(os.path.join(path, 'all_evoked_FFTs.npy'))
+
+
+SIGI_SSVEPs = np.load(os.path.join(path, 'SIGI_SSVEPs.npy'))
+
+SIGI_amplitudes =  np.load(os.path.join(path, 'SIGI_amplitudes.npy'))
+
+SIGI_walking_standing_correlations = np.load(os.path.join(path, 'SIGI_walking_standing_correlations.npy'))
+
+SIGI_phase_scores = np.load(os.path.join(path, 'SIGI_phase_scores.npy'))
+
+
+all_SSVEPs = np.load(os.path.join(path, 'all_SSVEPs.npy'))
+
+SSVEP_amplitudes = np.load(os.path.join(path, 'SSVEP_amplitudes.npy'))
+
+SSVEP_walking_standing_correlations = np.load(os.path.join(path, 'SSVEP_walking_standing_correlations.npy')) 
+
+SSVEP_phase_scores = np.load(os.path.join(path, 'SSVEP_phase_scores.npy'))
+
+
+
+blackout_SSVEPs = np.load(os.path.join(path, 'blackout_SSVEPs.npy'))
+
+
+blackout_amplitudes = np.load(os.path.join(path, 'blackout_amplitudes.npy'))
+
+
+
+all_mean_self_absolute_phase_shifts = np.load(os.path.join(path, 'all_mean_self_absolute_phase_shifts.npy'))
+
+self_split_amplitude_differences = np.load(os.path.join(path, 'self_split_amplitude_differences.npy'))
+
+all_mean_self_split_correlations = np.load(os.path.join(path, 'all_mean_self_split_correlations.npy'))
+
+
+
+
+# ## Evoked FFT spectrums
+
+electrode = 5
 
 peak_locations = (31, 36, 42, 45, 50, 55)
 first_harmonic_locations = (62, 71, 84, 90, 100, 110)
@@ -259,41 +349,43 @@ SNR_peaks = np.zeros([10,6,8,2])
 SNR_first_harmonic = np.zeros([10,6,8,2])
 
 for subject in range(0,10):
-    # plt.figure()
-    # plt.suptitle('Subject ' + str(subject+1))
+    plt.figure()
+    plt.suptitle('Subject ' + str(subject+1))
     for frequency in range(0,6):
-        # plt.subplot(3,2,frequency+1)
-        # plt.title(str(frequencies_to_use[frequency]) + ' Hz')
+        plt.subplot(3,2,frequency+1)
+        plt.title(str(frequencies_to_use[frequency]) + ' Hz')
         
-        for electrode in range(0,8):
-            for condition in range(0,2):
-                
-                #   plt.plot(fft_spectrum, label = (str(condition_names[condition])))
-                
-                fft_spectrum = all_evoked_FFTs[subject,frequency,electrode,condition,:]
-                peak_frequency = peak_locations[frequency]
-     
-                peak_amplitude = fft_spectrum[peak_frequency] 
-                peak_noise_amplitude = fft_spectrum[np.r_[peak_frequency-5:peak_frequency-2, peak_frequency+2:peak_frequency+5]]
-                
-                peak_amplitudes[subject,frequency,electrode,condition] = peak_amplitude
-                SNR_peaks[subject,frequency,electrode,condition] = peak_amplitude / peak_noise_amplitude.mean()
-                
-                first_harmonic_frequency = first_harmonic_locations[frequency]
-                
-                first_harmonic_amplitude = fft_spectrum[first_harmonic_frequency] 
-                
-                first_harmonic_noise_amplitude = fft_spectrum[np.r_[first_harmonic_frequency-5:first_harmonic_frequency-2, first_harmonic_frequency+2:first_harmonic_frequency+5]]
-                
-                first_harmonic_amplitudes[subject,frequency,electrode,condition] = first_harmonic_amplitude 
-                SNR_first_harmonic[subject,frequency,electrode,condition] = first_harmonic_amplitude / first_harmonic_noise_amplitude.mean()
-                
+       # for electrode in range(0,8):
+        for condition in range(0,2):
+            
+            fft_spectrum = all_evoked_FFTs[subject,frequency,electrode,condition,:]
+            
+            plt.plot(fft_spectrum, label = (str(condition_names[condition])))
+            
+            peak_frequency = peak_locations[frequency]
+ 
+            peak_amplitude = fft_spectrum[peak_frequency] 
+            peak_noise_amplitude = fft_spectrum[np.r_[peak_frequency-5:peak_frequency-2, peak_frequency+2:peak_frequency+5]]
+            
+            peak_amplitudes[subject,frequency,electrode,condition] = peak_amplitude
+            SNR_peaks[subject,frequency,electrode,condition] = peak_amplitude / peak_noise_amplitude.mean()
+            
+            first_harmonic_frequency = first_harmonic_locations[frequency]
+            
+            first_harmonic_amplitude = fft_spectrum[first_harmonic_frequency] 
+            
+            first_harmonic_noise_amplitude = fft_spectrum[np.r_[first_harmonic_frequency-5:first_harmonic_frequency-2, first_harmonic_frequency+2:first_harmonic_frequency+5]]
+            
+            first_harmonic_amplitudes[subject,frequency,electrode,condition] = first_harmonic_amplitude 
+            SNR_first_harmonic[subject,frequency,electrode,condition] = first_harmonic_amplitude / first_harmonic_noise_amplitude.mean()
+            
            
-                
-           
-        #plt.xlim(0, 100)
+        plt.xlim(0, 100)
     
-   # plt.legend()
+    plt.legend()
+
+
+
 
 
 ## plot grand average FFTs
@@ -309,7 +401,7 @@ for electrode in range(0,8):
             grand_average_fft = all_evoked_FFTs[:,frequency,electrode,condition,:].mean(axis=0)
             plt.plot(grand_average_fft, label = (str(condition_names[condition])))
             plt.xlim(20, 120)
-            plt.ylim(0, 150)
+            plt.ylim(0, 135)
             
             peak_amplitudes_all_subjects = peak_amplitudes[:, frequency, electrode, condition]
             first_harmonic_all_subjects = first_harmonic_amplitudes[:, frequency, electrode, condition]
@@ -404,7 +496,7 @@ for subject in range(1,11):
     
     # plt.plot(blackout_SSVEP,'k', label = 'Blackout')
 
-    plt.ylim(-1, 1)
+   # plt.ylim(-1, 1)
 
 plt.legend()
 
@@ -1249,145 +1341,145 @@ for frequency in range(0,6):
 
 
 
-## get the correlation between the SSVEP at one frequency and the time warped SSVEP at the next frequency
+# ## get the correlation between the SSVEP at one frequency and the time warped SSVEP at the next frequency
 
-max_correlations_with_other_frequencies = np.zeros([10,8,2,6,6])
+# max_correlations_with_other_frequencies = np.zeros([10,8,2,6,6])
 
 
-for subject in range(0,10):
-    for electrode in range(0,8):
-        for condition in range(0,2):
+# for subject in range(0,10):
+#     for electrode in range(0,8):
+#         for condition in range(0,2):
 
-            for frequency_1 in range(0,6): 
-                for frequency_2 in range(0,6): 
+#             for frequency_1 in range(0,6): 
+#                 for frequency_2 in range(0,6): 
         
         
-                    period_frequency_1 = int(np.round(sample_rate/frequencies_to_use[frequency_1]))             
+#                     period_frequency_1 = int(np.round(sample_rate/frequencies_to_use[frequency_1]))             
     
-                    SSVEP_1 = all_SSVEPs[subject,frequency_1,electrode,condition,0:period_frequency_1] 
+#                     SSVEP_1 = all_SSVEPs[subject,frequency_1,electrode,condition,0:period_frequency_1] 
         
-                    period_frequency_2 = int(np.round(sample_rate/frequencies_to_use[frequency_2]))             
+#                     period_frequency_2 = int(np.round(sample_rate/frequencies_to_use[frequency_2]))             
     
-                    SSVEP_2 = all_SSVEPs[subject,frequency_2,electrode,condition,0:period_frequency_2] 
+#                     SSVEP_2 = all_SSVEPs[subject,frequency_2,electrode,condition,0:period_frequency_2] 
     
-                    time_warped_SSVEP = functions.time_warp_SSVEPs(SSVEP_1, SSVEP_2)
+#                     time_warped_SSVEP = functions.time_warp_SSVEPs(SSVEP_1, SSVEP_2)
                     
-                    # get the cross correlation with the lowest frequency SSVEP
-                    if period_frequency_1 >= period_frequency_2:
-                        max_correlation = functions.max_correlation(SSVEP_1, time_warped_SSVEP)
-                    elif period_frequency_1 < period_frequency_2:
-                        max_correlation = functions.max_correlation(SSVEP_2, time_warped_SSVEP)
+#                     # get the cross correlation with the lowest frequency SSVEP
+#                     if period_frequency_1 >= period_frequency_2:
+#                         max_correlation = functions.max_correlation(SSVEP_1, time_warped_SSVEP)
+#                     elif period_frequency_1 < period_frequency_2:
+#                         max_correlation = functions.max_correlation(SSVEP_2, time_warped_SSVEP)
                         
-                    max_correlations_with_other_frequencies[subject,electrode,condition, frequency_1,frequency_2] = max_correlation
+#                     max_correlations_with_other_frequencies[subject,electrode,condition, frequency_1,frequency_2] = max_correlation
                     
      
                     
      
         
      
-## average the correlation and plot in a grid
-correlation_cutoff = 0.4
+# ## average the correlation and plot in a grid
+# correlation_cutoff = 0.4
  
-standing_or_walking = 1 # 0 = standing, 1 = walking
+# standing_or_walking = 1 # 0 = standing, 1 = walking
    
-electrodes_to_use = (2,3,4,5,6)
-grand_average_correlation_grid_matrix = np.zeros([len(electrodes_to_use),6,6])
+# electrodes_to_use = (2,3,4,5,6)
+# grand_average_correlation_grid_matrix = np.zeros([len(electrodes_to_use),6,6])
 
-electrode_count = 0  
+# electrode_count = 0  
 
-for electrode in electrodes_to_use: ##'VEOG', 'blink', 'P3', 'P4', 'O2', 'Pz', 'O1', 'HEOG', 'x_dir', 'y_dir', 'z_dir'   
+# for electrode in electrodes_to_use: ##'VEOG', 'blink', 'P3', 'P4', 'O2', 'Pz', 'O1', 'HEOG', 'x_dir', 'y_dir', 'z_dir'   
 
-    print(electrode_names[electrode])
+#     print(electrode_names[electrode])
 
-    # check which subjects have a significantly high signal to noise ratio
-    subjects_to_use = []
-    for subject in range(0,10):
+#     # check which subjects have a significantly high signal to noise ratio
+#     subjects_to_use = []
+#     for subject in range(0,10):
         
-        standing_self_correlations_all_frequencies = all_mean_self_split_correlations[subject,:,electrode,0]  # subject, frequency, electrode, condition
-        walking_self_correlations_all_frequencies = all_mean_self_split_correlations[subject,:,electrode,1]  # subject, frequency, electrode, condition
+#         standing_self_correlations_all_frequencies = all_mean_self_split_correlations[subject,:,electrode,0]  # subject, frequency, electrode, condition
+#         walking_self_correlations_all_frequencies = all_mean_self_split_correlations[subject,:,electrode,1]  # subject, frequency, electrode, condition
        
-        if all(standing_self_correlations_all_frequencies > correlation_cutoff) and all(walking_self_correlations_all_frequencies > correlation_cutoff):
-            subjects_to_use.append(subject)
+#         if all(standing_self_correlations_all_frequencies > correlation_cutoff) and all(walking_self_correlations_all_frequencies > correlation_cutoff):
+#             subjects_to_use.append(subject)
             
 
-    # plt.figure()
-    # plt.title(electrode_names[electrode])
+#     # plt.figure()
+#     # plt.title(electrode_names[electrode])
 
-    correlations_all_subjects_standing = max_correlations_with_other_frequencies[:,electrode,0, :,:]
-    correlations_all_subjects_walking = max_correlations_with_other_frequencies[:,electrode,1, :,:]
+#     correlations_all_subjects_standing = max_correlations_with_other_frequencies[:,electrode,0, :,:]
+#     correlations_all_subjects_walking = max_correlations_with_other_frequencies[:,electrode,1, :,:]
     
-    # average only the frequencies and subjects which have a self-correlation above the cutoff value
-    average_correlations_grid_standing = np.zeros([6,6])
-    average_correlations_grid_walking = np.zeros([6,6])
-    for frequency_1 in range(0,6):
-        for frequency_2 in range(0,6):
+#     # average only the frequencies and subjects which have a self-correlation above the cutoff value
+#     average_correlations_grid_standing = np.zeros([6,6])
+#     average_correlations_grid_walking = np.zeros([6,6])
+#     for frequency_1 in range(0,6):
+#         for frequency_2 in range(0,6):
             
-            # standing
-            subjects_to_use = []
-            for subject in range(0,10):
-                if all_mean_self_split_correlations[subject,frequency_1,electrode,0] > correlation_cutoff and all_mean_self_split_correlations[subject,frequency_2,electrode,0] > correlation_cutoff:
-                    subjects_to_use.append(subject)
-            average_correlations_grid_standing[frequency_1, frequency_2] = correlations_all_subjects_standing[subjects_to_use,frequency_1, frequency_2].mean(axis=0)
-            print(subjects_to_use)   
+#             # standing
+#             subjects_to_use = []
+#             for subject in range(0,10):
+#                 if all_mean_self_split_correlations[subject,frequency_1,electrode,0] > correlation_cutoff and all_mean_self_split_correlations[subject,frequency_2,electrode,0] > correlation_cutoff:
+#                     subjects_to_use.append(subject)
+#             average_correlations_grid_standing[frequency_1, frequency_2] = correlations_all_subjects_standing[subjects_to_use,frequency_1, frequency_2].mean(axis=0)
+#            # print(subjects_to_use)   
             
-            # walking
-            subjects_to_use = []
-            for subject in range(0,10):
-                if all_mean_self_split_correlations[subject,frequency_1,electrode,1] > correlation_cutoff and all_mean_self_split_correlations[subject,frequency_2,electrode,1] > correlation_cutoff:
-                    subjects_to_use.append(subject)
-            average_correlations_grid_walking[frequency_1, frequency_2] = correlations_all_subjects_standing[subjects_to_use,frequency_1, frequency_2].mean(axis=0)
-            print(subjects_to_use)     
+#             # walking
+#             subjects_to_use = []
+#             for subject in range(0,10):
+#                 if all_mean_self_split_correlations[subject,frequency_1,electrode,1] > correlation_cutoff and all_mean_self_split_correlations[subject,frequency_2,electrode,1] > correlation_cutoff:
+#                     subjects_to_use.append(subject)
+#             average_correlations_grid_walking[frequency_1, frequency_2] = correlations_all_subjects_standing[subjects_to_use,frequency_1, frequency_2].mean(axis=0)
+#             #print(subjects_to_use)     
     
-    # average all subjects
-    # average_correlations_grid_standing = correlations_all_subjects_standing.mean(axis=0)
-    # average_correlations_grid_walking = correlations_all_subjects_walking.mean(axis=0)
+#     # average all subjects
+#     # average_correlations_grid_standing = correlations_all_subjects_standing.mean(axis=0)
+#     # average_correlations_grid_walking = correlations_all_subjects_walking.mean(axis=0)
     
     
-    # average walking and standing
-    #walking_standing_average_correlations_grid = (average_correlations_grid_standing + average_correlations_grid_walking)/2
-    # grand_average_correlation_grid_matrix[electrode_count,:,:] = walking_standing_average_correlations_grid
+#     # average walking and standing
+#     #walking_standing_average_correlations_grid = (average_correlations_grid_standing + average_correlations_grid_walking)/2
+#     # grand_average_correlation_grid_matrix[electrode_count,:,:] = walking_standing_average_correlations_grid
 
-    if standing_or_walking == 0:
-        grand_average_correlation_grid_matrix[electrode_count,:,:] = average_correlations_grid_standing
-    elif standing_or_walking == 1:
-        grand_average_correlation_grid_matrix[electrode_count,:,:] = average_correlations_grid_walking
+#     if standing_or_walking == 0:
+#         grand_average_correlation_grid_matrix[electrode_count,:,:] = average_correlations_grid_standing
+#     elif standing_or_walking == 1:
+#         grand_average_correlation_grid_matrix[electrode_count,:,:] = average_correlations_grid_walking
 
-    electrode_count +=  1
+#     electrode_count += 1
     
-    #plot
-    plt.figure()
+#     #plot
+#     plt.figure()
     
     
-    if standing_or_walking == 0:
-        plt.title(electrode_names[electrode] + ' Standing')
-        plt.imshow(average_correlations_grid_standing)
-    elif standing_or_walking == 1:
-        plt.title(electrode_names[electrode] + ' Walking')
-        plt.imshow(average_correlations_grid_walking)
+#     if standing_or_walking == 0:
+#         plt.title(electrode_names[electrode] + ' Standing')
+#         plt.imshow(average_correlations_grid_standing)
+#     elif standing_or_walking == 1:
+#         plt.title(electrode_names[electrode] + ' Walking')
+#         plt.imshow(average_correlations_grid_walking)
         
-    plt.colorbar()
+#     plt.colorbar()
 
-    plt.xticks(ticks = (0,1,2,3,4,5), labels = ('30 Hz', '35 Hz','40 Hz','45 Hz','50 Hz', '55 Hz'))
-    plt.yticks(ticks = (0,1,2,3,4,5), labels = ('30 Hz', '35 Hz','40 Hz','45 Hz','50 Hz', '55 Hz'))
+#     plt.xticks(ticks = (0,1,2,3,4,5), labels = ('30 Hz', '35 Hz','40 Hz','45 Hz','50 Hz', '55 Hz'))
+#     plt.yticks(ticks = (0,1,2,3,4,5), labels = ('30 Hz', '35 Hz','40 Hz','45 Hz','50 Hz', '55 Hz'))
 
-    plt.show()
+#     plt.show()
     
 
 
-grand_average_correlations_grid = grand_average_correlation_grid_matrix.mean(axis=0)
+# grand_average_correlations_grid = grand_average_correlation_grid_matrix.mean(axis=0)
 
 
-plt.figure()
-if standing_or_walking == 0:
-    plt.title('Average all electrodes Standing')
-elif standing_or_walking == 1:
-    plt.title('Average all electrodes Walking')
+# plt.figure()
+# if standing_or_walking == 0:
+#     plt.title('Average all electrodes Standing')
+# elif standing_or_walking == 1:
+#     plt.title('Average all electrodes Walking')
  
 
-plt.imshow(grand_average_correlations_grid)
-plt.colorbar()
+# plt.imshow(grand_average_correlations_grid)
+# plt.colorbar()
 
-plt.xticks(ticks = (0,1,2,3,4,5), labels = ('30 Hz', '35 Hz','40 Hz','45 Hz','50 Hz', '55 Hz'))
-plt.yticks(ticks = (0,1,2,3,4,5), labels = ('30 Hz', '35 Hz','40 Hz','45 Hz','50 Hz', '55 Hz'))
+# plt.xticks(ticks = (0,1,2,3,4,5), labels = ('30 Hz', '35 Hz','40 Hz','45 Hz','50 Hz', '55 Hz'))
+# plt.yticks(ticks = (0,1,2,3,4,5), labels = ('30 Hz', '35 Hz','40 Hz','45 Hz','50 Hz', '55 Hz'))
 
-plt.show()
+# plt.show()
