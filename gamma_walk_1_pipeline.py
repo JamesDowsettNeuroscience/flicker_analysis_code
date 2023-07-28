@@ -47,212 +47,212 @@ trig_length = 4
 #######################################
 
 
-### Matrices to store results and SSVEPs
+# ### Matrices to store results and SSVEPs
 
-SIGI_SSVEPs = np.zeros([num_subjects,6,8,2,25]) # subject, frequency, electrode, condition, SSVEP data (SIGI always 40 Hz, lenght = 25)
+# SIGI_SSVEPs = np.zeros([num_subjects,6,8,2,25]) # subject, frequency, electrode, condition, SSVEP data (SIGI always 40 Hz, lenght = 25)
 
-SIGI_amplitudes = np.zeros([num_subjects,6,8,2]) # subject, frequency, electrode, condition
+# SIGI_amplitudes = np.zeros([num_subjects,6,8,2]) # subject, frequency, electrode, condition
 
-SIGI_walking_standing_correlations = np.zeros([num_subjects,6,8])
+# SIGI_walking_standing_correlations = np.zeros([num_subjects,6,8])
 
-SIGI_phase_scores = np.zeros([num_subjects,6,8])
-
-
-all_SSVEPs = np.zeros([num_subjects,6,8,2,34]) # subject, frequency, electrode, condition, SSVEP data (34 data points is the largest SSVEP)
-
-SSVEP_amplitudes = np.zeros([num_subjects,6,8,2]) # subject, frequency, electrode , condition
-
-SSVEP_walking_standing_correlations = np.zeros([num_subjects,6,8]) # subject, frequency, electrode
-
-SSVEP_phase_scores = np.zeros([num_subjects,6,8])
+# SIGI_phase_scores = np.zeros([num_subjects,6,8])
 
 
+# all_SSVEPs = np.zeros([num_subjects,6,8,2,34]) # subject, frequency, electrode, condition, SSVEP data (34 data points is the largest SSVEP)
 
-blackout_SSVEPs = np.zeros([num_subjects,8,25]) # blackout was 40 Hz, so length = 25
+# SSVEP_amplitudes = np.zeros([num_subjects,6,8,2]) # subject, frequency, electrode , condition
 
-blackout_amplitudes = np.zeros([num_subjects,8])
+# SSVEP_walking_standing_correlations = np.zeros([num_subjects,6,8]) # subject, frequency, electrode
+
+# SSVEP_phase_scores = np.zeros([num_subjects,6,8])
 
 
 
-all_mean_self_absolute_phase_shifts = np.zeros([num_subjects,6,8,2])  # subject, frequency, electrode, condition
-self_split_amplitude_differences = np.zeros([num_subjects,6,8,2])  # subject, frequency, electrode, condition
+# blackout_SSVEPs = np.zeros([num_subjects,8,25]) # blackout was 40 Hz, so length = 25
 
-all_mean_self_split_correlations = np.zeros([num_subjects,6,8,2])  # subject, frequency, electrode, condition
-
-
-length = 1 # length of FFT in seconds
-all_evoked_FFTs = np.zeros([num_subjects,6,8,2,(length * sample_rate)]) # subject, frequency, electrode, condition, FFT data 
+# blackout_amplitudes = np.zeros([num_subjects,8])
 
 
-##################################
 
-for subject in range(1,11):
+# all_mean_self_absolute_phase_shifts = np.zeros([num_subjects,6,8,2])  # subject, frequency, electrode, condition
+# self_split_amplitude_differences = np.zeros([num_subjects,6,8,2])  # subject, frequency, electrode, condition
+
+# all_mean_self_split_correlations = np.zeros([num_subjects,6,8,2])  # subject, frequency, electrode, condition
+
+
+# length = 1 # length of FFT in seconds
+# all_evoked_FFTs = np.zeros([num_subjects,6,8,2,(length * sample_rate)]) # subject, frequency, electrode, condition, FFT data 
+
+
+# ##################################
+
+# for subject in range(1,11):
    
-    print('  ')
-    print('Subject ' + str(subject))
-    print(' ')
+#     print('  ')
+#     print('Subject ' + str(subject))
+#     print(' ')
  
     
-    for electrode in range(0,8):
+#     for electrode in range(0,8):
         
-        electrode_name = electrode_names[electrode]
+#         electrode_name = electrode_names[electrode]
         
-        print(' ')
-        print(electrode_name)
-        print(' ')
+#         print(' ')
+#         print(electrode_name)
+#         print(' ')
         
-        ## load raw data
+#         ## load raw data
         
-        data_file_name = 'subject_' + str(subject) + '_electrode_' + str(electrode) + '_data.npy'
+#         data_file_name = 'subject_' + str(subject) + '_electrode_' + str(electrode) + '_data.npy'
         
-        data_with_path = os.path.join(path,data_file_name)
+#         data_with_path = os.path.join(path,data_file_name)
         
-        raw_data = np.load(data_with_path)                
+#         raw_data = np.load(data_with_path)                
 
 
 
-        ####### SIGI conditions
+#         ####### SIGI conditions
         
-        frequency_count = 0
-        for frequency in frequencies_to_use: # loop for each frequency to match the number of segments from each frequency 
+#         frequency_count = 0
+#         for frequency in frequencies_to_use: # loop for each frequency to match the number of segments from each frequency 
 
-            for condition in range(0,2):
+#             for condition in range(0,2):
                 
-                ## load triggers from real SSVEP condition to match the number of triggers to use
-                triggers_file_name = 'subject_' + str(subject) + '_' + condition_names[condition] + '_' + str(frequency) + 'Hz_triggers.npy'   
+#                 ## load triggers from real SSVEP condition to match the number of triggers to use
+#                 triggers_file_name = 'subject_' + str(subject) + '_' + condition_names[condition] + '_' + str(frequency) + 'Hz_triggers.npy'   
                 
-                triggers_with_path = os.path.join(path,triggers_file_name)
+#                 triggers_with_path = os.path.join(path,triggers_file_name)
                 
-                triggers = np.load(triggers_with_path)    
+#                 triggers = np.load(triggers_with_path)    
             
-                num_triggers_to_use = len(triggers)
+#                 num_triggers_to_use = len(triggers)
                 
                 
-                # load the SIGI triggers
-                triggers_file_name = 'subject_' + str(subject) + '_SIGI_' + condition_names[condition] + '_triggers.npy'
+#                 # load the SIGI triggers
+#                 triggers_file_name = 'subject_' + str(subject) + '_SIGI_' + condition_names[condition] + '_triggers.npy'
                 
-                triggers_with_path = os.path.join(path,triggers_file_name)
+#                 triggers_with_path = os.path.join(path,triggers_file_name)
                 
-                triggers = np.load(triggers_with_path)    
+#                 triggers = np.load(triggers_with_path)    
                 
-                # only use the same number of triggers that there were in the real SSVEP condition
-                triggers = triggers[0:num_triggers_to_use]
+#                 # only use the same number of triggers that there were in the real SSVEP condition
+#                 triggers = triggers[0:num_triggers_to_use]
                 
-                print(condition_names[condition] + ' ' + str(len(triggers)))
+#                 print(condition_names[condition] + ' ' + str(len(triggers)))
                 
-                ### make SSVEP
+#                 ### make SSVEP
                 
-                period = int(np.round(sample_rate/40))
+#                 period = int(np.round(sample_rate/40))
                 
-                SSVEP = functions.make_SSVEPs(raw_data, triggers, 25) # SIGI was always 40 Hz, length = 25
+#                 SSVEP = functions.make_SSVEPs(raw_data, triggers, 25) # SIGI was always 40 Hz, length = 25
 
-                # plt.plot(SSVEP)
+#                 # plt.plot(SSVEP)
         
-                SIGI_amplitudes[subject-1,frequency_count,electrode,condition] = np.ptp(SSVEP) # save amplitude
+#                 SIGI_amplitudes[subject-1,frequency_count,electrode,condition] = np.ptp(SSVEP) # save amplitude
                 
-                SIGI_SSVEPs[subject-1,frequency_count,electrode,condition,:] = SSVEP # save the SSVEP
+#                 SIGI_SSVEPs[subject-1,frequency_count,electrode,condition,:] = SSVEP # save the SSVEP
                 
 
-                    # make a copy to later compare walking and standing
-                if condition == 0:
-                    standing_SSVEP = np.copy(SSVEP)
-                elif condition== 1:
-                    walking_SSVEP = np.copy(SSVEP)
+#                     # make a copy to later compare walking and standing
+#                 if condition == 0:
+#                     standing_SSVEP = np.copy(SSVEP)
+#                 elif condition== 1:
+#                     walking_SSVEP = np.copy(SSVEP)
         
         
-            # get walking/standing correlations and phase shift
-            SIGI_walking_standing_correlations[subject-1,frequency_count,electrode] = np.corrcoef(standing_SSVEP, walking_SSVEP)[0,1]
+#             # get walking/standing correlations and phase shift
+#             SIGI_walking_standing_correlations[subject-1,frequency_count,electrode] = np.corrcoef(standing_SSVEP, walking_SSVEP)[0,1]
         
-            SIGI_phase_scores[subject-1,frequency_count,electrode] = functions.cross_correlation_absolute(standing_SSVEP, walking_SSVEP)
+#             SIGI_phase_scores[subject-1,frequency_count,electrode] = functions.cross_correlation_absolute(standing_SSVEP, walking_SSVEP)
         
-            frequency_count += 1
+#             frequency_count += 1
             
             
     
-        ######### make real SSVEPs and FFTs ########################
-        frequency_count = 0
-        for frequency in frequencies_to_use:
-            for condition in range(0,2):
+#         ######### make real SSVEPs and FFTs ########################
+#         frequency_count = 0
+#         for frequency in frequencies_to_use:
+#             for condition in range(0,2):
             
             
-                ## load triggers
-                triggers_file_name = 'subject_' + str(subject) + '_' + condition_names[condition] + '_' + str(frequency) + 'Hz_triggers.npy'
+#                 ## load triggers
+#                 triggers_file_name = 'subject_' + str(subject) + '_' + condition_names[condition] + '_' + str(frequency) + 'Hz_triggers.npy'
                 
-                triggers_with_path = os.path.join(path,triggers_file_name)
+#                 triggers_with_path = os.path.join(path,triggers_file_name)
                 
-                triggers = np.load(triggers_with_path)
+#                 triggers = np.load(triggers_with_path)
                 
-                ### linear interpolation
-                data_linear_interpolation = functions.linear_interpolation(raw_data, triggers, trig_1_times[frequency_count], trig_2_times[frequency_count], trig_length)
+#                 ### linear interpolation
+#                 data_linear_interpolation = functions.linear_interpolation(raw_data, triggers, trig_1_times[frequency_count], trig_2_times[frequency_count], trig_length)
                 
                 
                 
-                ### make SSVEP
+#                 ### make SSVEP
                 
-                period = int(np.round(sample_rate/frequency))
+#                 period = int(np.round(sample_rate/frequency))
                 
-                SSVEP = functions.make_SSVEPs(data_linear_interpolation, triggers, period)
+#                 SSVEP = functions.make_SSVEPs(data_linear_interpolation, triggers, period)
 
-                # save amplitude
-                SSVEP_amplitudes[subject-1,frequency_count,electrode,condition] = np.ptp(SSVEP)
+#                 # save amplitude
+#                 SSVEP_amplitudes[subject-1,frequency_count,electrode,condition] = np.ptp(SSVEP)
                 
-                # save the SSVEP
-                all_SSVEPs[subject-1,frequency_count,electrode,condition,0:len(SSVEP)] = SSVEP 
+#                 # save the SSVEP
+#                 all_SSVEPs[subject-1,frequency_count,electrode,condition,0:len(SSVEP)] = SSVEP 
                 
-                # get absolute self phase shift
-                phase_shift = functions.phase_shift_SSVEPs_split(data_linear_interpolation, triggers, period)
+#                 # get absolute self phase shift
+#                 phase_shift = functions.phase_shift_SSVEPs_split(data_linear_interpolation, triggers, period)
                 
-                all_mean_self_absolute_phase_shifts[subject-1, frequency_count, electrode, condition] = np.abs(phase_shift)
+#                 all_mean_self_absolute_phase_shifts[subject-1, frequency_count, electrode, condition] = np.abs(phase_shift)
                 
-                ## get self correlation
+#                 ## get self correlation
                 
-                self_split_correlation = functions.compare_SSVEPs_split(data_linear_interpolation, triggers, period)
-                all_mean_self_split_correlations[subject-1, frequency_count, electrode, condition] = self_split_correlation
+#                 self_split_correlation = functions.compare_SSVEPs_split(data_linear_interpolation, triggers, period)
+#                 all_mean_self_split_correlations[subject-1, frequency_count, electrode, condition] = self_split_correlation
                 
-                # get self amplitude difference
-                amplitude_difference = functions.SSVEP_split_amplitude_difference(data_linear_interpolation, triggers, period)
-                self_split_amplitude_differences[subject-1, frequency_count, electrode, condition] = amplitude_difference
+#                 # get self amplitude difference
+#                 amplitude_difference = functions.SSVEP_split_amplitude_difference(data_linear_interpolation, triggers, period)
+#                 self_split_amplitude_differences[subject-1, frequency_count, electrode, condition] = amplitude_difference
                 
-                # Evoked FFT
-                # evoked_FFT = functions.evoked_fft(data_linear_interpolation, triggers, length, sample_rate)
-                # all_evoked_FFTs[subject-1,frequency_count,electrode,condition,0:len(evoked_FFT)] = evoked_FFT # subject, frequency, electrode, condition, FFT data 
+#                 # Evoked FFT
+#                 # evoked_FFT = functions.evoked_fft(data_linear_interpolation, triggers, length, sample_rate)
+#                 # all_evoked_FFTs[subject-1,frequency_count,electrode,condition,0:len(evoked_FFT)] = evoked_FFT # subject, frequency, electrode, condition, FFT data 
                 
-                # make a copy to later compare walking and standing
-                if condition == 0:
-                    standing_SSVEP = np.copy(SSVEP)
-                elif condition== 1:
-                    walking_SSVEP = np.copy(SSVEP)
+#                 # make a copy to later compare walking and standing
+#                 if condition == 0:
+#                     standing_SSVEP = np.copy(SSVEP)
+#                 elif condition== 1:
+#                     walking_SSVEP = np.copy(SSVEP)
                     
-            # save correlations and phase shift
-            SSVEP_walking_standing_correlations[subject-1,frequency_count,electrode] = np.corrcoef(standing_SSVEP, walking_SSVEP)[0,1]
+#             # save correlations and phase shift
+#             SSVEP_walking_standing_correlations[subject-1,frequency_count,electrode] = np.corrcoef(standing_SSVEP, walking_SSVEP)[0,1]
                
-            SSVEP_phase_scores[subject-1,frequency_count,electrode] = functions.cross_correlation_absolute(standing_SSVEP, walking_SSVEP)
+#             SSVEP_phase_scores[subject-1,frequency_count,electrode] = functions.cross_correlation_absolute(standing_SSVEP, walking_SSVEP)
 
-            frequency_count += 1
+#             frequency_count += 1
                     
                 
-    ############# make blackout SSVEPs  ######################
+#     ############# make blackout SSVEPs  ######################
     
    
         
-        ## load triggers
-        triggers_file_name = 'subject_' + str(subject) + '_blackout_triggers.npy'
+#         ## load triggers
+#         triggers_file_name = 'subject_' + str(subject) + '_blackout_triggers.npy'
         
-        triggers_with_path = os.path.join(path,triggers_file_name)
+#         triggers_with_path = os.path.join(path,triggers_file_name)
         
-        triggers = np.load(triggers_with_path)
+#         triggers = np.load(triggers_with_path)
         
-        ### linear interpolation, use 40 Hz trigger times, = frequency 2
-        data_linear_interpolation = functions.linear_interpolation(raw_data, triggers, trig_1_times[2], trig_2_times[2], trig_length)
+#         ### linear interpolation, use 40 Hz trigger times, = frequency 2
+#         data_linear_interpolation = functions.linear_interpolation(raw_data, triggers, trig_1_times[2], trig_2_times[2], trig_length)
         
          
-        period = int(np.round(sample_rate/40))
+#         period = int(np.round(sample_rate/40))
         
-        SSVEP = functions.make_SSVEPs(data_linear_interpolation, triggers, period)
+#         SSVEP = functions.make_SSVEPs(data_linear_interpolation, triggers, period)
         
-        blackout_amplitudes[subject-1,electrode] = np.ptp(SSVEP)
+#         blackout_amplitudes[subject-1,electrode] = np.ptp(SSVEP)
 
-        blackout_SSVEPs[subject-1,electrode,:] = SSVEP # save the SSVEP
+#         blackout_SSVEPs[subject-1,electrode,:] = SSVEP # save the SSVEP
 
 
 
@@ -337,7 +337,7 @@ all_mean_self_split_correlations = np.load(os.path.join(path, 'all_mean_self_spl
 
 # ## Evoked FFT spectrums
 
-electrode = 5
+#electrode = 5
 
 peak_locations = (31, 36, 42, 45, 50, 55)
 first_harmonic_locations = (62, 71, 84, 90, 100, 110)
@@ -345,44 +345,50 @@ first_harmonic_locations = (62, 71, 84, 90, 100, 110)
 peak_amplitudes = np.zeros([10,6,8,2])
 first_harmonic_amplitudes = np.zeros([10,6,8,2])
 
+# empty matrix to store the noise values, i.e. the average of the FFT -5 to 5 Hz around the peak
+average_noise_peak = np.zeros([10,6,8,2])
+average_noise_first_harmonic = np.zeros([10,6,8,2])
+
 SNR_peaks = np.zeros([10,6,8,2])
 SNR_first_harmonic = np.zeros([10,6,8,2])
 
 for subject in range(0,10):
-    plt.figure()
-    plt.suptitle('Subject ' + str(subject+1))
+    # plt.figure()
+    # plt.suptitle('Subject ' + str(subject+1))
     for frequency in range(0,6):
-        plt.subplot(3,2,frequency+1)
-        plt.title(str(frequencies_to_use[frequency]) + ' Hz')
+        # plt.subplot(3,2,frequency+1)
+        # plt.title(str(frequencies_to_use[frequency]) + ' Hz')
         
-       # for electrode in range(0,8):
-        for condition in range(0,2):
-            
-            fft_spectrum = all_evoked_FFTs[subject,frequency,electrode,condition,:]
-            
-            plt.plot(fft_spectrum, label = (str(condition_names[condition])))
-            
-            peak_frequency = peak_locations[frequency]
- 
-            peak_amplitude = fft_spectrum[peak_frequency] 
-            peak_noise_amplitude = fft_spectrum[np.r_[peak_frequency-5:peak_frequency-2, peak_frequency+2:peak_frequency+5]]
-            
-            peak_amplitudes[subject,frequency,electrode,condition] = peak_amplitude
-            SNR_peaks[subject,frequency,electrode,condition] = peak_amplitude / peak_noise_amplitude.mean()
-            
-            first_harmonic_frequency = first_harmonic_locations[frequency]
-            
-            first_harmonic_amplitude = fft_spectrum[first_harmonic_frequency] 
-            
-            first_harmonic_noise_amplitude = fft_spectrum[np.r_[first_harmonic_frequency-5:first_harmonic_frequency-2, first_harmonic_frequency+2:first_harmonic_frequency+5]]
-            
-            first_harmonic_amplitudes[subject,frequency,electrode,condition] = first_harmonic_amplitude 
-            SNR_first_harmonic[subject,frequency,electrode,condition] = first_harmonic_amplitude / first_harmonic_noise_amplitude.mean()
-            
-           
-        plt.xlim(0, 100)
+        for electrode in range(0,8):
+            for condition in range(0,2):
+                
+                fft_spectrum = all_evoked_FFTs[subject,frequency,electrode,condition,:]
+                
+              #  plt.plot(fft_spectrum, label = (str(condition_names[condition])))
+                
+                peak_frequency = peak_locations[frequency]
+     
+                peak_amplitude = fft_spectrum[peak_frequency] 
+                peak_noise_amplitude = fft_spectrum[np.r_[peak_frequency-5:peak_frequency-2, peak_frequency+2:peak_frequency+5]]
+                
+                peak_amplitudes[subject,frequency,electrode,condition] = peak_amplitude
+                average_noise_peak[subject,frequency,electrode,condition] = peak_noise_amplitude.mean()
+                SNR_peaks[subject,frequency,electrode,condition] = peak_amplitude / peak_noise_amplitude.mean()
+                
+                first_harmonic_frequency = first_harmonic_locations[frequency]
+                
+                first_harmonic_amplitude = fft_spectrum[first_harmonic_frequency] 
+                
+                first_harmonic_noise_amplitude = fft_spectrum[np.r_[first_harmonic_frequency-5:first_harmonic_frequency-2, first_harmonic_frequency+2:first_harmonic_frequency+5]]
+                
+                first_harmonic_amplitudes[subject,frequency,electrode,condition] = first_harmonic_amplitude 
+                average_noise_first_harmonic[subject,frequency,electrode,condition] = first_harmonic_noise_amplitude.mean()
+                SNR_first_harmonic[subject,frequency,electrode,condition] = first_harmonic_amplitude / first_harmonic_noise_amplitude.mean()
+                
+               
+       # plt.xlim(0, 100)
     
-    plt.legend()
+   # plt.legend()
 
 
 
@@ -1064,6 +1070,41 @@ print('35 vs 40 Hz, P4 Z = ' + str(Z_score_phase_35_vs_40z_P4))
 
 
 ########### Stats  ####################
+
+
+## Evoked FFTs, check for presence of 2nd harmonic
+
+electrode = 5
+
+for frequency_count in range(0,6):
+    
+    print('\n' + str(frequencies_to_use[frequency_count]) + ' Hz\n')
+    
+    for condition in range(0,2):
+        
+        print(condition_names[condition] )
+    
+        first_harmonic_amplitudes_all_subjects = first_harmonic_amplitudes[:,frequency_count,electrode,condition]
+        
+        average_noise_first_harmonic_all_subjects = average_noise_first_harmonic[:,frequency_count,electrode,condition]
+
+        Z_score = functions.group_permutation_test(first_harmonic_amplitudes_all_subjects ,average_noise_first_harmonic_all_subjects)
+
+        print(str(Z_score))
+        
+        p_value_one_sided = scipy.stats.norm.sf(abs(Z_score)) #one-sided
+        
+        print(str(p_value_one_sided))
+
+        cohens_d = functions.cohens_d(first_harmonic_amplitudes_all_subjects, average_noise_first_harmonic_all_subjects)
+
+        print('cohens d = ' + str(cohens_d) + '\n')
+
+
+
+
+
+
 
 ## Amplitude compared to Blackout condition
 
